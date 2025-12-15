@@ -65,3 +65,14 @@ export interface CourseProgress {
   completed: boolean;
   earnedRewards: string[];
 }
+
+export interface TestResult {
+  id: string;
+  userId: string;
+  courseId: string;
+  testId: string;
+  score: number;
+  answers: Record<string, string | string[]>;
+  completedAt: string;
+  passed: boolean;
+}

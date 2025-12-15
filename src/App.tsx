@@ -11,6 +11,8 @@ import AdminCourses from "./pages/admin/Courses";
 import AdminUsers from "./pages/admin/Users";
 import StudentDashboard from "./pages/student/Dashboard";
 import StudentCourses from "./pages/student/Courses";
+import StudentCourseDetail from "./pages/student/CourseDetail";
+import StudentTest from "./pages/student/Test";
 import StudentRewards from "./pages/student/Rewards";
 import StudentProgress from "./pages/student/Progress";
 import StudentProfile from "./pages/student/Profile";
@@ -34,6 +36,8 @@ const App = () => (
           
           <Route path={ROUTES.STUDENT.DASHBOARD} element={<StudentDashboard />} />
           <Route path={ROUTES.STUDENT.COURSES} element={<StudentCourses />} />
+          <Route path={ROUTES.STUDENT.COURSE_DETAIL} element={<StudentCourseDetail />} />
+          <Route path={ROUTES.STUDENT.TEST} element={<StudentTest />} />
           <Route path={ROUTES.STUDENT.REWARDS} element={<StudentRewards />} />
           <Route path={ROUTES.STUDENT.PROGRESS} element={<StudentProgress />} />
           <Route path={ROUTES.STUDENT.PROFILE} element={<StudentProfile />} />

@@ -6,9 +6,12 @@ import { Progress } from '@/components/ui/progress';
 import Icon from '@/components/ui/icon';
 import { mockCourses, mockProgress } from '@/data/mockData';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ROUTES } from '@/constants/routes';
 
 export default function StudentCourses() {
   const [filter, setFilter] = useState<'all' | 'inProgress' | 'completed'>('all');
+  const navigate = useNavigate();
   const userId = '2';
 
   const userProgress = mockProgress.filter(p => p.userId === userId);
@@ -111,7 +114,11 @@ export default function StudentCourses() {
                     </div>
                   )}
 
-                  <Button className="w-full" variant={progress?.completed ? 'outline' : 'default'}>
+                  <Button 
+                    className="w-full" 
+                    variant={progress?.completed ? 'outline' : 'default'}
+                    onClick={() => navigate(ROUTES.STUDENT.COURSE_DETAIL.replace(':id', course.id))}
+                  >
                     {progress?.completed ? (
                       <>
                         <Icon name="RotateCcw" className="mr-2" size={16} />
