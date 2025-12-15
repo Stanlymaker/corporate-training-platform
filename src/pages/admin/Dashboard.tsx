@@ -14,14 +14,14 @@ export default function AdminDashboard() {
       title: 'Всего курсов',
       value: totalCourses,
       icon: 'BookOpen',
-      color: 'bg-purple-500',
+      color: 'bg-orange-500',
       trend: `${publishedCourses} опубликовано`,
     },
     {
       title: 'Обучающихся',
       value: totalStudents,
       icon: 'Users',
-      color: 'bg-blue-500',
+      color: 'bg-amber-500',
       trend: 'Активных пользователей',
     },
     {
@@ -82,7 +82,7 @@ export default function AdminDashboard() {
                       <h4 className="font-semibold text-gray-900 truncate">{course.title}</h4>
                       <p className="text-sm text-gray-600">{course.lessonsCount} уроков • {course.duration} мин</p>
                     </div>
-                    <div className="flex items-center gap-1 text-sm font-medium text-purple-600">
+                    <div className="flex items-center gap-1 text-sm font-medium text-orange-600">
                       <Icon name="Users" size={14} />
                       <span>{Math.floor(Math.random() * 50) + 10}</span>
                     </div>
@@ -103,7 +103,7 @@ export default function AdminDashboard() {
               <div className="space-y-4">
                 {mockUsers.filter(u => u.role === 'student').map((user) => (
                   <div key={user.id} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
-                    <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-blue-400 rounded-full flex items-center justify-center text-white font-semibold">
+                    <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-amber-400 rounded-full flex items-center justify-center text-white font-semibold">
                       {user.name.charAt(0)}
                     </div>
                     <div className="flex-1 min-w-0">

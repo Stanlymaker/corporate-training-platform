@@ -25,7 +25,7 @@ export default function StudentDashboard() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="border-0 shadow-md bg-gradient-to-br from-purple-500 to-purple-600 text-white">
+          <Card className="border-0 shadow-md bg-gradient-to-br from-orange-500 to-orange-600 text-white">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <Icon name="Trophy" size={32} />
@@ -35,7 +35,7 @@ export default function StudentDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="border-0 shadow-md bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+          <Card className="border-0 shadow-md bg-gradient-to-br from-amber-500 to-amber-600 text-white">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <Icon name="BookOpen" size={32} />
@@ -111,7 +111,7 @@ export default function StudentDashboard() {
                   {mockCourses.slice(2, 4).map((course) => (
                     <div key={course.id} className="group p-4 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl hover:shadow-lg transition-all cursor-pointer">
                       <img src={course.image} alt={course.title} className="w-full h-32 object-cover rounded-lg mb-3" />
-                      <h4 className="font-semibold text-gray-900 mb-2 group-hover:text-purple-600 transition-colors">{course.title}</h4>
+                      <h4 className="font-semibold text-gray-900 mb-2 group-hover:text-orange-600 transition-colors">{course.title}</h4>
                       <div className="flex items-center gap-3 text-sm text-gray-600">
                         <span className="flex items-center gap-1">
                           <Icon name="BookOpen" size={14} />
@@ -149,7 +149,7 @@ export default function StudentDashboard() {
                         key={reward.id}
                         className={`p-4 rounded-xl text-center transition-all ${
                           earned
-                            ? 'bg-gradient-to-br from-purple-50 to-blue-50 border-2 border-purple-200 hover-scale'
+                            ? 'bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 hover-scale'
                             : 'bg-gray-100 opacity-50'
                         }`}
                       >
@@ -162,7 +162,7 @@ export default function StudentDashboard() {
               </CardContent>
             </Card>
 
-            <Card className="border-0 shadow-md bg-gradient-to-br from-purple-600 to-blue-600 text-white">
+            <Card className="border-0 shadow-md bg-gradient-to-br from-orange-600 to-amber-600 text-white">
               <CardContent className="p-6">
                 <Icon name="Target" size={32} className="mb-4" />
                 <h3 className="font-bold text-lg mb-2">Цель недели</h3>
