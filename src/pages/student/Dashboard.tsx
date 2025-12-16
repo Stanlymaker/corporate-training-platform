@@ -76,7 +76,9 @@ export default function StudentDashboard() {
                     return (
                       <div key={course.id} className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer" onClick={() => navigate(`/student/courses/${course.id}`)}>
                         <div className="flex items-start gap-3 mb-3">
-                          <img src={course.image} alt={course.title} className="w-16 h-16 rounded-lg object-cover" />
+                          <div className={`w-16 h-16 rounded-lg bg-gradient-to-br ${getCategoryGradient(course.category)} flex items-center justify-center shadow-md flex-shrink-0`}>
+                            <Icon name={getCategoryIcon(course.category) as any} size={32} className="text-white" />
+                          </div>
                           <div className="flex-1 min-w-0">
                             <h4 className="font-semibold text-base text-gray-900 mb-1">{course.title}</h4>
                             <p className="text-xs text-gray-600 mb-2">{course.category} • {course.duration} мин</p>
