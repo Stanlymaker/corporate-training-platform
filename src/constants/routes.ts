@@ -8,6 +8,7 @@ export const ROUTES = {
     TESTS: '/admin/tests',
     REWARDS: '/admin/rewards',
     ANALYTICS: '/admin/analytics',
+    MEDIA: '/admin/media',
   },
   STUDENT: {
     DASHBOARD: '/student/dashboard',

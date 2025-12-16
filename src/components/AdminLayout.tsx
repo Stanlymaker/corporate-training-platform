@@ -25,6 +25,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { icon: 'BookOpen', label: 'Курсы', path: ROUTES.ADMIN.COURSES },
     { icon: 'Users', label: 'Пользователи', path: ROUTES.ADMIN.USERS },
     { icon: 'ClipboardCheck', label: 'Тесты', path: ROUTES.ADMIN.TESTS },
+    { icon: 'FolderOpen', label: 'Медиабиблиотека', path: ROUTES.ADMIN.MEDIA },
     { icon: 'Award', label: 'Награды', path: ROUTES.ADMIN.REWARDS },
     { icon: 'BarChart3', label: 'Аналитика', path: ROUTES.ADMIN.ANALYTICS },
   ];
