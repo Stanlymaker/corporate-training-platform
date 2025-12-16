@@ -23,6 +23,17 @@ export interface Course {
   students?: number;
   rating?: number;
   instructor?: string;
+  status?: 'draft' | 'published' | 'archived';
+  price?: number;
+  maxStudents?: number;
+  startDate?: string;
+  endDate?: string;
+  certificateEnabled?: boolean;
+  certificateTemplate?: string;
+  prerequisites?: string[];
+  tags?: string[];
+  language?: string;
+  subtitlesAvailable?: boolean;
 }
 
 export interface Lesson {

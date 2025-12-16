@@ -4,6 +4,8 @@ export const ROUTES = {
   ADMIN: {
     DASHBOARD: '/admin/dashboard',
     COURSES: '/admin/courses',
+    COURSE_EDITOR: '/admin/courses/edit/:courseId?',
+    COURSE_VIEW: '/admin/courses/view/:courseId',
     USERS: '/admin/users',
     TESTS: '/admin/tests',
     REWARDS: '/admin/rewards',

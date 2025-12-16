@@ -26,7 +26,7 @@ export default function AdminCourses() {
             <p className="text-gray-600">Создавайте и редактируйте образовательный контент</p>
           </div>
           <Button 
-            onClick={() => navigate('/admin/courses/new')}
+            onClick={() => navigate('/admin/courses/edit')}
           >
             <Icon name="Plus" className="mr-2" size={18} />
             Создать курс
@@ -89,11 +89,19 @@ export default function AdminCourses() {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="outline" className="flex-1">
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    onClick={() => navigate(`/admin/courses/edit/${course.id}`)}
+                  >
                     <Icon name="Edit" className="mr-2" size={16} />
                     Редактировать
                   </Button>
-                  <Button variant="outline" className="flex-1">
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    onClick={() => navigate(`/admin/courses/view/${course.id}`)}
+                  >
                     <Icon name="Eye" className="mr-2" size={16} />
                     Просмотр
                   </Button>

@@ -10,6 +10,7 @@ import Login from "./pages/Login";
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminCourses from "./pages/admin/Courses";
 import AdminCourseEditor from "./pages/admin/CourseEditor";
+import AdminCourseView from "./pages/admin/CourseView";
 import AdminUsers from "./pages/admin/Users";
 import AdminAnalytics from "./pages/admin/Analytics";
 import AdminTests from "./pages/admin/Tests";
@@ -43,8 +44,9 @@ const App = () => (
             
             <Route path={ROUTES.ADMIN.DASHBOARD} element={<AdminDashboard />} />
             <Route path={ROUTES.ADMIN.COURSES} element={<AdminCourses />} />
-            <Route path="/admin/courses/new" element={<AdminCourseEditor />} />
-            <Route path="/admin/courses/:courseId/edit" element={<AdminCourseEditor />} />
+            <Route path="/admin/courses/edit" element={<AdminCourseEditor />} />
+            <Route path="/admin/courses/edit/:courseId" element={<AdminCourseEditor />} />
+            <Route path="/admin/courses/view/:courseId" element={<AdminCourseView />} />
             <Route path={ROUTES.ADMIN.USERS} element={<AdminUsers />} />
             <Route path={ROUTES.ADMIN.ANALYTICS} element={<AdminAnalytics />} />
             <Route path={ROUTES.ADMIN.TESTS} element={<AdminTests />} />
