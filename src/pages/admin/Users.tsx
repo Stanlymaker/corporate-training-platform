@@ -1,63 +1,106 @@
 import AdminLayout from '@/components/AdminLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import Icon from '@/components/ui/icon';
 import { mockUsers, mockProgress } from '@/data/mockData';
 import { useState } from 'react';
+import UserFilters, { FilterState } from '@/components/admin/UserFilters';
+import UserDetailsModal from '@/components/admin/UserDetailsModal';
+import AddUserModal, { NewUserData } from '@/components/admin/AddUserModal';
+import { User } from '@/types';
 
 export default function AdminUsers() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [filters, setFilters] = useState<FilterState>({
+    role: 'all',
+    registrationDateFrom: '',
+    registrationDateTo: '',
+    activityStatus: 'all',
+  });
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [users, setUsers] = useState(mockUsers);
 
-  const students = mockUsers.filter(u => u.role === 'student');
-  const filteredUsers = students.filter(user =>
-    user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredUsers = users.filter((user) => {
+    const matchesSearch =
+      user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesRole = filters.role === 'all' || user.role === filters.role;
+
+    let matchesActivity = true;
+    if (filters.activityStatus === 'active') {
+      matchesActivity = user.lastActive.includes('часов') || user.lastActive.includes('минут');
+    } else if (filters.activityStatus === 'inactive') {
+      matchesActivity = user.lastActive.includes('месяц');
+    }
+
+    return matchesSearch && matchesRole && matchesActivity;
+  });
 
   const getUserProgress = (userId: string) => {
-    const progress = mockProgress.filter(p => p.userId === userId);
-    const completed = progress.filter(p => p.completed).length;
+    const progress = mockProgress.filter((p) => p.userId === userId);
+    const completed = progress.filter((p) => p.completed).length;
     return { total: progress.length, completed };
   };
+
+  const handleViewDetails = (user: User) => {
+    setSelectedUser(user);
+    setShowDetailsModal(true);
+  };
+
+  const handleEditRole = (userId: string, newRole: 'admin' | 'student') => {
+    setUsers((prevUsers) =>
+      prevUsers.map((u) => (u.id === userId ? { ...u, role: newRole } : u))
+    );
+    setSelectedUser((prev) => (prev && prev.id === userId ? { ...prev, role: newRole } : prev));
+  };
+
+  const handleAddUser = (userData: NewUserData) => {
+    const newUser: User = {
+      id: Date.now().toString(),
+      name: userData.name,
+      email: userData.email,
+      role: userData.role,
+      registrationDate: new Date().toLocaleDateString('ru-RU'),
+      lastActive: 'Только что',
+    };
+    setUsers([...users, newUser]);
+  };
+
+  const students = users.filter((u) => u.role === 'student');
+  const activeUsers = users.filter(
+    (u) => u.lastActive.includes('часов') || u.lastActive.includes('минут')
+  );
 
   return (
     <AdminLayout>
       <div className="animate-fade-in">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Управление пользователями</h1>
-            <p className="text-gray-600">Отслеживайте прогресс и управляйте доступом</p>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              Управление пользователями
+            </h1>
+            <p className="text-gray-600">
+              Отслеживайте прогресс и управляйте доступом
+            </p>
           </div>
-          <Button>
+          <Button onClick={() => setShowAddModal(true)}>
             <Icon name="UserPlus" className="mr-2" size={18} />
             Добавить пользователя
           </Button>
         </div>
 
-        <Card className="border shadow-sm mb-6">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="relative flex-1">
-                <Icon name="Search" className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-                <Input
-                  placeholder="Поиск по имени или email..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              <Button variant="outline">
-                <Icon name="Filter" className="mr-2" size={16} />
-                Фильтры
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        <UserFilters
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          onFilterApply={setFilters}
+        />
 
-        <Card className="border-0 shadow-md">
+        <Card className="border shadow-sm">
           <CardContent className="p-6">
             <Table>
               <TableHeader>
@@ -82,15 +125,29 @@ export default function AdminUsers() {
                           </div>
                           <div>
                             <div className="font-semibold text-gray-900">{user.name}</div>
-                            <Badge variant="outline" className="mt-1">Обучающийся</Badge>
+                            <Badge
+                              variant={user.role === 'admin' ? 'default' : 'outline'}
+                              className="mt-1"
+                            >
+                              {user.role === 'admin' ? 'Администратор' : 'Обучающийся'}
+                            </Badge>
                           </div>
                         </div>
                       </TableCell>
                       <TableCell className="text-gray-600">{user.email}</TableCell>
-                      <TableCell className="text-gray-600">{user.registrationDate}</TableCell>
+                      <TableCell className="text-gray-600">
+                        {user.registrationDate}
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <div
+                            className={`w-2 h-2 rounded-full ${
+                              user.lastActive.includes('часов') ||
+                              user.lastActive.includes('минут')
+                                ? 'bg-green-500'
+                                : 'bg-gray-400'
+                            }`}
+                          ></div>
                           <span className="text-gray-600">{user.lastActive}</span>
                         </div>
                       </TableCell>
@@ -103,7 +160,11 @@ export default function AdminUsers() {
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="sm">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleViewDetails(user)}
+                        >
                           <Icon name="Eye" className="mr-1" size={14} />
                           Детали
                         </Button>
@@ -113,15 +174,22 @@ export default function AdminUsers() {
                 })}
               </TableBody>
             </Table>
+
+            {filteredUsers.length === 0 && (
+              <div className="text-center py-12 text-gray-500">
+                <Icon name="Users" size={48} className="mx-auto mb-4 opacity-30" />
+                <p>Пользователи не найдены</p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-          <Card className="border-0 shadow-md">
+          <Card className="border shadow-sm">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
-                  <Icon name="Users" className="text-orange-600" size={24} />
+                <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
+                  <Icon name="Users" className="text-primary" size={24} />
                 </div>
                 <div>
                   <div className="text-2xl font-bold text-gray-900">{students.length}</div>
@@ -131,21 +199,23 @@ export default function AdminUsers() {
             </CardContent>
           </Card>
 
-          <Card className="border-0 shadow-md">
+          <Card className="border shadow-sm">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
                   <Icon name="TrendingUp" className="text-green-600" size={24} />
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-gray-900">{students.length}</div>
+                  <div className="text-2xl font-bold text-gray-900">
+                    {activeUsers.length}
+                  </div>
                   <div className="text-sm text-gray-600">Активных пользователей</div>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-0 shadow-md">
+          <Card className="border shadow-sm">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
@@ -153,7 +223,7 @@ export default function AdminUsers() {
                 </div>
                 <div>
                   <div className="text-2xl font-bold text-gray-900">
-                    {mockProgress.filter(p => p.completed).length}
+                    {mockProgress.filter((p) => p.completed).length}
                   </div>
                   <div className="text-sm text-gray-600">Курсов завершено</div>
                 </div>
@@ -162,6 +232,20 @@ export default function AdminUsers() {
           </Card>
         </div>
       </div>
+
+      <UserDetailsModal
+        show={showDetailsModal}
+        user={selectedUser}
+        onClose={() => setShowDetailsModal(false)}
+        onEditRole={handleEditRole}
+        userProgress={selectedUser ? getUserProgress(selectedUser.id) : { total: 0, completed: 0 }}
+      />
+
+      <AddUserModal
+        show={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onAdd={handleAddUser}
+      />
     </AdminLayout>
   );
 }
