@@ -11,6 +11,7 @@ import AdminDashboard from "./pages/admin/Dashboard";
 import AdminCourses from "./pages/admin/Courses";
 import AdminCourseEditor from "./pages/admin/CourseEditor";
 import AdminCourseView from "./pages/admin/CourseView";
+import AdminAssignments from "./pages/admin/Assignments";
 import AdminUsers from "./pages/admin/Users";
 import AdminAnalytics from "./pages/admin/Analytics";
 import AdminTests from "./pages/admin/Tests";
@@ -23,6 +24,7 @@ import StudentDashboard from "./pages/student/Dashboard";
 import StudentCourses from "./pages/student/Courses";
 import StudentCourseDetail from "./pages/student/CourseDetail";
 import StudentCourseDetails from "./pages/student/CourseDetails";
+import StudentLesson from "./pages/student/Lesson";
 import StudentTest from "./pages/student/Test";
 import StudentTestPage from "./pages/student/TestPage";
 import StudentProfile from "./pages/student/Profile";
@@ -46,6 +48,7 @@ const App = () => (
             <Route path="/admin/courses/edit" element={<AdminCourseEditor />} />
             <Route path="/admin/courses/edit/:courseId" element={<AdminCourseEditor />} />
             <Route path="/admin/courses/view/:courseId" element={<AdminCourseView />} />
+            <Route path={ROUTES.ADMIN.ASSIGNMENTS} element={<AdminAssignments />} />
             <Route path={ROUTES.ADMIN.USERS} element={<AdminUsers />} />
             <Route path={ROUTES.ADMIN.ANALYTICS} element={<AdminAnalytics />} />
             <Route path={ROUTES.ADMIN.TESTS} element={<AdminTests />} />
@@ -59,6 +62,7 @@ const App = () => (
             <Route path={ROUTES.STUDENT.DASHBOARD} element={<StudentDashboard />} />
             <Route path={ROUTES.STUDENT.COURSES} element={<StudentCourses />} />
             <Route path="/student/courses/:courseId" element={<StudentCourseDetails />} />
+            <Route path="/student/courses/:courseId/lesson/:lessonId" element={<StudentLesson />} />
             <Route path="/student/courses/:courseId/test/:testId" element={<StudentTestPage />} />
             <Route path={ROUTES.STUDENT.COURSE_DETAIL} element={<StudentCourseDetail />} />
             <Route path={ROUTES.STUDENT.TEST} element={<StudentTest />} />

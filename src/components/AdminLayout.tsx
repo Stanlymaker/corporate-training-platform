@@ -25,6 +25,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const menuItems = [
     { icon: 'LayoutDashboard', label: 'Панель', path: ROUTES.ADMIN.DASHBOARD },
     { icon: 'BookOpen', label: 'Курсы', path: ROUTES.ADMIN.COURSES },
+    { icon: 'UserCheck', label: 'Назначения', path: ROUTES.ADMIN.ASSIGNMENTS },
     { icon: 'Users', label: 'Пользователи', path: ROUTES.ADMIN.USERS },
     { icon: 'ClipboardCheck', label: 'Тесты', path: ROUTES.ADMIN.TESTS },
     { icon: 'FolderOpen', label: 'Медиа', path: ROUTES.ADMIN.MEDIA },

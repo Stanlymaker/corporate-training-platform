@@ -26,6 +26,7 @@ export interface Course {
   status?: 'draft' | 'published' | 'archived';
   startDate?: string;
   endDate?: string;
+  prerequisiteCourses?: string[];
 }
 
 export interface Lesson {
@@ -33,11 +34,20 @@ export interface Lesson {
   courseId: string;
   title: string;
   content: string;
-  type: 'text' | 'video' | 'pdf';
+  type: 'text' | 'video' | 'pdf' | 'quiz';
   order: number;
   duration: number;
   videoUrl?: string;
   description: string;
+  materials?: LessonMaterial[];
+  requiresPrevious?: boolean;
+}
+
+export interface LessonMaterial {
+  id: string;
+  title: string;
+  type: 'pdf' | 'doc' | 'link' | 'video';
+  url: string;
 }
 
 export interface Test {
@@ -81,6 +91,20 @@ export interface CourseProgress {
   testScore?: number;
   completed: boolean;
   earnedRewards: string[];
+  completedLessonIds: string[];
+  lastAccessedLesson?: string;
+  startedAt?: string;
+}
+
+export interface CourseAssignment {
+  id: string;
+  courseId: string;
+  userId: string;
+  assignedBy: string;
+  assignedAt: string;
+  dueDate?: string;
+  status: 'assigned' | 'in_progress' | 'completed' | 'overdue';
+  notes?: string;
 }
 
 export interface TestResult {

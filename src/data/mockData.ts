@@ -1,4 +1,4 @@
-import { Course, User, CourseProgress, Reward, Question, TestResult, Lesson, Test } from '@/types';
+import { Course, User, CourseProgress, Reward, Question, TestResult, Lesson, Test, CourseAssignment } from '@/types';
 
 export const mockCourses: Course[] = [
   {
@@ -98,12 +98,51 @@ export const mockLessons: Lesson[] = [
     id: 'l1',
     courseId: '1',
     title: 'Введение в маркетинг и целевую аудиторию',
-    content: 'Основные понятия и принципы определения целевой аудитории',
-    type: 'video',
+    content: `# Добро пожаловать в курс!
+
+В этом уроке мы рассмотрим основные понятия маркетинга и узнаем, почему правильное определение целевой аудитории — ключ к успеху вашего бизнеса.
+
+## Что такое целевая аудитория?
+
+Целевая аудитория (ЦА) — это группа людей, которым потенциально интересен ваш продукт или услуга. Правильное определение ЦА помогает:
+
+- Эффективно распределять маркетинговый бюджет
+- Создавать релевантные рекламные сообщения
+- Повышать конверсию продаж
+- Улучшать продукт согласно потребностям клиентов
+
+## Основные критерии ЦА
+
+1. **Демографические характеристики**: возраст, пол, доход, образование
+2. **География**: место проживания и работы
+3. **Психографика**: ценности, интересы, образ жизни
+4. **Поведенческие факторы**: паттерны покупок, лояльность к бренду
+
+## Практическое задание
+
+Подумайте о вашем продукте и ответьте на вопросы:
+- Кто ваш идеальный клиент?
+- Какие проблемы он хочет решить?
+- Где он проводит время онлайн и офлайн?`,
+    type: 'text',
     order: 1,
     duration: 12,
-    videoUrl: 'https://example.com/video1',
     description: 'Узнайте базовые концепции маркетинга и важность правильного определения целевой аудитории',
+    requiresPrevious: false,
+    materials: [
+      {
+        id: 'm1',
+        title: 'Шаблон анализа ЦА',
+        type: 'pdf',
+        url: 'https://example.com/template1.pdf',
+      },
+      {
+        id: 'm2',
+        title: 'Примеры портретов ЦА',
+        type: 'pdf',
+        url: 'https://example.com/examples.pdf',
+      },
+    ],
   },
   {
     id: 'l2',
@@ -280,6 +319,9 @@ export const mockProgress: CourseProgress[] = [
     testScore: 85,
     completed: true,
     earnedRewards: ['1'],
+    completedLessonIds: ['l1', 'l2', 'l3', 'l4', 'l5', 'l6', 'l7', 'l8'],
+    lastAccessedLesson: 'l8',
+    startedAt: '2024-01-16T09:00:00Z',
   },
   {
     courseId: '2',
@@ -288,6 +330,9 @@ export const mockProgress: CourseProgress[] = [
     totalLessons: 10,
     completed: false,
     earnedRewards: [],
+    completedLessonIds: ['l9', 'l10'],
+    lastAccessedLesson: 'l10',
+    startedAt: '2024-02-02T10:00:00Z',
   },
   {
     courseId: '3',
@@ -296,6 +341,8 @@ export const mockProgress: CourseProgress[] = [
     totalLessons: 12,
     completed: false,
     earnedRewards: [],
+    completedLessonIds: [],
+    startedAt: '2024-03-02T10:00:00Z',
   },
 ];
 
@@ -462,5 +509,46 @@ export const mockTestResults: TestResult[] = [
     },
     completedAt: '2024-12-10T14:30:00Z',
     passed: true,
+  },
+];
+
+export const mockAssignments: CourseAssignment[] = [
+  {
+    id: 'a1',
+    courseId: '1',
+    userId: '2',
+    assignedBy: '1',
+    assignedAt: '2024-01-15T10:00:00Z',
+    dueDate: '2024-03-15T23:59:59Z',
+    status: 'completed',
+    notes: 'Первый курс для начала обучения',
+  },
+  {
+    id: 'a2',
+    courseId: '2',
+    userId: '2',
+    assignedBy: '1',
+    assignedAt: '2024-02-01T10:00:00Z',
+    dueDate: '2024-05-01T23:59:59Z',
+    status: 'in_progress',
+    notes: 'После завершения курса 1',
+  },
+  {
+    id: 'a3',
+    courseId: '3',
+    userId: '2',
+    assignedBy: '1',
+    assignedAt: '2024-03-01T10:00:00Z',
+    status: 'assigned',
+    notes: 'Продвинутый курс',
+  },
+  {
+    id: 'a4',
+    courseId: '1',
+    userId: '3',
+    assignedBy: '1',
+    assignedAt: '2024-03-10T10:00:00Z',
+    dueDate: '2024-06-10T23:59:59Z',
+    status: 'in_progress',
   },
 ];
