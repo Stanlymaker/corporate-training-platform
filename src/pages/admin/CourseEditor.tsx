@@ -28,6 +28,17 @@ interface CourseFormData {
   instructor: string;
   image: string;
   lessons: Lesson[];
+  status: 'draft' | 'published' | 'archived';
+  price: number;
+  maxStudents: number;
+  startDate: string;
+  endDate: string;
+  certificateEnabled: boolean;
+  certificateTemplate: string;
+  prerequisites: string[];
+  tags: string[];
+  language: string;
+  subtitlesAvailable: boolean;
 }
 
 const initialFormData: CourseFormData = {
@@ -38,6 +49,17 @@ const initialFormData: CourseFormData = {
   instructor: '',
   image: '',
   lessons: [],
+  status: 'draft',
+  price: 0,
+  maxStudents: 0,
+  startDate: '',
+  endDate: '',
+  certificateEnabled: false,
+  certificateTemplate: 'standard',
+  prerequisites: [],
+  tags: [],
+  language: 'ru',
+  subtitlesAvailable: false,
 };
 
 export default function CourseEditor() {
@@ -49,7 +71,7 @@ export default function CourseEditor() {
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
   const [showLessonDialog, setShowLessonDialog] = useState(false);
 
-  const handleInputChange = (field: keyof CourseFormData, value: string) => {
+  const handleInputChange = (field: keyof CourseFormData, value: any) => {
     setFormData({ ...formData, [field]: value });
   };
 
@@ -164,16 +186,19 @@ export default function CourseEditor() {
           </Button>
         </div>
 
-        <div className="grid grid-cols-3 gap-6">
-          <CourseInfoForm
-            formData={formData}
-            onInputChange={handleInputChange}
-          />
+        <div className="space-y-6">
+          <div className="grid grid-cols-3 gap-6">
+            <CourseInfoForm
+              formData={formData}
+              onInputChange={handleInputChange}
+            />
 
-          <CourseSummary
-            lessons={formData.lessons}
-            totalDuration={totalDuration}
-          />
+            <CourseSummary
+              lessons={formData.lessons}
+              totalDuration={totalDuration}
+              formData={formData}
+            />
+          </div>
 
           <CourseLessonsList
             lessons={formData.lessons}
