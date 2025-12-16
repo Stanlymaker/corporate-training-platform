@@ -46,8 +46,7 @@ export default function TestView() {
 
   return (
     <AdminLayout>
-      <div className="max-w-6xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6">
           <Button
             variant="ghost"
             onClick={() => navigate(ROUTES.ADMIN.TESTS)}
@@ -251,7 +250,6 @@ export default function TestView() {
             </Card>
           </div>
         </div>
-      </div>
     </AdminLayout>
   );
 }

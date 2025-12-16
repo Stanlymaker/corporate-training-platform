@@ -169,8 +169,7 @@ export default function TestEditor() {
 
   return (
     <AdminLayout>
-      <div className="max-w-5xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6">
           <div>
             <Button
               variant="ghost"
@@ -193,28 +192,29 @@ export default function TestEditor() {
           </Button>
         </div>
 
-        <div className="space-y-6">
-          <div className="grid grid-cols-3 gap-6">
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
             <TestInfoForm
               formData={formData}
               onInputChange={handleInputChange}
             />
-
-            <TestSummary
-              questions={formData.questions}
-              totalPoints={totalPoints}
-              formData={formData}
-            />
           </div>
 
-          <TestQuestionsList
+          <TestSummary
             questions={formData.questions}
-            onAddQuestion={handleAddQuestion}
-            onEditQuestion={handleEditQuestion}
-            onDeleteQuestion={handleDeleteQuestion}
-            getQuestionTypeLabel={getQuestionTypeLabel}
+            totalPoints={totalPoints}
+            formData={formData}
           />
         </div>
+
+        <TestQuestionsList
+          questions={formData.questions}
+          onAddQuestion={handleAddQuestion}
+          onEditQuestion={handleEditQuestion}
+          onDeleteQuestion={handleDeleteQuestion}
+          getQuestionTypeLabel={getQuestionTypeLabel}
+        />
       </div>
 
       <QuestionDialog

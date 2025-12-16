@@ -45,8 +45,7 @@ export default function CourseView() {
 
   return (
     <AdminLayout>
-      <div className="max-w-6xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6">
           <Button
             variant="ghost"
             onClick={() => navigate(ROUTES.ADMIN.COURSES)}
@@ -265,7 +264,6 @@ export default function CourseView() {
             )}
           </div>
         </div>
-      </div>
     </AdminLayout>
   );
 }

@@ -146,8 +146,7 @@ export default function CourseEditor() {
 
   return (
     <AdminLayout>
-      <div className="max-w-5xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6">
           <div>
             <Button
               variant="ghost"
@@ -170,29 +169,30 @@ export default function CourseEditor() {
           </Button>
         </div>
 
-        <div className="space-y-6">
-          <div className="grid grid-cols-3 gap-6">
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
             <CourseInfoForm
               formData={formData}
               onInputChange={handleInputChange}
             />
-
-            <CourseSummary
-              lessons={formData.lessons}
-              totalDuration={totalDuration}
-              formData={formData}
-            />
           </div>
 
-          <CourseLessonsList
+          <CourseSummary
             lessons={formData.lessons}
-            onAddLesson={handleAddLesson}
-            onEditLesson={handleEditLesson}
-            onDeleteLesson={handleDeleteLesson}
-            onReorderLesson={handleReorderLesson}
-            getTypeIcon={getTypeIcon}
+            totalDuration={totalDuration}
+            formData={formData}
           />
         </div>
+
+        <CourseLessonsList
+          lessons={formData.lessons}
+          onAddLesson={handleAddLesson}
+          onEditLesson={handleEditLesson}
+          onDeleteLesson={handleDeleteLesson}
+          onReorderLesson={handleReorderLesson}
+          getTypeIcon={getTypeIcon}
+        />
       </div>
 
       <LessonDialog
