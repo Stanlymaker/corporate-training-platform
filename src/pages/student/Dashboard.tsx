@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import Icon from '@/components/ui/icon';
 import { mockCourses, mockProgress, mockRewards } from '@/data/mockData';
+import { getCategoryIcon, getCategoryGradient } from '@/utils/categoryIcons';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 
@@ -109,7 +110,14 @@ export default function StudentDashboard() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {mockCourses.slice(2, 4).map((course) => (
                     <div key={course.id} className="group p-3 bg-muted rounded-lg hover:shadow-md transition-all cursor-pointer" onClick={() => navigate(`/student/courses/${course.id}`)}>
-                      <img src={course.image} alt={course.title} className="w-full h-28 object-cover rounded-lg mb-2" />
+                      <div className="relative w-full h-28 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg mb-2 overflow-hidden">
+                        <div className={`absolute inset-0 bg-gradient-to-br ${getCategoryGradient(course.category)} opacity-10`} />
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className={`w-16 h-16 rounded-xl bg-gradient-to-br ${getCategoryGradient(course.category)} flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform duration-300`}>
+                            <Icon name={getCategoryIcon(course.category) as any} size={32} className="text-white" />
+                          </div>
+                        </div>
+                      </div>
                       <h4 className="font-semibold text-sm text-gray-900 mb-2 line-clamp-2 group-hover:text-primary transition-colors">{course.title}</h4>
                       <div className="flex items-center gap-3 text-xs text-gray-600 mb-2">
                         <span className="flex items-center gap-1">

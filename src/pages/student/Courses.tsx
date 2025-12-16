@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import Icon from '@/components/ui/icon';
 import { mockCourses, mockProgress, mockAssignments } from '@/data/mockData';
+import { getCategoryIcon, getCategoryGradient } from '@/utils/categoryIcons';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
@@ -72,12 +73,13 @@ export default function StudentCourses() {
 
             return (
               <Card key={course.id} className="border-0 shadow-md hover:shadow-lg transition-all overflow-hidden group">
-                <div className="relative aspect-video overflow-hidden">
-                  <img
-                    src={course.image}
-                    alt={course.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
+                <div className="relative aspect-video overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
+                  <div className={`absolute inset-0 bg-gradient-to-br ${getCategoryGradient(course.category)} opacity-10`} />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className={`w-24 h-24 rounded-2xl bg-gradient-to-br ${getCategoryGradient(course.category)} flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform duration-300`}>
+                      <Icon name={getCategoryIcon(course.category) as any} size={48} className="text-white" />
+                    </div>
+                  </div>
                   <div className="absolute top-3 left-3">
                     {course.accessType === 'closed' && isAssigned && (
                       <Badge variant="outline" className="bg-white/90 backdrop-blur-sm border-purple-300 text-purple-700">
