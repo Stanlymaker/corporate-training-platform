@@ -18,13 +18,8 @@ interface CourseSummaryProps {
   totalDuration: number;
   formData: {
     status: 'draft' | 'published' | 'archived';
-    price: number;
-    maxStudents: number;
     startDate: string;
     endDate: string;
-    certificateEnabled: boolean;
-    tags: string[];
-    prerequisites: string[];
   };
 }
 
@@ -62,10 +57,6 @@ export default function CourseSummary({ lessons, totalDuration, formData }: Cour
             {formData.status === 'published' ? 'Опубликован' : 
              formData.status === 'draft' ? 'Черновик' : 'Архив'}
           </Badge>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-gray-600">Цена:</span>
-          <span className="font-bold">{formData.price === 0 ? 'Бесплатно' : `${formData.price} ₽`}</span>
         </div>
 
         <div className="border-t pt-4">
@@ -112,45 +103,7 @@ export default function CourseSummary({ lessons, totalDuration, formData }: Cour
             <span className="text-gray-600">Окончание:</span>
             <span className="font-medium">{formatDate(formData.endDate)}</span>
           </div>
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-600">Макс. студентов:</span>
-            <span className="font-medium">{formData.maxStudents === 0 ? 'Без лимита' : formData.maxStudents}</span>
-          </div>
         </div>
-
-        {formData.certificateEnabled && (
-          <div className="border-t pt-4">
-            <div className="flex items-center gap-2 text-sm text-green-600">
-              <Icon name="Award" size={16} />
-              <span>Выдается сертификат</span>
-            </div>
-          </div>
-        )}
-
-        {formData.tags.length > 0 && (
-          <div className="border-t pt-4">
-            <div className="text-sm text-gray-600 mb-2">Теги:</div>
-            <div className="flex flex-wrap gap-1">
-              {formData.tags.map(tag => (
-                <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {formData.prerequisites.length > 0 && (
-          <div className="border-t pt-4">
-            <div className="text-sm text-gray-600 mb-2">Требования:</div>
-            <div className="space-y-1">
-              {formData.prerequisites.map(prereq => (
-                <div key={prereq} className="flex items-start gap-2 text-xs text-gray-600">
-                  <Icon name="Check" size={12} className="mt-0.5 text-green-600" />
-                  <span>{prereq}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     </Card>
   );

@@ -24,16 +24,8 @@ export interface Course {
   rating?: number;
   instructor?: string;
   status?: 'draft' | 'published' | 'archived';
-  price?: number;
-  maxStudents?: number;
   startDate?: string;
   endDate?: string;
-  certificateEnabled?: boolean;
-  certificateTemplate?: string;
-  prerequisites?: string[];
-  tags?: string[];
-  language?: string;
-  subtitlesAvailable?: boolean;
 }
 
 export interface Lesson {
@@ -52,18 +44,25 @@ export interface Test {
   id: string;
   courseId: string;
   title: string;
-  questions: Question[];
+  description: string;
   passScore: number;
+  timeLimit: number;
   attempts: number;
+  questionsCount: number;
+  status: 'draft' | 'published';
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Question {
   id: string;
-  type: 'single' | 'multiple' | 'text' | 'match';
+  testId: string;
+  type: 'single' | 'multiple' | 'text';
   text: string;
   options?: string[];
   correctAnswer: string | string[];
   points: number;
+  order: number;
 }
 
 export interface Reward {

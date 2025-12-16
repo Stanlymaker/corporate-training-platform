@@ -29,16 +29,8 @@ interface CourseFormData {
   image: string;
   lessons: Lesson[];
   status: 'draft' | 'published' | 'archived';
-  price: number;
-  maxStudents: number;
   startDate: string;
   endDate: string;
-  certificateEnabled: boolean;
-  certificateTemplate: string;
-  prerequisites: string[];
-  tags: string[];
-  language: string;
-  subtitlesAvailable: boolean;
 }
 
 const initialFormData: CourseFormData = {
@@ -50,16 +42,8 @@ const initialFormData: CourseFormData = {
   image: '',
   lessons: [],
   status: 'draft',
-  price: 0,
-  maxStudents: 0,
   startDate: '',
   endDate: '',
-  certificateEnabled: false,
-  certificateTemplate: 'standard',
-  prerequisites: [],
-  tags: [],
-  language: 'ru',
-  subtitlesAvailable: false,
 };
 
 export default function CourseEditor() {

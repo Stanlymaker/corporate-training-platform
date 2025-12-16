@@ -1,4 +1,4 @@
-import { Course, User, CourseProgress, Reward, Question, TestResult, Lesson } from '@/types';
+import { Course, User, CourseProgress, Reward, Question, TestResult, Lesson, Test } from '@/types';
 
 export const mockCourses: Course[] = [
   {
@@ -16,16 +16,8 @@ export const mockCourses: Course[] = [
     rating: 4.8,
     instructor: 'Анна Иванова',
     status: 'published',
-    price: 0,
-    maxStudents: 0,
     startDate: '01.01.2024',
     endDate: '31.12.2024',
-    certificateEnabled: true,
-    certificateTemplate: 'standard',
-    prerequisites: ['Базовые знания маркетинга', 'Понимание основ бизнеса'],
-    tags: ['маркетинг', 'целевая аудитория', 'сегментация'],
-    language: 'ru',
-    subtitlesAvailable: true,
   },
   {
     id: '2',
@@ -42,16 +34,8 @@ export const mockCourses: Course[] = [
     rating: 4.7,
     instructor: 'Петр Смирнов',
     status: 'published',
-    price: 4990,
-    maxStudents: 100,
     startDate: '15.02.2024',
     endDate: '15.06.2024',
-    certificateEnabled: true,
-    certificateTemplate: 'premium',
-    prerequisites: ['Опыт работы в бизнесе от 1 года'],
-    tags: ['стратегия', 'ценностное предложение', 'конкуренция'],
-    language: 'ru',
-    subtitlesAvailable: false,
   },
   {
     id: '3',
@@ -68,16 +52,8 @@ export const mockCourses: Course[] = [
     rating: 4.9,
     instructor: 'Мария Козлова',
     status: 'published',
-    price: 7990,
-    maxStudents: 50,
     startDate: '01.03.2024',
     endDate: '01.09.2024',
-    certificateEnabled: true,
-    certificateTemplate: 'corporate',
-    prerequisites: ['Знание Excel', 'Опыт аналитической работы'],
-    tags: ['аналитика', 'исследование рынка', 'конкуренты'],
-    language: 'ru',
-    subtitlesAvailable: true,
   },
   {
     id: '4',
@@ -94,16 +70,8 @@ export const mockCourses: Course[] = [
     rating: 4.6,
     instructor: 'Дмитрий Соколов',
     status: 'published',
-    price: 9990,
-    maxStudents: 30,
     startDate: '10.04.2024',
     endDate: '10.10.2024',
-    certificateEnabled: true,
-    certificateTemplate: 'premium',
-    prerequisites: ['Базовые знания финансов', 'Опыт предпринимательства'],
-    tags: ['финансы', 'бизнес-модель', 'планирование'],
-    language: 'ru',
-    subtitlesAvailable: true,
   },
   {
     id: '5',
@@ -120,16 +88,8 @@ export const mockCourses: Course[] = [
     rating: 4.8,
     instructor: 'Елена Волкова',
     status: 'published',
-    price: 5990,
-    maxStudents: 0,
     startDate: '20.05.2024',
     endDate: '20.08.2024',
-    certificateEnabled: false,
-    certificateTemplate: 'standard',
-    prerequisites: ['Базовые знания продуктового подхода'],
-    tags: ['продукт', 'MVP', 'тестирование', 'стартапы'],
-    language: 'ru',
-    subtitlesAvailable: false,
   },
 ];
 
@@ -339,9 +299,65 @@ export const mockProgress: CourseProgress[] = [
   },
 ];
 
+export const mockTests: Test[] = [
+  {
+    id: 'test1',
+    courseId: '1',
+    title: 'Итоговый тест по целевой аудитории',
+    description: 'Проверьте свои знания по определению и анализу целевой аудитории',
+    passScore: 70,
+    timeLimit: 30,
+    attempts: 3,
+    questionsCount: 8,
+    status: 'published',
+    createdAt: '10.12.2024',
+    updatedAt: '15.12.2024',
+  },
+  {
+    id: 'test2',
+    courseId: '2',
+    title: 'Проверка знаний: Ценностное предложение',
+    description: 'Оцените свое понимание принципов создания ценностного предложения',
+    passScore: 75,
+    timeLimit: 25,
+    attempts: 2,
+    questionsCount: 10,
+    status: 'published',
+    createdAt: '05.12.2024',
+    updatedAt: '12.12.2024',
+  },
+  {
+    id: 'test3',
+    courseId: '3',
+    title: 'Тест по анализу рынка',
+    description: 'Проверьте навыки анализа рынка и конкурентного окружения',
+    passScore: 80,
+    timeLimit: 40,
+    attempts: 3,
+    questionsCount: 15,
+    status: 'published',
+    createdAt: '01.12.2024',
+    updatedAt: '10.12.2024',
+  },
+  {
+    id: 'test4',
+    courseId: '4',
+    title: 'Финансовое планирование: Итоговый тест',
+    description: 'Комплексная проверка знаний по бизнес-моделям и финансовому планированию',
+    passScore: 85,
+    timeLimit: 45,
+    attempts: 2,
+    questionsCount: 12,
+    status: 'draft',
+    createdAt: '15.11.2024',
+    updatedAt: '14.12.2024',
+  },
+];
+
 export const mockQuestions: Question[] = [
   {
     id: 'q1',
+    testId: 'test1',
     type: 'single',
     text: 'Что является ключевым элементом при определении целевой аудитории?',
     options: [
@@ -352,9 +368,11 @@ export const mockQuestions: Question[] = [
     ],
     correctAnswer: 'Демографические характеристики',
     points: 10,
+    order: 1,
   },
   {
     id: 'q2',
+    testId: 'test1',
     type: 'multiple',
     text: 'Какие факторы важны при сегментировании рынка? (выберите все подходящие)',
     options: [
@@ -365,9 +383,11 @@ export const mockQuestions: Question[] = [
     ],
     correctAnswer: ['Поведенческие характеристики', 'Психографические характеристики', 'Потребности и проблемы клиентов'],
     points: 15,
+    order: 2,
   },
   {
     id: 'q3',
+    testId: 'test1',
     type: 'single',
     text: 'Что такое портрет клиента (Customer Persona)?',
     options: [
@@ -378,9 +398,11 @@ export const mockQuestions: Question[] = [
     ],
     correctAnswer: 'Детальное описание типичного представителя целевой аудитории',
     points: 10,
+    order: 3,
   },
   {
     id: 'q4',
+    testId: 'test1',
     type: 'single',
     text: 'Какой метод исследования наиболее эффективен для глубокого понимания потребностей аудитории?',
     options: [
@@ -391,6 +413,37 @@ export const mockQuestions: Question[] = [
     ],
     correctAnswer: 'Глубинные интервью',
     points: 10,
+    order: 4,
+  },
+  {
+    id: 'q5',
+    testId: 'test2',
+    type: 'single',
+    text: 'Что является основой ценностного предложения?',
+    options: [
+      'Уникальная польза для клиента',
+      'Низкая цена продукта',
+      'Красивый дизайн',
+      'Известный бренд'
+    ],
+    correctAnswer: 'Уникальная польза для клиента',
+    points: 10,
+    order: 1,
+  },
+  {
+    id: 'q6',
+    testId: 'test3',
+    type: 'multiple',
+    text: 'Какие инструменты используются для анализа конкурентов?',
+    options: [
+      'SWOT-анализ',
+      'Матрица БКГ',
+      'Гороскоп',
+      'Конкурентная карта'
+    ],
+    correctAnswer: ['SWOT-анализ', 'Матрица БКГ', 'Конкурентная карта'],
+    points: 15,
+    order: 1,
   },
 ];
 
