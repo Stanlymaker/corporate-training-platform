@@ -1,0 +1,43 @@
+export type LogLevel = 'info' | 'warning' | 'error' | 'success';
+
+export type LogAction = 
+  | 'user.login'
+  | 'user.logout'
+  | 'user.register'
+  | 'user.update'
+  | 'course.create'
+  | 'course.update'
+  | 'course.delete'
+  | 'course.publish'
+  | 'lesson.create'
+  | 'lesson.update'
+  | 'lesson.delete'
+  | 'test.create'
+  | 'test.update'
+  | 'test.delete'
+  | 'test.submit'
+  | 'media.upload'
+  | 'media.delete'
+  | 'system.error'
+  | 'api.request'
+  | 'api.error';
+
+export interface SystemLog {
+  id: string;
+  timestamp: string;
+  level: LogLevel;
+  action: LogAction;
+  userId?: string;
+  userName?: string;
+  message: string;
+  details?: string;
+  metadata?: {
+    ip?: string;
+    userAgent?: string;
+    path?: string;
+    method?: string;
+    statusCode?: number;
+    error?: string;
+    [key: string]: any;
+  };
+}

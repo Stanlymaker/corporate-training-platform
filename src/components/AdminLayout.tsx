@@ -28,6 +28,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { icon: 'FolderOpen', label: 'Медиабиблиотека', path: ROUTES.ADMIN.MEDIA },
     { icon: 'Award', label: 'Награды', path: ROUTES.ADMIN.REWARDS },
     { icon: 'BarChart3', label: 'Аналитика', path: ROUTES.ADMIN.ANALYTICS },
+    { icon: 'FileText', label: 'Системные логи', path: ROUTES.ADMIN.LOGS },
   ];
 
   const handleLogout = () => {

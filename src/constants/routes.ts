@@ -9,6 +9,7 @@ export const ROUTES = {
     REWARDS: '/admin/rewards',
     ANALYTICS: '/admin/analytics',
     MEDIA: '/admin/media',
+    LOGS: '/admin/logs',
   },
   STUDENT: {
     DASHBOARD: '/student/dashboard',

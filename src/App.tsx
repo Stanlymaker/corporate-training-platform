@@ -16,6 +16,7 @@ import AdminTests from "./pages/admin/Tests";
 import AdminTestEditor from "./pages/admin/TestEditor";
 import AdminRewards from "./pages/admin/Rewards";
 import AdminMedia from "./pages/admin/Media";
+import AdminLogs from "./pages/admin/Logs";
 import StudentDashboard from "./pages/student/Dashboard";
 import StudentCourses from "./pages/student/Courses";
 import StudentCourseDetail from "./pages/student/CourseDetail";
@@ -51,6 +52,7 @@ const App = () => (
             <Route path="/admin/tests/:testId/edit" element={<AdminTestEditor />} />
             <Route path={ROUTES.ADMIN.REWARDS} element={<AdminRewards />} />
             <Route path={ROUTES.ADMIN.MEDIA} element={<AdminMedia />} />
+            <Route path={ROUTES.ADMIN.LOGS} element={<AdminLogs />} />
             
             <Route path={ROUTES.STUDENT.DASHBOARD} element={<StudentDashboard />} />
             <Route path={ROUTES.STUDENT.COURSES} element={<StudentCourses />} />
