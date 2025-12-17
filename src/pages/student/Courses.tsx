@@ -118,10 +118,6 @@ export default function StudentCourses() {
                       <Icon name="Clock" size={12} />
                       {course.duration} мин
                     </span>
-                    <span className="flex items-center gap-1">
-                      <Icon name="Target" size={12} />
-                      {course.passScore}%
-                    </span>
                   </div>
 
                   {progress && (
