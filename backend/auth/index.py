@@ -70,6 +70,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     Аутентификация пользователей: вход, выход, проверка токена
     Endpoints: POST ?action=login, POST ?action=logout, GET ?action=me
     '''
+    print(f"[DEBUG] Handler called with method: {event.get('httpMethod')}, query: {event.get('queryStringParameters')}")
     method: str = event.get('httpMethod', 'GET')
     
     if method == 'OPTIONS':
@@ -91,6 +92,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     
     if method == 'POST' and action == 'login':
         body_data = json.loads(event.get('body', '{}'))
+        print(f"[DEBUG] Login attempt with email: {body_data.get('email')}")
+        
         login_req = LoginRequest(**body_data)
         
         conn = get_db_connection()
@@ -105,6 +108,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         user = cur.fetchone()
         
         if not user:
+            print(f"[DEBUG] User not found: {login_req.email}")
             cur.close()
             conn.close()
             return {
@@ -114,7 +118,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'isBase64Encoded': False
             }
         
+        print(f"[DEBUG] User found: {user[1]}, is_active: {user[8]}")
+        
         if not user[8]:
+            print(f"[DEBUG] User account disabled: {user[1]}")
             cur.close()
             conn.close()
             return {
@@ -125,7 +132,18 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             }
         
         password_hash = user[11]
-        if not bcrypt.checkpw(login_req.password.encode('utf-8'), password_hash.encode('utf-8')):
+        print(f"[DEBUG] Password hash from DB: {password_hash[:20]}...")
+        print(f"[DEBUG] Checking password: {login_req.password}")
+        
+        try:
+            password_match = bcrypt.checkpw(login_req.password.encode('utf-8'), password_hash.encode('utf-8'))
+            print(f"[DEBUG] Password match result: {password_match}")
+        except Exception as e:
+            print(f"[DEBUG] Bcrypt error: {str(e)}")
+            password_match = False
+        
+        if not password_match:
+            print(f"[DEBUG] Password check failed for user: {user[1]}")
             cur.close()
             conn.close()
             return {
@@ -134,6 +152,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'body': json.dumps({'error': 'Неверный email или пароль'}, ensure_ascii=False),
                 'isBase64Encoded': False
             }
+        
+        print(f"[DEBUG] Login successful for user: {user[1]}")
         
         cur.execute(
             "UPDATE users SET last_active = %s WHERE id = %s",
