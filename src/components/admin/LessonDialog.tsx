@@ -42,6 +42,7 @@ export default function LessonDialog({
   onLessonChange,
 }: LessonDialogProps) {
   const [uploadingFile, setUploadingFile] = useState(false);
+  const [showMaterialMenu, setShowMaterialMenu] = useState(false);
 
   if (!show || !lesson) return null;
 
@@ -273,29 +274,51 @@ export default function LessonDialog({
               <label className="block text-sm font-medium text-gray-700">
                 Справочные материалы
               </label>
-              <div className="flex gap-2">
-                <input
-                  type="file"
-                  accept=".pdf,.doc,.docx"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) handleFileUpload(file, 'material');
-                  }}
-                  className="hidden"
-                  id="material-upload"
-                />
-                <label htmlFor="material-upload">
-                  <Button type="button" variant="outline" size="sm" asChild disabled={uploadingFile}>
-                    <span>
-                      <Icon name="Paperclip" size={14} className="mr-1" />
-                      Файл
-                    </span>
-                  </Button>
-                </label>
-                <Button type="button" variant="outline" size="sm" onClick={handleAddLink}>
-                  <Icon name="Link" size={14} className="mr-1" />
-                  Ссылка
+              <div className="relative">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setShowMaterialMenu(!showMaterialMenu)}
+                  disabled={uploadingFile}
+                >
+                  <Icon name="Plus" size={14} className="mr-1" />
+                  Добавить
                 </Button>
+                
+                {showMaterialMenu && (
+                  <div className="absolute right-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                    <input
+                      type="file"
+                      accept=".pdf,.doc,.docx"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          handleFileUpload(file, 'material');
+                          setShowMaterialMenu(false);
+                        }
+                      }}
+                      className="hidden"
+                      id="material-upload"
+                    />
+                    <label htmlFor="material-upload">
+                      <div className="px-4 py-2 hover:bg-gray-50 cursor-pointer flex items-center gap-2 rounded-t-lg">
+                        <Icon name="Paperclip" size={14} className="text-gray-600" />
+                        <span className="text-sm">Файл</span>
+                      </div>
+                    </label>
+                    <div 
+                      onClick={() => {
+                        handleAddLink();
+                        setShowMaterialMenu(false);
+                      }}
+                      className="px-4 py-2 hover:bg-gray-50 cursor-pointer flex items-center gap-2 rounded-b-lg"
+                    >
+                      <Icon name="Link" size={14} className="text-gray-600" />
+                      <span className="text-sm">Ссылка</span>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
