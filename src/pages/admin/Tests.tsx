@@ -1,34 +1,91 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminLayout from '@/components/AdminLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
-import { mockTests, mockCourses, mockQuestions } from '@/data/mockData';
+import { API_ENDPOINTS, getAuthHeaders } from '@/config/api';
+
+interface Test {
+  id: string;
+  title: string;
+  description: string;
+  courseId: string;
+  lessonId?: string;
+  status: 'draft' | 'published';
+  passScore: number;
+  timeLimit: number;
+  attempts: number;
+  questionsCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface Course {
+  id: string;
+  title: string;
+}
 
 export default function Tests() {
   const navigate = useNavigate();
   const [filter, setFilter] = useState<'all' | 'published' | 'draft'>('all');
+  const [tests, setTests] = useState<Test[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const filteredTests = mockTests.filter(test => {
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const coursesRes = await fetch(API_ENDPOINTS.COURSES, { headers: getAuthHeaders() });
+      if (coursesRes.ok) {
+        const coursesData = await coursesRes.json();
+        setCourses(coursesData.courses || []);
+        
+        const allTests: Test[] = [];
+        for (const course of (coursesData.courses || [])) {
+          const testsRes = await fetch(`${API_ENDPOINTS.TESTS}?courseId=${course.id}`, { headers: getAuthHeaders() });
+          if (testsRes.ok) {
+            const testsData = await testsRes.json();
+            allTests.push(...(testsData.tests || []));
+          }
+        }
+        setTests(allTests);
+      }
+    } catch (error) {
+      console.error('Error loading data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredTests = tests.filter(test => {
     if (filter === 'published') return test.status === 'published';
     if (filter === 'draft') return test.status === 'draft';
     return true;
   });
 
   const getCourseTitle = (courseId: string) => {
-    const course = mockCourses.find(c => c.id === courseId);
+    const course = courses.find(c => c.id === courseId);
     return course?.title || 'Неизвестный курс';
-  };
-
-  const getQuestionsCount = (testId: string) => {
-    return mockQuestions.filter(q => q.testId === testId).length;
   };
 
   return (
     <AdminLayout>
       <div className="animate-fade-in">
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-gray-600">Загрузка тестов...</p>
+            </div>
+          </div>
+        ) : (
+          <>
         <div className="mb-8 flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Управление тестами</h1>
@@ -50,7 +107,7 @@ export default function Tests() {
                   <Icon name="FileQuestion" className="text-blue-600" size={24} />
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-gray-900">{mockTests.length}</div>
+                  <div className="text-2xl font-bold text-gray-900">{tests.length}</div>
                   <div className="text-sm text-gray-600">Всего тестов</div>
                 </div>
               </div>
@@ -65,7 +122,7 @@ export default function Tests() {
                 </div>
                 <div>
                   <div className="text-2xl font-bold text-gray-900">
-                    {mockTests.filter(t => t.status === 'published').length}
+                    {tests.filter(t => t.status === 'published').length}
                   </div>
                   <div className="text-sm text-gray-600">Опубликовано</div>
                 </div>
@@ -81,7 +138,7 @@ export default function Tests() {
                 </div>
                 <div>
                   <div className="text-2xl font-bold text-gray-900">
-                    {mockTests.filter(t => t.status === 'draft').length}
+                    {tests.filter(t => t.status === 'draft').length}
                   </div>
                   <div className="text-sm text-gray-600">Черновики</div>
                 </div>
@@ -95,19 +152,19 @@ export default function Tests() {
             variant={filter === 'all' ? 'default' : 'outline'}
             onClick={() => setFilter('all')}
           >
-            Все тесты ({mockTests.length})
+            Все тесты ({tests.length})
           </Button>
           <Button
             variant={filter === 'published' ? 'default' : 'outline'}
             onClick={() => setFilter('published')}
           >
-            Опубликованные ({mockTests.filter(t => t.status === 'published').length})
+            Опубликованные ({tests.filter(t => t.status === 'published').length})
           </Button>
           <Button
             variant={filter === 'draft' ? 'default' : 'outline'}
             onClick={() => setFilter('draft')}
           >
-            Черновики ({mockTests.filter(t => t.status === 'draft').length})
+            Черновики ({tests.filter(t => t.status === 'draft').length})
           </Button>
         </div>
 
@@ -133,7 +190,7 @@ export default function Tests() {
 
                 <div className="grid grid-cols-4 gap-3 p-3 bg-gray-50 rounded-lg mb-4">
                   <div className="text-center">
-                    <div className="text-lg font-bold text-gray-900">{getQuestionsCount(test.id)}</div>
+                    <div className="text-lg font-bold text-gray-900">{test.questionsCount || 0}</div>
                     <div className="text-xs text-gray-600">Вопросов</div>
                   </div>
                   <div className="text-center">
@@ -151,8 +208,8 @@ export default function Tests() {
                 </div>
 
                 <div className="flex items-center justify-between text-xs text-gray-500 mb-4">
-                  <span>Создан: {test.createdAt}</span>
-                  <span>Обновлён: {test.updatedAt}</span>
+                  <span>Создан: {new Date(test.createdAt).toLocaleDateString('ru-RU')}</span>
+                  <span>Обновлён: {new Date(test.updatedAt).toLocaleDateString('ru-RU')}</span>
                 </div>
 
                 <div className="flex gap-2">
@@ -180,6 +237,8 @@ export default function Tests() {
             </Card>
           ))}
         </div>
+        </>
+        )}
       </div>
     </AdminLayout>
   );

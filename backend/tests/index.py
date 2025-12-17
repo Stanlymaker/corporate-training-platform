@@ -278,6 +278,32 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         body_data = json.loads(event.get('body', '{}'))
         create_req = CreateTestRequest(**body_data)
         
+        # Проверяем что курс существует
+        cur.execute("SELECT id FROM courses WHERE id = %s", (create_req.courseId,))
+        if not cur.fetchone():
+            cur.close()
+            conn.close()
+            return {
+                'statusCode': 400,
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'Курс с указанным ID не найден'}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
+        
+        # Если указан урок, проверяем что он существует
+        lesson_id_value = create_req.lessonId
+        if lesson_id_value:
+            cur.execute("SELECT id FROM lessons WHERE id = %s", (lesson_id_value,))
+            if not cur.fetchone():
+                cur.close()
+                conn.close()
+                return {
+                    'statusCode': 400,
+                    'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'error': 'Урок с указанным ID не найден'}, ensure_ascii=False),
+                    'isBase64Encoded': False
+                }
+        
         new_test_id = str(uuid.uuid4())
         now = datetime.utcnow()
         
@@ -287,7 +313,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) "
             "RETURNING id, course_id, lesson_id, title, description, pass_score, time_limit, attempts, "
             "questions_count, status, created_at, updated_at",
-            (new_test_id, create_req.courseId, create_req.lessonId, create_req.title,
+            (new_test_id, create_req.courseId, lesson_id_value, create_req.title,
              create_req.description, create_req.passScore, create_req.timeLimit, create_req.attempts,
              0, 'draft', now, now)
         )
