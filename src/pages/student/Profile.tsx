@@ -3,19 +3,20 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import Icon from '@/components/ui/icon';
-import { mockCourses, mockProgress, mockRewards, mockUsers } from '@/data/mockData';
+import { mockCourses, mockProgress, mockRewards } from '@/data/mockData';
 import { getCategoryIcon, getCategoryGradient } from '@/utils/categoryIcons';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function StudentProfile() {
   const navigate = useNavigate();
-  const userId = '2';
+  const { user: currentUser } = useAuth();
   const [selectedReward, setSelectedReward] = useState<string | null>(null);
   
-  const currentUser = mockUsers.find(u => u.id === userId);
+  const userId = currentUser?.id || '';
   const userProgress = mockProgress.filter(p => p.userId === userId);
   const completedCount = userProgress.filter(p => p.completed).length;
   const inProgressCount = userProgress.filter(p => !p.completed && p.completedLessons > 0).length;

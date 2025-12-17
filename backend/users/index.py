@@ -103,12 +103,38 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     user_id = query_params.get('id')
     action = query_params.get('action', '')
     
-    auth_error = require_admin(headers)
-    if auth_error:
+    # Проверка авторизации
+    auth_token = headers.get('X-Auth-Token') or headers.get('x-auth-token')
+    if not auth_token:
         return {
-            'statusCode': auth_error['statusCode'],
+            'statusCode': 401,
             'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
-            'body': json.dumps({'error': auth_error['error']}, ensure_ascii=False),
+            'body': json.dumps({'error': 'Токен отсутствует'}, ensure_ascii=False),
+            'isBase64Encoded': False
+        }
+    
+    payload = verify_jwt_token(auth_token)
+    if not payload:
+        return {
+            'statusCode': 401,
+            'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'error': 'Недействительный токен'}, ensure_ascii=False),
+            'isBase64Encoded': False
+        }
+    
+    current_user_id = payload.get('user_id')
+    current_user_role = payload.get('role')
+    
+    # Проверка прав: админы могут все, студенты только свой профиль
+    if method == 'PUT' and user_id and user_id == current_user_id:
+        # Студент редактирует свой профиль - разрешено
+        pass
+    elif current_user_role != 'admin':
+        # Не админ пытается делать что-то кроме редактирования своего профиля
+        return {
+            'statusCode': 403,
+            'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'error': 'Доступ запрещен'}, ensure_ascii=False),
             'isBase64Encoded': False
         }
     

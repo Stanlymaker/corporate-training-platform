@@ -2,31 +2,32 @@ import StudentLayout from '@/components/StudentLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
-import { mockUsers } from '@/data/mockData';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { User } from '@/types';
+import { useAuth } from '@/contexts/AuthContext';
+import { API_ENDPOINTS, getAuthHeaders } from '@/config/api';
+import { toast } from 'sonner';
 
 export default function StudentSettings() {
-  const userId = '2';
-  const currentUser = mockUsers.find(u => u.id === userId);
-  
-  const [editedUser, setEditedUser] = useState<User>(currentUser || {} as User);
+  const { user: authUser } = useAuth();
+  const [editedUser, setEditedUser] = useState<Partial<User>>({});
+  const [isLoading, setIsLoading] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
+  useEffect(() => {
+    if (authUser) {
+      setEditedUser(authUser);
+    }
+  }, [authUser]);
 
   const validateProfileForm = () => {
     const newErrors: { [key: string]: string } = {};
 
     if (!editedUser.name?.trim()) {
       newErrors.name = 'Введите ФИО';
-    }
-
-    if (!editedUser.email?.trim()) {
-      newErrors.email = 'Введите email';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editedUser.email)) {
-      newErrors.email = 'Некорректный email';
     }
 
     setErrors(newErrors);
@@ -54,21 +55,70 @@ export default function StudentSettings() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSaveProfile = () => {
-    if (validateProfileForm()) {
-      console.log('Сохранение профиля:', editedUser);
-      // Здесь будет API запрос
+  const handleSaveProfile = async () => {
+    if (!validateProfileForm() || !authUser) return;
+
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${API_ENDPOINTS.USERS}?id=${authUser.id}`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          name: editedUser.name,
+          position: editedUser.position || null,
+          department: editedUser.department || null,
+          phone: editedUser.phone || null,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Ошибка сохранения');
+      }
+
+      const data = await response.json();
+      const updatedUser = data.user || data;
+      localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+      toast.success('Профиль успешно обновлен');
+      
+      // Обновим данные в AuthContext через перезагрузку
+      setTimeout(() => window.location.reload(), 500);
+    } catch (error: any) {
+      console.error('Ошибка сохранения профиля:', error);
+      toast.error(error.message || 'Не удалось сохранить профиль');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleChangePassword = () => {
-    if (validatePasswordForm()) {
-      console.log('Смена пароля');
+  const handleChangePassword = async () => {
+    if (!validatePasswordForm() || !authUser) return;
+
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${API_ENDPOINTS.USERS}?id=${authUser.id}&action=password`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          password: newPassword,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Ошибка смены пароля');
+      }
+
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
       setErrors({});
-      // Здесь будет API запрос
+      toast.success('Пароль успешно изменен');
+    } catch (error: any) {
+      console.error('Ошибка смены пароля:', error);
+      toast.error(error.message || 'Не удалось изменить пароль');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -114,14 +164,10 @@ export default function StudentSettings() {
                   <input
                     type="email"
                     value={editedUser.email || ''}
-                    onChange={(e) => setEditedUser({ ...editedUser, email: e.target.value })}
-                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${
-                      errors.email ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    disabled
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
                   />
-                  {errors.email && (
-                    <p className="text-sm text-red-600 mt-1">{errors.email}</p>
-                  )}
+                  <p className="text-xs text-gray-500 mt-1">Email нельзя изменить</p>
                 </div>
 
                 <div>
@@ -165,9 +211,9 @@ export default function StudentSettings() {
               </div>
 
               <div className="flex justify-end pt-4 border-t">
-                <Button onClick={handleSaveProfile}>
+                <Button onClick={handleSaveProfile} disabled={isLoading}>
                   <Icon name="Check" className="mr-2" size={16} />
-                  Сохранить изменения
+                  {isLoading ? 'Сохранение...' : 'Сохранить изменения'}
                 </Button>
               </div>
             </CardContent>
@@ -238,9 +284,9 @@ export default function StudentSettings() {
               </div>
 
               <div className="flex justify-end pt-4 border-t">
-                <Button onClick={handleChangePassword} variant="outline">
+                <Button onClick={handleChangePassword} variant="outline" disabled={isLoading}>
                   <Icon name="Key" className="mr-2" size={16} />
-                  Изменить пароль
+                  {isLoading ? 'Изменение...' : 'Изменить пароль'}
                 </Button>
               </div>
             </CardContent>
