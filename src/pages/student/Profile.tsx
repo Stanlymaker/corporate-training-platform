@@ -9,26 +9,11 @@ import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { User } from '@/types';
 
 export default function StudentProfile() {
   const navigate = useNavigate();
   const userId = '2';
   const [selectedReward, setSelectedReward] = useState<string | null>(null);
-  const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [editedUser, setEditedUser] = useState<User | null>(null);
-
-  const handleEditProfile = () => {
-    setEditedUser(currentUser || null);
-    setIsEditingProfile(true);
-  };
-
-  const handleSaveProfile = () => {
-    if (editedUser) {
-      console.log('Сохранение профиля:', editedUser);
-      setIsEditingProfile(false);
-    }
-  };
   
   const currentUser = mockUsers.find(u => u.id === userId);
   const userProgress = mockProgress.filter(p => p.userId === userId);
@@ -70,15 +55,6 @@ export default function StudentProfile() {
                   Активность: {new Date(currentUser?.lastActive || '').toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}
                 </span>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleEditProfile}
-                className="mt-4"
-              >
-                <Icon name="Edit" className="mr-2" size={16} />
-                Редактировать профиль
-              </Button>
             </div>
           </div>
         </CardContent>
@@ -221,87 +197,6 @@ export default function StudentProfile() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isEditingProfile} onOpenChange={setIsEditingProfile}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Редактировать профиль</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                ФИО *
-              </label>
-              <input
-                type="text"
-                value={editedUser?.name || ''}
-                onChange={(e) => setEditedUser(editedUser ? { ...editedUser, name: e.target.value } : null)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Email *
-              </label>
-              <input
-                type="email"
-                value={editedUser?.email || ''}
-                onChange={(e) => setEditedUser(editedUser ? { ...editedUser, email: e.target.value } : null)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Должность
-              </label>
-              <input
-                type="text"
-                value={editedUser?.position || ''}
-                onChange={(e) => setEditedUser(editedUser ? { ...editedUser, position: e.target.value } : null)}
-                placeholder="Например: Менеджер по продажам"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Отдел
-              </label>
-              <input
-                type="text"
-                value={editedUser?.department || ''}
-                onChange={(e) => setEditedUser(editedUser ? { ...editedUser, department: e.target.value } : null)}
-                placeholder="Например: Отдел продаж"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Телефон
-              </label>
-              <input
-                type="tel"
-                value={editedUser?.phone || ''}
-                onChange={(e) => setEditedUser(editedUser ? { ...editedUser, phone: e.target.value } : null)}
-                placeholder="+7 (999) 123-45-67"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-            </div>
-
-            <div className="flex justify-end gap-3 pt-4 border-t">
-              <Button variant="outline" onClick={() => setIsEditingProfile(false)}>
-                Отмена
-              </Button>
-              <Button onClick={handleSaveProfile}>
-                <Icon name="Check" className="mr-2" size={16} />
-                Сохранить
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </StudentLayout>
   );
 }

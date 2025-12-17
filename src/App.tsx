@@ -18,6 +18,7 @@ import AdminTestView from "./pages/admin/TestView";
 import AdminRewards from "./pages/admin/Rewards";
 import AdminLogs from "./pages/admin/Logs";
 import StudentProfile from "./pages/student/Profile";
+import StudentSettings from "./pages/student/Settings";
 import StudentCourses from "./pages/student/Courses";
 import StudentCourseDetail from "./pages/student/CourseDetail";
 import StudentCourseDetails from "./pages/student/CourseDetails";
@@ -58,6 +59,7 @@ const App = () => (
             <Route path="/student/courses/:courseId/lesson/:lessonId" element={<StudentLesson />} />
             <Route path="/student/courses/:courseId/test/:testId" element={<StudentTest />} />
             <Route path={ROUTES.STUDENT.PROFILE} element={<StudentProfile />} />
+            <Route path={ROUTES.STUDENT.SETTINGS} element={<StudentSettings />} />
             
             <Route path="*" element={<NotFound />} />
           </Routes>
