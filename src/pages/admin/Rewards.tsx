@@ -26,6 +26,8 @@ import { mockCourses, mockRewards, mockProgress } from '@/data/mockData';
 
 export default function Rewards() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingReward, setEditingReward] = useState<any>(null);
   const [selectedIcon, setSelectedIcon] = useState('🏆');
   const [selectedColor, setSelectedColor] = useState('#F97316');
 
@@ -43,6 +45,13 @@ export default function Rewards() {
     const earnedCount = mockProgress.filter(p => p.earnedRewards.includes(reward.id)).length;
     return { ...reward, earnedCount };
   });
+
+  const handleEditReward = (reward: any) => {
+    setEditingReward(reward);
+    setSelectedIcon(reward.icon);
+    setSelectedColor(reward.color);
+    setIsEditDialogOpen(true);
+  };
 
   return (
     <AdminLayout>
@@ -251,7 +260,12 @@ export default function Rewards() {
                         </div>
 
                         <div className="flex gap-2 w-full">
-                          <Button size="sm" variant="outline" className="flex-1">
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="flex-1"
+                            onClick={() => handleEditReward(reward)}
+                          >
                             <Icon name="Edit" size={14} />
                           </Button>
                           <Button size="sm" variant="outline" className="flex-1 text-red-600">
@@ -266,6 +280,110 @@ export default function Rewards() {
             </div>
           </CardContent>
         </Card>
+
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Редактировать награду</DialogTitle>
+              <DialogDescription>
+                Измените параметры награды
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-6 py-4">
+              <div>
+                <Label htmlFor="edit-reward-name">Название награды</Label>
+                <Input
+                  id="edit-reward-name"
+                  defaultValue={editingReward?.name}
+                  placeholder="Например: Эксперт по маркетингу"
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <Label>Курс</Label>
+                <Select defaultValue={editingReward?.courseId}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Выберите курс" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {mockCourses.map(course => (
+                      <SelectItem key={course.id} value={course.id}>
+                        {course.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label>Выберите иконку</Label>
+                <div className="grid grid-cols-6 gap-2 mt-2">
+                  {icons.map((icon) => (
+                    <button
+                      key={icon}
+                      onClick={() => setSelectedIcon(icon)}
+                      className={`aspect-square text-4xl rounded-lg border-2 transition-all ${
+                        selectedIcon === icon
+                          ? 'border-orange-500 bg-orange-50 scale-110'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      {icon}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <Label>Выберите цвет</Label>
+                <div className="grid grid-cols-3 gap-3 mt-2">
+                  {colors.map((color) => (
+                    <button
+                      key={color.value}
+                      onClick={() => setSelectedColor(color.value)}
+                      className={`p-4 rounded-lg border-2 transition-all ${
+                        selectedColor === color.value
+                          ? 'border-gray-900 scale-105'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                      style={{ backgroundColor: color.value + '20' }}
+                    >
+                      <div
+                        className="w-full h-8 rounded"
+                        style={{ backgroundColor: color.value }}
+                      />
+                      <div className="text-sm font-medium text-gray-700 mt-2">{color.name}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="p-6 bg-gray-50 rounded-xl">
+                <Label className="mb-3 block">Предпросмотр</Label>
+                <div className="flex items-center justify-center">
+                  <div
+                    className="w-32 h-32 rounded-2xl flex items-center justify-center text-6xl border-4"
+                    style={{
+                      backgroundColor: selectedColor + '20',
+                      borderColor: selectedColor,
+                    }}
+                  >
+                    {selectedIcon}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                Отмена
+              </Button>
+              <Button className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600">
+                Сохранить изменения
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </AdminLayout>
   );
