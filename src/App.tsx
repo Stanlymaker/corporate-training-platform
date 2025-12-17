@@ -26,7 +26,7 @@ import StudentCourseDetail from "./pages/student/CourseDetail";
 import StudentCourseDetails from "./pages/student/CourseDetails";
 import StudentLesson from "./pages/student/Lesson";
 import StudentTest from "./pages/student/Test";
-import StudentProfile from "./pages/student/Profile";
+
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -63,7 +63,7 @@ const App = () => (
             <Route path="/student/courses/:courseId" element={<StudentCourseDetails />} />
             <Route path="/student/courses/:courseId/lesson/:lessonId" element={<StudentLesson />} />
             <Route path="/student/courses/:courseId/test/:testId" element={<StudentTest />} />
-            <Route path={ROUTES.STUDENT.PROFILE} element={<StudentProfile />} />
+            <Route path={ROUTES.STUDENT.PROFILE} element={<StudentDashboard />} />
             
             <Route path="*" element={<NotFound />} />
           </Routes>

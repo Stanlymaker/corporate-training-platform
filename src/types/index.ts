@@ -82,6 +82,9 @@ export interface Reward {
   icon: string;
   color: string;
   courseId: string;
+  description?: string;
+  condition?: string;
+  bonuses?: string[];
 }
 
 export interface CourseProgress {
