@@ -1,37 +1,85 @@
 import AdminLayout from '@/components/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Icon from '@/components/ui/icon';
-import { mockCourses, mockUsers, mockProgress } from '@/data/mockData';
+import { useState, useEffect } from 'react';
+import { API_ENDPOINTS, getAuthHeaders } from '@/config/api';
 
 export default function AdminDashboard() {
-  const totalCourses = mockCourses.length;
-  const publishedCourses = mockCourses.filter(c => c.published).length;
-  const totalStudents = mockUsers.filter(u => u.role === 'student').length;
-  const completedCourses = mockProgress.filter(p => p.completed).length;
+  const [stats, setStats] = useState({
+    totalCourses: 0,
+    publishedCourses: 0,
+    totalStudents: 0,
+    activeUsers: 0,
+  });
+  const [loading, setLoading] = useState(true);
 
-  const stats = [
+  useEffect(() => {
+    loadStats();
+  }, []);
+
+  const loadStats = async () => {
+    try {
+      setLoading(true);
+      
+      const [usersRes, coursesRes] = await Promise.all([
+        fetch(API_ENDPOINTS.USERS, { headers: getAuthHeaders() }),
+        fetch(API_ENDPOINTS.COURSES, { headers: getAuthHeaders() }),
+      ]);
+
+      if (usersRes.ok && coursesRes.ok) {
+        const usersData = await usersRes.json();
+        const coursesData = await coursesRes.json();
+
+        const users = usersData.users || [];
+        const courses = coursesData.courses || [];
+
+        setStats({
+          totalCourses: courses.length,
+          publishedCourses: courses.filter((c: any) => c.published).length,
+          totalStudents: users.filter((u: any) => u.role === 'student').length,
+          activeUsers: users.filter((u: any) => u.isActive).length,
+        });
+      }
+    } catch (error) {
+      console.error('Error loading stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const statsCards = [
     {
       title: 'Всего курсов',
-      value: totalCourses,
+      value: stats.totalCourses,
       icon: 'BookOpen',
       color: 'bg-orange-500',
-      trend: `${publishedCourses} опубликовано`,
+      trend: `${stats.publishedCourses} опубликовано`,
     },
     {
       title: 'Обучающихся',
-      value: totalStudents,
+      value: stats.totalStudents,
       icon: 'Users',
       color: 'bg-amber-500',
-      trend: 'Активных пользователей',
+      trend: `${stats.activeUsers} активных`,
     },
     {
-      title: 'Завершено курсов',
-      value: completedCourses,
+      title: 'Активных пользователей',
+      value: stats.activeUsers,
       icon: 'CheckCircle',
       color: 'bg-green-500',
-      trend: 'Всего прохождений',
+      trend: 'Всего пользователей',
     },
   ];
+
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center h-64">
+          <Icon name="Loader2" className="animate-spin" size={32} />
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>
@@ -42,7 +90,7 @@ export default function AdminDashboard() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {stats.map((stat, index) => (
+          {statsCards.map((stat, index) => (
             <Card key={index} className="transition-shadow hover:shadow-md">
               <CardContent className="p-6">
                 <div className="flex items-start justify-between mb-4">
@@ -58,54 +106,54 @@ export default function AdminDashboard() {
           ))}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="border shadow-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Icon name="BookOpen" size={20} />
-                Популярные курсы
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {mockCourses.slice(0, 3).map((course) => (
-                  <div key={course.id} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                    <img src={course.image} alt={course.title} className="w-16 h-16 rounded-lg object-cover" />
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-semibold text-gray-900 truncate">{course.title}</h4>
-                      <p className="text-sm text-gray-600">{course.lessonsCount} уроков • {course.duration} мин</p>
-                    </div>
-                    <div className="flex items-center gap-1 text-sm font-medium text-orange-600">
-                      <Icon name="Users" size={14} />
-                      <span>{Math.floor(Math.random() * 50) + 10}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
+        <div className="grid grid-cols-1 gap-6">
           <Card className="border shadow-sm">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Icon name="TrendingUp" size={20} />
-                Последняя активность
+                Статистика платформы
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {mockUsers.filter(u => u.role === 'student').map((user) => (
-                  <div key={user.id} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
-                    <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-semibold">
-                      {user.name.charAt(0)}
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                      <Icon name="BookOpen" size={20} className="text-orange-600" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-semibold text-gray-900">{user.name}</h4>
-                      <p className="text-sm text-gray-600">Последний вход: {user.lastActive}</p>
+                    <div>
+                      <p className="font-semibold text-gray-900">Курсы</p>
+                      <p className="text-sm text-gray-600">{stats.publishedCourses} из {stats.totalCourses} опубликованы</p>
                     </div>
-                    <Icon name="CheckCircle" className="text-green-500" size={20} />
                   </div>
-                ))}
+                  <div className="text-2xl font-bold text-gray-900">{stats.totalCourses}</div>
+                </div>
+
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <Icon name="Users" size={20} className="text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-900">Студенты</p>
+                      <p className="text-sm text-gray-600">{stats.activeUsers} активных пользователей</p>
+                    </div>
+                  </div>
+                  <div className="text-2xl font-bold text-gray-900">{stats.totalStudents}</div>
+                </div>
+
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                      <Icon name="Award" size={20} className="text-green-600" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-900">Система готова</p>
+                      <p className="text-sm text-gray-600">Начните создавать курсы и назначать студентам</p>
+                    </div>
+                  </div>
+                  <Icon name="CheckCircle" size={32} className="text-green-500" />
+                </div>
               </div>
             </CardContent>
           </Card>
