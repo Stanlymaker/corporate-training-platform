@@ -242,42 +242,6 @@ export default function CourseInfoForm({ formData, onInputChange }: CourseInfoFo
           </div>
         </div>
 
-        <div className="border-t pt-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Последовательность прохождения
-          </label>
-          <div className="space-y-2">
-            <label className="flex items-center gap-2 cursor-pointer p-3 border rounded-lg hover:bg-gray-50">
-              <input
-                type="radio"
-                name="sequenceType"
-                value="linear"
-                checked={formData.sequenceType === 'linear'}
-                onChange={(e) => onInputChange('sequenceType', e.target.value)}
-                className="w-4 h-4 text-orange-500"
-              />
-              <div>
-                <div className="font-medium text-sm">Линейная</div>
-                <div className="text-xs text-gray-500">Студенты проходят уроки строго по порядку</div>
-              </div>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer p-3 border rounded-lg hover:bg-gray-50">
-              <input
-                type="radio"
-                name="sequenceType"
-                value="free"
-                checked={formData.sequenceType === 'free'}
-                onChange={(e) => onInputChange('sequenceType', e.target.value)}
-                className="w-4 h-4 text-orange-500"
-              />
-              <div>
-                <div className="font-medium text-sm">Свободная</div>
-                <div className="text-xs text-gray-500">Студенты могут выбирать любой урок</div>
-              </div>
-            </label>
-          </div>
-        </div>
-
       </div>
     </Card>
   );
