@@ -42,7 +42,10 @@ export default function LessonDialog({
   onLessonChange,
 }: LessonDialogProps) {
   const [uploadingFile, setUploadingFile] = useState(false);
-  const [showMaterialMenu, setShowMaterialMenu] = useState(false);
+  const [showMaterialForm, setShowMaterialForm] = useState(false);
+  const [materialType, setMaterialType] = useState<'file' | 'link'>('file');
+  const [linkTitle, setLinkTitle] = useState('');
+  const [linkUrl, setLinkUrl] = useState('');
 
   if (!show || !lesson) return null;
 
@@ -76,17 +79,18 @@ export default function LessonDialog({
   };
 
   const handleAddLink = () => {
-    const url = prompt('Введите URL ссылки:');
-    const title = prompt('Введите название ссылки:');
-    if (url && title) {
+    if (linkUrl && linkTitle) {
       const newMaterial: LessonMaterial = {
         id: Date.now().toString(),
-        title,
+        title: linkTitle,
         type: 'link',
-        url,
+        url: linkUrl,
       };
       const materials = lesson.materials || [];
       onLessonChange('materials', [...materials, newMaterial]);
+      setLinkTitle('');
+      setLinkUrl('');
+      setShowMaterialForm(false);
     }
   };
 
@@ -274,53 +278,113 @@ export default function LessonDialog({
               <label className="block text-sm font-medium text-gray-700">
                 Справочные материалы
               </label>
-              <div className="relative">
+              {!showMaterialForm && (
                 <Button 
                   type="button" 
                   variant="outline" 
                   size="sm" 
-                  onClick={() => setShowMaterialMenu(!showMaterialMenu)}
+                  onClick={() => setShowMaterialForm(true)}
                   disabled={uploadingFile}
                 >
                   <Icon name="Plus" size={14} className="mr-1" />
                   Добавить
                 </Button>
-                
-                {showMaterialMenu && (
-                  <div className="absolute right-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-                    <input
-                      type="file"
-                      accept=".pdf,.doc,.docx"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          handleFileUpload(file, 'material');
-                          setShowMaterialMenu(false);
-                        }
-                      }}
-                      className="hidden"
-                      id="material-upload"
-                    />
-                    <label htmlFor="material-upload">
-                      <div className="px-4 py-2 hover:bg-gray-50 cursor-pointer flex items-center gap-2 rounded-t-lg">
-                        <Icon name="Paperclip" size={14} className="text-gray-600" />
-                        <span className="text-sm">Файл</span>
-                      </div>
-                    </label>
-                    <div 
-                      onClick={() => {
-                        handleAddLink();
-                        setShowMaterialMenu(false);
-                      }}
-                      className="px-4 py-2 hover:bg-gray-50 cursor-pointer flex items-center gap-2 rounded-b-lg"
-                    >
-                      <Icon name="Link" size={14} className="text-gray-600" />
-                      <span className="text-sm">Ссылка</span>
-                    </div>
-                  </div>
-                )}
-              </div>
+              )}
             </div>
+
+            {showMaterialForm && (
+              <div className="mb-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                <div className="space-y-3">
+                  <div className="flex gap-3">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        checked={materialType === 'file'}
+                        onChange={() => setMaterialType('file')}
+                        className="w-4 h-4 text-orange-500"
+                      />
+                      <span className="text-sm">Файл</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        checked={materialType === 'link'}
+                        onChange={() => setMaterialType('link')}
+                        className="w-4 h-4 text-orange-500"
+                      />
+                      <span className="text-sm">Ссылка</span>
+                    </label>
+                  </div>
+
+                  {materialType === 'file' ? (
+                    <div>
+                      <input
+                        type="file"
+                        accept=".pdf,.doc,.docx"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            handleFileUpload(file, 'material');
+                            setShowMaterialForm(false);
+                          }
+                        }}
+                        className="hidden"
+                        id="material-upload-form"
+                      />
+                      <label htmlFor="material-upload-form">
+                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:border-orange-500 transition-colors">
+                          <Icon name="Upload" size={24} className="mx-auto text-gray-400 mb-2" />
+                          <p className="text-sm text-gray-600">Нажмите для выбора файла</p>
+                          <p className="text-xs text-gray-500 mt-1">PDF, DOC, DOCX</p>
+                        </div>
+                      </label>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <input
+                        type="text"
+                        placeholder="Название ссылки"
+                        value={linkTitle}
+                        onChange={(e) => setLinkTitle(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      />
+                      <input
+                        type="url"
+                        placeholder="https://example.com"
+                        value={linkUrl}
+                        onChange={(e) => setLinkUrl(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      />
+                    </div>
+                  )}
+
+                  <div className="flex justify-end gap-2 pt-2">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setShowMaterialForm(false);
+                        setLinkTitle('');
+                        setLinkUrl('');
+                      }}
+                    >
+                      Отмена
+                    </Button>
+                    {materialType === 'link' && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={handleAddLink}
+                        disabled={!linkTitle || !linkUrl}
+                      >
+                        Добавить ссылку
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {lesson.materials && lesson.materials.length > 0 ? (
               <div className="space-y-2">
