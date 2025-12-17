@@ -70,6 +70,14 @@ export default function AdminUsers() {
       lastActive: 'Только что',
     };
     setUsers([...users, newUser]);
+    console.log(`Пользователь ${userData.name} создан с паролем: ${userData.password}`);
+  };
+
+  const handleEditPassword = (userId: string, newPassword: string) => {
+    const user = users.find(u => u.id === userId);
+    if (user) {
+      console.log(`Пароль для ${user.name} изменен на: ${newPassword}`);
+    }
   };
 
   const handleAssignCourse = (userId: string, courseId: string) => {
@@ -261,6 +269,7 @@ export default function AdminUsers() {
         user={selectedUser}
         onClose={() => setShowDetailsModal(false)}
         onEditRole={handleEditRole}
+        onEditPassword={handleEditPassword}
         userProgress={selectedUser ? getUserProgress(selectedUser.id) : { total: 0, completed: 0 }}
         onAssignCourse={handleAssignCourse}
         onRemoveAssignment={handleRemoveAssignment}

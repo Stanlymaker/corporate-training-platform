@@ -12,6 +12,7 @@ export interface NewUserData {
   name: string;
   email: string;
   role: 'admin' | 'student';
+  password: string;
 }
 
 export default function AddUserModal({ show, onClose, onAdd }: AddUserModalProps) {
@@ -19,7 +20,18 @@ export default function AddUserModal({ show, onClose, onAdd }: AddUserModalProps
     name: '',
     email: '',
     role: 'student',
+    password: '',
   });
+
+  const generatePassword = () => {
+    const length = 12;
+    const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+    let password = '';
+    for (let i = 0; i < length; i++) {
+      password += charset.charAt(Math.floor(Math.random() * charset.length));
+    }
+    setFormData({ ...formData, password });
+  };
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
@@ -36,6 +48,12 @@ export default function AddUserModal({ show, onClose, onAdd }: AddUserModalProps
       newErrors.email = 'Некорректный email';
     }
 
+    if (!formData.password.trim()) {
+      newErrors.password = 'Введите или сгенерируйте пароль';
+    } else if (formData.password.length < 8) {
+      newErrors.password = 'Пароль должен быть не менее 8 символов';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -43,14 +61,14 @@ export default function AddUserModal({ show, onClose, onAdd }: AddUserModalProps
   const handleSubmit = () => {
     if (validateForm()) {
       onAdd(formData);
-      setFormData({ name: '', email: '', role: 'student' });
+      setFormData({ name: '', email: '', role: 'student', password: '' });
       setErrors({});
       onClose();
     }
   };
 
   const handleClose = () => {
-    setFormData({ name: '', email: '', role: 'student' });
+    setFormData({ name: '', email: '', role: 'student', password: '' });
     setErrors({});
     onClose();
   };
@@ -116,6 +134,38 @@ export default function AddUserModal({ show, onClose, onAdd }: AddUserModalProps
               <option value="student">Обучающийся</option>
               <option value="admin">Администратор</option>
             </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Пароль *
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                placeholder="Введите или сгенерируйте пароль"
+                className={`flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${
+                  errors.password ? 'border-red-500' : 'border-gray-300'
+                }`}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={generatePassword}
+                className="whitespace-nowrap"
+              >
+                <Icon name="RefreshCw" className="mr-2" size={16} />
+                Сгенерировать
+              </Button>
+            </div>
+            {errors.password && (
+              <p className="text-sm text-red-600 mt-1">{errors.password}</p>
+            )}
+            <p className="text-xs text-gray-500 mt-1">
+              Минимум 8 символов. Вы сможете изменить пароль позже.
+            </p>
           </div>
         </div>
 
