@@ -165,67 +165,6 @@ export default function CourseView() {
           </div>
 
           <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Icon name="Info" size={20} />
-                  Детали курса
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Цена:</span>
-                  <span className="font-semibold">
-                    {course.price === 0 || !course.price ? 'Бесплатно' : `${course.price} ₽`}
-                  </span>
-                </div>
-                
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Макс. студентов:</span>
-                  <span className="font-semibold">
-                    {course.maxStudents === 0 || !course.maxStudents ? 'Без ограничений' : course.maxStudents}
-                  </span>
-                </div>
-
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Язык:</span>
-                  <span className="font-semibold">
-                    {course.language === 'ru' ? 'Русский' : course.language === 'en' ? 'Английский' : 'Русский'}
-                  </span>
-                </div>
-
-                {course.subtitlesAvailable && (
-                  <div className="flex items-center gap-2 text-sm text-green-600">
-                    <Icon name="Subtitles" size={16} />
-                    <span>Доступны субтитры</span>
-                  </div>
-                )}
-
-                <div className="border-t pt-4 space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Начало:</span>
-                    <span className="font-semibold">{formatDate(course.startDate)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Окончание:</span>
-                    <span className="font-semibold">{formatDate(course.endDate)}</span>
-                  </div>
-                </div>
-
-                {course.certificateEnabled && (
-                  <div className="border-t pt-4">
-                    <div className="flex items-center gap-2 text-sm text-green-600 mb-2">
-                      <Icon name="Award" size={16} />
-                      <span className="font-semibold">Сертификат включен</span>
-                    </div>
-                    <div className="text-xs text-gray-600">
-                      Шаблон: {course.certificateTemplate === 'standard' ? 'Стандартный' : 
-                               course.certificateTemplate === 'premium' ? 'Премиум' : 'Корпоративный'}
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
 
             <Card>
               <CardHeader>
