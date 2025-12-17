@@ -155,59 +155,96 @@ export default function UserDetailsModal({
                 Все курсы и доступ
               </h5>
               
-              <div className="space-y-2">
-                {mockCourses.map((course) => {
-                  const courseStatus = getCourseStatus(course);
-                  const assignment = userAssignments.find(a => a.courseId === course.id);
-                  
-                  return (
-                    <div key={course.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3">
-                          <Icon 
-                            name={course.accessType === 'open' ? 'Unlock' : 'Lock'} 
-                            size={16} 
-                            className={course.accessType === 'open' ? 'text-green-500' : 'text-gray-400'}
-                          />
-                          <div>
-                            <div className="font-medium text-gray-900">{course.title}</div>
-                            <div className="text-xs text-gray-500 mt-0.5">
-                              {course.accessType === 'open' ? 'Открытый курс' : 'Закрытый курс'} • {course.lessonsCount} уроков • {course.duration} мин
+              <div className="space-y-6">
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <Icon name="Unlock" size={16} className="text-green-500" />
+                    <h6 className="font-semibold text-gray-700">Открытые курсы</h6>
+                  </div>
+                  <div className="space-y-2">
+                    {mockCourses.filter(c => c.accessType === 'open').map((course) => {
+                      const courseStatus = getCourseStatus(course);
+                      
+                      return (
+                        <div key={course.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3">
+                              <div>
+                                <div className="font-medium text-gray-900">{course.title}</div>
+                                <div className="text-xs text-gray-500 mt-0.5">
+                                  {course.lessonsCount} уроков • {course.duration} мин
+                                </div>
+                              </div>
                             </div>
                           </div>
+                          
+                          <div className="flex items-center gap-3">
+                            <Badge className={courseStatus.color}>
+                              {courseStatus.label}
+                            </Badge>
+                          </div>
                         </div>
-                      </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <Icon name="Lock" size={16} className="text-gray-400" />
+                    <h6 className="font-semibold text-gray-700">Закрытые курсы</h6>
+                  </div>
+                  <div className="space-y-2">
+                    {mockCourses.filter(c => c.accessType === 'closed').map((course) => {
+                      const courseStatus = getCourseStatus(course);
+                      const assignment = userAssignments.find(a => a.courseId === course.id);
                       
-                      <div className="flex items-center gap-3">
-                        <Badge className={courseStatus.color}>
-                          {courseStatus.label}
-                        </Badge>
-                        
-                        {course.accessType === 'closed' && courseStatus.status === 'not_assigned' && onAssignCourse && (
-                          <Button
-                            size="sm"
-                            onClick={() => onAssignCourse(user.id, course.id)}
-                            className="whitespace-nowrap"
-                          >
-                            <Icon name="Plus" size={14} className="mr-1" />
-                            Назначить
-                          </Button>
-                        )}
-                        
-                        {assignment && onRemoveAssignment && courseStatus.status !== 'completed' && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => onRemoveAssignment(assignment.id)}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                          >
-                            <Icon name="Trash2" size={14} />
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
+                      return (
+                        <div key={course.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3">
+                              <div>
+                                <div className="font-medium text-gray-900">{course.title}</div>
+                                <div className="text-xs text-gray-500 mt-0.5">
+                                  {course.lessonsCount} уроков • {course.duration} мин
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center gap-3">
+                            <Badge className={courseStatus.color}>
+                              {courseStatus.label}
+                            </Badge>
+                            
+                            {courseStatus.status === 'not_assigned' && onAssignCourse && (
+                              <Button
+                                size="sm"
+                                onClick={() => onAssignCourse(user.id, course.id)}
+                                className="whitespace-nowrap"
+                              >
+                                <Icon name="Plus" size={14} className="mr-1" />
+                                Назначить
+                              </Button>
+                            )}
+                            
+                            {assignment && onRemoveAssignment && courseStatus.status !== 'completed' && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => onRemoveAssignment(assignment.id)}
+                                className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 border-orange-200 whitespace-nowrap"
+                              >
+                                <Icon name="XCircle" size={14} className="mr-1" />
+                                Закрыть доступ
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             </div>
           )}
