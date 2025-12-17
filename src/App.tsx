@@ -16,7 +16,6 @@ import AdminTests from "./pages/admin/Tests";
 import AdminTestEditor from "./pages/admin/TestEditor";
 import AdminTestView from "./pages/admin/TestView";
 import AdminRewards from "./pages/admin/Rewards";
-import AdminMedia from "./pages/admin/Media";
 import AdminLogs from "./pages/admin/Logs";
 import StudentProfile from "./pages/student/Profile";
 import StudentCourses from "./pages/student/Courses";
@@ -51,7 +50,6 @@ const App = () => (
             <Route path="/admin/tests/edit/:testId" element={<AdminTestEditor />} />
             <Route path="/admin/tests/view/:testId" element={<AdminTestView />} />
             <Route path={ROUTES.ADMIN.REWARDS} element={<AdminRewards />} />
-            <Route path={ROUTES.ADMIN.MEDIA} element={<AdminMedia />} />
             <Route path={ROUTES.ADMIN.LOGS} element={<AdminLogs />} />
             
             <Route path="/student" element={<Navigate to={ROUTES.STUDENT.COURSES} replace />} />
