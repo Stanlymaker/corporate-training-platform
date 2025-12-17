@@ -13,7 +13,6 @@ import AdminCourseEditor from "./pages/admin/CourseEditor";
 import AdminCourseView from "./pages/admin/CourseView";
 import AdminAssignments from "./pages/admin/Assignments";
 import AdminUsers from "./pages/admin/Users";
-import AdminAnalytics from "./pages/admin/Analytics";
 import AdminTests from "./pages/admin/Tests";
 import AdminTestEditor from "./pages/admin/TestEditor";
 import AdminTestView from "./pages/admin/TestView";
@@ -49,7 +48,6 @@ const App = () => (
             <Route path="/admin/courses/view/:courseId" element={<AdminCourseView />} />
             <Route path={ROUTES.ADMIN.ASSIGNMENTS} element={<AdminAssignments />} />
             <Route path={ROUTES.ADMIN.USERS} element={<AdminUsers />} />
-            <Route path={ROUTES.ADMIN.ANALYTICS} element={<AdminAnalytics />} />
             <Route path={ROUTES.ADMIN.TESTS} element={<AdminTests />} />
             <Route path="/admin/tests/edit" element={<AdminTestEditor />} />
             <Route path="/admin/tests/edit/:testId" element={<AdminTestEditor />} />

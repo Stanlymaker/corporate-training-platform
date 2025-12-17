@@ -30,7 +30,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { icon: 'ClipboardCheck', label: 'Тесты', path: ROUTES.ADMIN.TESTS },
     { icon: 'FolderOpen', label: 'Медиа', path: ROUTES.ADMIN.MEDIA },
     { icon: 'Award', label: 'Награды', path: ROUTES.ADMIN.REWARDS },
-    { icon: 'BarChart3', label: 'Аналитика', path: ROUTES.ADMIN.ANALYTICS },
     { icon: 'FileText', label: 'Логи', path: ROUTES.ADMIN.LOGS },
   ];
 

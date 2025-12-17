@@ -10,7 +10,6 @@ export const ROUTES = {
     USERS: '/admin/users',
     TESTS: '/admin/tests',
     REWARDS: '/admin/rewards',
-    ANALYTICS: '/admin/analytics',
     MEDIA: '/admin/media',
     LOGS: '/admin/logs',
   },
