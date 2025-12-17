@@ -33,9 +33,6 @@ export interface Course {
   endDate?: string;
   prerequisiteCourses?: string[];
   accessType: 'open' | 'closed';
-  finalTestId?: string;
-  finalTestRequiresAllLessons?: boolean;
-  finalTestRequiresAllTests?: boolean;
 }
 
 export interface Lesson {
@@ -51,6 +48,9 @@ export interface Lesson {
   materials?: LessonMaterial[];
   requiresPrevious?: boolean;
   testId?: string;
+  isFinalTest?: boolean;
+  finalTestRequiresAllLessons?: boolean;
+  finalTestRequiresAllTests?: boolean;
 }
 
 export interface LessonMaterial {

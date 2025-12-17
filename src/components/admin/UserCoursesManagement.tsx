@@ -73,7 +73,7 @@ export default function UserCoursesManagement({
               const courseStatus = getCourseStatus(course);
               const isExpanded = expandedCourseId === course.id;
               const courseLessons = mockLessons.filter(l => l.courseId === course.id);
-              const courseTests = mockTests.filter(t => t.courseId === course.id && t.isFinal);
+              const finalTestLessons = courseLessons.filter(l => l.type === 'test' && l.isFinalTest);
               const progressData = userProgressData.find(p => p.courseId === course.id);
               
               return (
@@ -124,19 +124,20 @@ export default function UserCoursesManagement({
                         </div>
                       </div>
                       
-                      {courseTests.length > 0 && (
+                      {finalTestLessons.length > 0 && (
                         <div>
                           <h6 className="text-sm font-semibold text-gray-700 mb-2">Итоговые тесты</h6>
-                          {courseTests.map((test) => {
-                            const testPassed = progressData?.completed && progressData?.testScore !== undefined;
+                          {finalTestLessons.map((lesson) => {
+                            const lessonCompleted = progressData?.completedLessonIds.includes(lesson.id);
+                            const test = mockTests.find(t => t.id === lesson.testId);
                             return (
-                              <div key={test.id} className="flex items-center justify-between py-2 px-3 bg-blue-50 rounded border border-blue-200">
+                              <div key={lesson.id} className="flex items-center justify-between py-2 px-3 bg-blue-50 rounded border border-blue-200">
                                 <div className="flex items-center gap-2">
                                   <Icon name="ClipboardCheck" size={14} className="text-blue-600" />
-                                  <span className="text-sm font-medium">{test.title} (итоговый)</span>
+                                  <span className="text-sm font-medium">{test?.title || lesson.title} (итоговый)</span>
                                 </div>
-                                <Badge className={testPassed ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-500'}>
-                                  {testPassed ? `Пройден (${progressData?.testScore}%)` : 'Не пройден'}
+                                <Badge className={lessonCompleted ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-500'}>
+                                  {lessonCompleted ? `Пройден` : 'Не пройден'}
                                 </Badge>
                               </div>
                             );
@@ -161,7 +162,7 @@ export default function UserCoursesManagement({
               const courseStatus = getCourseStatus(course);
               const isExpanded = expandedCourseId === course.id;
               const courseLessons = mockLessons.filter(l => l.courseId === course.id);
-              const courseTests = mockTests.filter(t => t.courseId === course.id && t.isFinal);
+              const finalTestLessons = courseLessons.filter(l => l.type === 'test' && l.isFinalTest);
               const progressData = userProgressData.find(p => p.courseId === course.id);
               const assignment = userAssignments.find(a => a.courseId === course.id);
               const isAssigned = assignedCourseIds.includes(course.id);
@@ -241,19 +242,20 @@ export default function UserCoursesManagement({
                         </div>
                       </div>
                       
-                      {courseTests.length > 0 && (
+                      {finalTestLessons.length > 0 && (
                         <div>
                           <h6 className="text-sm font-semibold text-gray-700 mb-2">Итоговые тесты</h6>
-                          {courseTests.map((test) => {
-                            const testPassed = progressData?.completed && progressData?.testScore !== undefined;
+                          {finalTestLessons.map((lesson) => {
+                            const lessonCompleted = progressData?.completedLessonIds.includes(lesson.id);
+                            const test = mockTests.find(t => t.id === lesson.testId);
                             return (
-                              <div key={test.id} className="flex items-center justify-between py-2 px-3 bg-blue-50 rounded border border-blue-200">
+                              <div key={lesson.id} className="flex items-center justify-between py-2 px-3 bg-blue-50 rounded border border-blue-200">
                                 <div className="flex items-center gap-2">
                                   <Icon name="ClipboardCheck" size={14} className="text-blue-600" />
-                                  <span className="text-sm font-medium">{test.title} (итоговый)</span>
+                                  <span className="text-sm font-medium">{test?.title || lesson.title} (итоговый)</span>
                                 </div>
-                                <Badge className={testPassed ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-500'}>
-                                  {testPassed ? `Пройден (${progressData?.testScore}%)` : 'Не пройден'}
+                                <Badge className={lessonCompleted ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-500'}>
+                                  {lessonCompleted ? `Пройден` : 'Не пройден'}
                                 </Badge>
                               </div>
                             );

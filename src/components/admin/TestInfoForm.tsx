@@ -26,7 +26,7 @@ export default function TestInfoForm({ formData, onInputChange }: TestInfoFormPr
         <div className="flex items-start gap-2">
           <Icon name="Info" size={16} className="text-blue-600 mt-0.5" />
           <p className="text-xs text-blue-700">
-            Тест создается независимо от курсов. После создания вы сможете привязать его к любому курсу через редактор курса.
+            Тест создается независимо от курсов. После создания вы сможете привязать его к урокам через редактор курса.
           </p>
         </div>
       </div>

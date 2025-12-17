@@ -19,9 +19,6 @@ export const mockCourses: Course[] = [
     startDate: '01.01.2024',
     endDate: '31.12.2024',
     accessType: 'open',
-    finalTestId: 'test1',
-    finalTestRequiresAllLessons: true,
-    finalTestRequiresAllTests: true,
   },
   {
     id: '2',
@@ -60,8 +57,6 @@ export const mockCourses: Course[] = [
     startDate: '01.03.2024',
     endDate: '01.09.2024',
     accessType: 'closed',
-    finalTestId: 'test3',
-    finalTestRequiresAllLessons: true,
   },
   {
     id: '4',
