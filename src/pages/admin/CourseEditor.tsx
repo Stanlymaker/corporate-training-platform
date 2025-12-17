@@ -17,6 +17,9 @@ interface Lesson {
   content?: string;
   videoUrl?: string;
   testId?: string;
+  isFinalTest?: boolean;
+  finalTestRequiresAllLessons?: boolean;
+  finalTestRequiresAllTests?: boolean;
   order: number;
   description?: string;
   materials?: { id: string; title: string; type: 'pdf' | 'doc' | 'link' | 'video'; url: string }[];
@@ -32,9 +35,6 @@ interface CourseFormData {
   instructor: string;
   image: string;
   lessons: Lesson[];
-  finalTestId?: string;
-  finalTestRequiresAllLessons?: boolean;
-  finalTestRequiresAllTests?: boolean;
   status: 'draft' | 'published' | 'archived';
   accessType: 'open' | 'closed';
   sequenceType: 'linear' | 'free';
@@ -48,9 +48,6 @@ const initialFormData: CourseFormData = {
   instructor: '',
   image: '',
   lessons: [],
-  finalTestId: undefined,
-  finalTestRequiresAllLessons: false,
-  finalTestRequiresAllTests: false,
   status: 'draft',
   accessType: 'open',
   sequenceType: 'linear',

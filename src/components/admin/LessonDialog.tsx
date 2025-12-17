@@ -19,6 +19,9 @@ interface Lesson {
   content?: string;
   videoUrl?: string;
   testId?: string;
+  isFinalTest?: boolean;
+  finalTestRequiresAllLessons?: boolean;
+  finalTestRequiresAllTests?: boolean;
   order: number;
   description?: string;
   materials?: LessonMaterial[];
@@ -212,25 +215,69 @@ export default function LessonDialog({
           )}
 
           {lesson.type === 'test' && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Выберите тест
-              </label>
-              <select
-                value={lesson.testId || ''}
-                onChange={(e) => onLessonChange('testId', e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-              >
-                <option value="">-- Выберите тест --</option>
-                {mockTests.filter(t => !t.isFinal).map(test => (
-                  <option key={test.id} value={test.id}>
-                    {test.title} ({test.questionsCount} вопросов)
-                  </option>
-                ))}
-              </select>
-              <p className="text-sm text-gray-500 mt-1">
-                Отображаются только тесты к урокам (не итоговые)
-              </p>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Выберите тест
+                </label>
+                <select
+                  value={lesson.testId || ''}
+                  onChange={(e) => onLessonChange('testId', e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <option value="">-- Выберите тест --</option>
+                  {mockTests.filter(t => t.status === 'published').map(test => (
+                    <option key={test.id} value={test.id}>
+                      {test.title} ({test.questionsCount} вопросов, {test.timeLimit} мин)
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {lesson.testId && (
+                <div className="border-t pt-4 space-y-3">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={lesson.isFinalTest || false}
+                      onChange={(e) => onLessonChange('isFinalTest', e.target.checked)}
+                      className="w-4 h-4 text-orange-500 rounded focus:ring-orange-500"
+                    />
+                    <span className="text-sm font-medium text-gray-700">
+                      Итоговый тест курса
+                    </span>
+                  </label>
+
+                  {lesson.isFinalTest && (
+                    <div className="ml-6 space-y-2 p-3 bg-gray-50 rounded-lg">
+                      <p className="text-sm font-medium text-gray-700 mb-2">Условия доступа к итоговому тесту:</p>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={lesson.finalTestRequiresAllLessons || false}
+                          onChange={(e) => onLessonChange('finalTestRequiresAllLessons', e.target.checked)}
+                          className="w-4 h-4 text-orange-500 rounded focus:ring-orange-500"
+                        />
+                        <span className="text-sm text-gray-700">
+                          Требуется пройти все уроки курса
+                        </span>
+                      </label>
+
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={lesson.finalTestRequiresAllTests || false}
+                          onChange={(e) => onLessonChange('finalTestRequiresAllTests', e.target.checked)}
+                          className="w-4 h-4 text-orange-500 rounded focus:ring-orange-500"
+                        />
+                        <span className="text-sm text-gray-700">
+                          Требуется пройти все тесты к урокам
+                        </span>
+                      </label>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 

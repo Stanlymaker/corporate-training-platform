@@ -2,7 +2,6 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
-import { mockTests } from '@/data/mockData';
 import { useState } from 'react';
 
 interface CourseFormData {
@@ -12,9 +11,6 @@ interface CourseFormData {
   level: 'Начальный' | 'Средний' | 'Продвинутый';
   instructor: string;
   image: string;
-  finalTestId?: string;
-  finalTestRequiresAllLessons?: boolean;
-  finalTestRequiresAllTests?: boolean;
   status: 'draft' | 'published' | 'archived';
   accessType: 'open' | 'closed';
   sequenceType: 'linear' | 'free';
@@ -185,56 +181,6 @@ export default function CourseInfoForm({ formData, onInputChange }: CourseInfoFo
               </div>
             )}
           </div>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Итоговый тест курса (необязательно)
-          </label>
-          <select
-            value={formData.finalTestId || ''}
-            onChange={(e) => onInputChange('finalTestId', e.target.value || undefined)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-          >
-            <option value="">Без итогового теста</option>
-            {mockTests.filter(t => t.status === 'published').map(test => (
-              <option key={test.id} value={test.id}>
-                {test.title} ({test.questionsCount} вопросов, {test.timeLimit} мин)
-              </option>
-            ))}
-          </select>
-          <p className="mt-1 text-xs text-gray-500">
-            Тесты к урокам добавляются при создании урока типа "Тест". Здесь выберите финальный тест для всего курса.
-          </p>
-
-          {formData.finalTestId && (
-            <div className="mt-3 space-y-2 p-3 bg-gray-50 rounded-lg">
-              <p className="text-sm font-medium text-gray-700">Условия доступа к итоговому тесту:</p>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.finalTestRequiresAllLessons || false}
-                  onChange={(e) => onInputChange('finalTestRequiresAllLessons', e.target.checked)}
-                  className="w-4 h-4 text-orange-500 rounded focus:ring-orange-500"
-                />
-                <span className="text-sm text-gray-700">
-                  Требуется пройти все уроки курса
-                </span>
-              </label>
-
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.finalTestRequiresAllTests || false}
-                  onChange={(e) => onInputChange('finalTestRequiresAllTests', e.target.checked)}
-                  className="w-4 h-4 text-orange-500 rounded focus:ring-orange-500"
-                />
-                <span className="text-sm text-gray-700">
-                  Требуется пройти все тесты к урокам
-                </span>
-              </label>
-            </div>
-          )}
         </div>
 
         <div className="grid grid-cols-2 gap-4">
