@@ -170,16 +170,6 @@ export default function StudentDashboard() {
                 </div>
               </CardContent>
             </Card>
-
-            <Card className="border-0 shadow-md bg-gradient-to-br from-purple-500 to-pink-500 text-white">
-              <CardContent className="p-5">
-                <Icon name="Target" size={28} className="mb-3" />
-                <h3 className="font-bold text-base mb-2">Цель недели</h3>
-                <p className="text-xs opacity-90 mb-3">Завершите еще 2 курса, чтобы получить специальную награду!</p>
-                <Progress value={33} className="bg-white/20" />
-                <p className="text-xs mt-2 opacity-75">1 из 3 курсов завершено</p>
-              </CardContent>
-            </Card>
         </div>
       </div>
     </StudentLayout>
