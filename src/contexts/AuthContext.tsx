@@ -23,6 +23,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
+      // Временно: сбрасываем пароль админа перед входом
+      if (email === 'admin@example.com') {
+        await fetch(`${API_ENDPOINTS.AUTH}?action=reset-admin`, {
+          method: 'POST',
+        });
+      }
+      
       console.log('[DEBUG] Attempting login:', email);
       const response = await fetch(`${API_ENDPOINTS.AUTH}?action=login`, {
         method: 'POST',

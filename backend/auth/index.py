@@ -182,6 +182,31 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'isBase64Encoded': False
         }
     
+    if method == 'POST' and action == 'reset-admin':
+        # Временный endpoint для сброса пароля админа
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Создаем новый хеш для пароля "123456"
+        new_password = "123456"
+        password_hash = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        
+        cur.execute(
+            "UPDATE users SET password_hash = %s, updated_at = %s WHERE email = %s",
+            (password_hash, datetime.utcnow(), 'admin@example.com')
+        )
+        conn.commit()
+        
+        cur.close()
+        conn.close()
+        
+        return {
+            'statusCode': 200,
+            'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'message': 'Пароль администратора сброшен на 123456', 'hash': password_hash}, ensure_ascii=False),
+            'isBase64Encoded': False
+        }
+    
     if method == 'GET' and action == 'me':
         auth_token = headers.get('X-Auth-Token') or headers.get('x-auth-token')
         
