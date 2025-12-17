@@ -178,57 +178,18 @@ export default function LessonDialog({
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Видео урока
+                  Ссылка на видео *
                 </label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                  {lesson.videoUrl ? (
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-center gap-2 text-green-600">
-                        <Icon name="CheckCircle" size={20} />
-                        <span className="text-sm font-medium">Видео загружено</span>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onLessonChange('videoUrl', '')}
-                      >
-                        Заменить видео
-                      </Button>
-                    </div>
-                  ) : (
-                    <div>
-                      <Icon name="Upload" size={32} className="mx-auto text-gray-400 mb-2" />
-                      <p className="text-sm text-gray-600 mb-2">Загрузите видеофайл или вставьте ссылку</p>
-                      <input
-                        type="file"
-                        accept="video/*"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) handleFileUpload(file, 'video');
-                        }}
-                        className="hidden"
-                        id="video-upload"
-                      />
-                      <label htmlFor="video-upload">
-                        <Button type="button" variant="outline" size="sm" asChild>
-                          <span>
-                            <Icon name="Upload" size={14} className="mr-2" />
-                            Загрузить файл
-                          </span>
-                        </Button>
-                      </label>
-                      <div className="mt-3">
-                        <input
-                          type="text"
-                          placeholder="или вставьте ссылку VK/Rutube"
-                          onChange={(e) => onLessonChange('videoUrl', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
+                <input
+                  type="url"
+                  value={lesson.videoUrl || ''}
+                  onChange={(e) => onLessonChange('videoUrl', e.target.value)}
+                  placeholder="https://vk.com/video... или https://rutube.ru/video/..."
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Поддерживаются ссылки VK Видео и Rutube
+                </p>
               </div>
             </div>
           )}
