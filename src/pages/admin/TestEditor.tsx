@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import AdminLayout from '@/components/AdminLayout';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import { ROUTES } from '@/constants/routes';
+import { API_ENDPOINTS, getAuthHeaders } from '@/config/api';
 import TestInfoForm from '@/components/admin/TestInfoForm';
 import TestSummary from '@/components/admin/TestSummary';
 import TestQuestionsList from '@/components/admin/TestQuestionsList';
@@ -54,6 +55,59 @@ export default function TestEditor() {
   const [formData, setFormData] = useState<TestFormData>(initialFormData);
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   const [showQuestionDialog, setShowQuestionDialog] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [loadingTest, setLoadingTest] = useState(isEditMode);
+  const [courseId, setCourseId] = useState<string>('');
+
+  useEffect(() => {
+    if (isEditMode && testId) {
+      loadTest(testId);
+    }
+  }, [testId, isEditMode]);
+
+  const loadTest = async (id: string) => {
+    setLoadingTest(true);
+    try {
+      const [testRes, questionsRes] = await Promise.all([
+        fetch(`${API_ENDPOINTS.TESTS}?id=${id}`, { headers: getAuthHeaders() }),
+        fetch(`${API_ENDPOINTS.TESTS}?testId=${id}&action=questions`, { headers: getAuthHeaders() }),
+      ]);
+
+      if (testRes.ok && questionsRes.ok) {
+        const testData = await testRes.json();
+        const questionsData = await questionsRes.json();
+        
+        setCourseId(testData.test.courseId || '');
+        
+        setFormData({
+          title: testData.test.title || '',
+          description: testData.test.description || '',
+          passScore: testData.test.passScore || 70,
+          timeLimit: testData.test.timeLimit || 30,
+          attempts: testData.test.attempts || 3,
+          status: testData.test.status || 'draft',
+          questions: (questionsData.questions || []).map((q: any) => ({
+            id: q.id,
+            type: q.type,
+            question: q.text,
+            answers: q.options ? JSON.parse(q.options).map((opt: string, idx: number) => ({
+              id: `${idx}`,
+              text: opt,
+              isCorrect: JSON.parse(q.correctAnswer).includes(idx),
+            })) : [],
+            correctText: q.type === 'text' ? JSON.parse(q.correctAnswer) : undefined,
+            points: q.points,
+            matchingPairs: q.matchingPairs ? JSON.parse(q.matchingPairs) : undefined,
+            textCheckType: q.textCheckType,
+          })),
+        });
+      }
+    } catch (error) {
+      console.error('Error loading test:', error);
+    } finally {
+      setLoadingTest(false);
+    }
+  };
 
   const handleInputChange = (field: keyof TestFormData, value: string | number) => {
     setFormData({ ...formData, [field]: value });
@@ -151,9 +205,85 @@ export default function TestEditor() {
     });
   };
 
-  const handleSaveTest = () => {
-    console.log('Saving test:', formData);
-    navigate(ROUTES.ADMIN.TESTS);
+  const handleSaveTest = async () => {
+    if (!courseId && !isEditMode) {
+      alert('Укажите ID курса для создания теста');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const method = isEditMode ? 'PUT' : 'POST';
+      const url = isEditMode ? `${API_ENDPOINTS.TESTS}?id=${testId}` : API_ENDPOINTS.TESTS;
+
+      const testPayload = {
+        courseId: courseId,
+        title: formData.title,
+        description: formData.description,
+        passScore: formData.passScore,
+        timeLimit: formData.timeLimit,
+        attempts: formData.attempts,
+        status: formData.status,
+      };
+
+      const testRes = await fetch(url, {
+        method,
+        headers: getAuthHeaders(),
+        body: JSON.stringify(testPayload),
+      });
+
+      if (!testRes.ok) {
+        throw new Error('Failed to save test');
+      }
+
+      const testData = await testRes.json();
+      const savedTestId = testData.test.id;
+
+      for (let i = 0; i < formData.questions.length; i++) {
+        const question = formData.questions[i];
+        
+        let correctAnswer: any;
+        let options: string[] | undefined;
+
+        if (question.type === 'single') {
+          const correctIndex = question.answers?.findIndex(a => a.isCorrect);
+          correctAnswer = correctIndex !== -1 ? correctIndex : 0;
+          options = question.answers?.map(a => a.text) || [];
+        } else if (question.type === 'multiple') {
+          correctAnswer = question.answers?.map((a, idx) => a.isCorrect ? idx : -1).filter(idx => idx !== -1) || [];
+          options = question.answers?.map(a => a.text) || [];
+        } else if (question.type === 'text') {
+          correctAnswer = question.correctText || '';
+        } else if (question.type === 'matching') {
+          correctAnswer = question.matchingPairs || [];
+        }
+
+        const questionPayload = {
+          testId: savedTestId,
+          type: question.type,
+          text: question.question,
+          options: options,
+          correctAnswer: correctAnswer,
+          points: question.points,
+          order: i,
+          matchingPairs: question.type === 'matching' ? question.matchingPairs : undefined,
+          textCheckType: question.type === 'text' ? (question.textCheckType || 'manual') : undefined,
+        };
+
+        await fetch(`${API_ENDPOINTS.TESTS}?action=question`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify(questionPayload),
+        });
+      }
+
+      navigate(ROUTES.ADMIN.TESTS);
+    } catch (error) {
+      console.error('Error saving test:', error);
+      alert('Ошибка при сохранении теста');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const totalPoints = formData.questions.reduce((sum, q) => sum + q.points, 0);
@@ -166,6 +296,19 @@ export default function TestEditor() {
       default: return type;
     }
   };
+
+  if (loadingTest) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-gray-600">Загрузка теста...</p>
+          </div>
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>
@@ -185,10 +328,10 @@ export default function TestEditor() {
           </div>
           <Button
             onClick={handleSaveTest}
-            disabled={!formData.title || formData.questions.length === 0}
+            disabled={!formData.title || formData.questions.length === 0 || loading}
           >
             <Icon name="Save" className="mr-2" size={16} />
-            {isEditMode ? 'Сохранить изменения' : 'Создать тест'}
+            {loading ? 'Сохранение...' : isEditMode ? 'Сохранить изменения' : 'Создать тест'}
           </Button>
         </div>
 

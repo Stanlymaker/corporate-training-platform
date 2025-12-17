@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import StudentLayout from '@/components/StudentLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -5,15 +6,71 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import Icon from '@/components/ui/icon';
-import { mockCourses, mockLessons, mockProgress } from '@/data/mockData';
 import { ROUTES } from '@/constants/routes';
+import { API_ENDPOINTS, getAuthHeaders } from '@/config/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function CourseDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const course = mockCourses.find(c => c.id === id);
-  const userId = '2';
+  const { user } = useAuth();
+  const userId = user?.id || '';
+
+  const [course, setCourse] = useState<any>(null);
+  const [courseLessons, setCourseLessons] = useState<any[]>([]);
+  const [userProgress, setUserProgress] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (id) {
+      loadCourseData(id);
+    }
+  }, [id]);
+
+  const loadCourseData = async (courseId: string) => {
+    setLoading(true);
+    try {
+      const [courseRes, lessonsRes, progressRes] = await Promise.all([
+        fetch(`${API_ENDPOINTS.COURSES}?id=${courseId}`, { headers: getAuthHeaders() }),
+        fetch(`${API_ENDPOINTS.LESSONS}?courseId=${courseId}`, { headers: getAuthHeaders() }),
+        fetch(`${API_ENDPOINTS.PROGRESS}?userId=${userId}`, { headers: getAuthHeaders() }),
+      ]);
+
+      if (courseRes.ok) {
+        const courseData = await courseRes.json();
+        setCourse(courseData.course);
+      }
+
+      if (lessonsRes.ok) {
+        const lessonsData = await lessonsRes.json();
+        setCourseLessons(lessonsData.lessons || []);
+      }
+
+      if (progressRes.ok) {
+        const progressData = await progressRes.json();
+        const courseProgress = (progressData.progress || []).find((p: any) => p.courseId === courseId);
+        setUserProgress(courseProgress);
+      }
+    } catch (error) {
+      console.error('Error loading course data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
   
+  if (loading) {
+    return (
+      <StudentLayout>
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-gray-600">Загрузка курса...</p>
+          </div>
+        </div>
+      </StudentLayout>
+    );
+  }
+
   if (!course) {
     return (
       <StudentLayout>
@@ -28,8 +85,6 @@ export default function CourseDetail() {
     );
   }
 
-  const courseLessons = mockLessons.filter(l => l.courseId === course.id);
-  const userProgress = mockProgress.find(p => p.courseId === course.id && p.userId === userId);
   const completedLessons = userProgress?.completedLessons || 0;
   const totalLessons = courseLessons.length;
   const progressPercent = totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
@@ -74,12 +129,12 @@ export default function CourseDetail() {
                     <div className="text-sm text-gray-600">Минут</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-primary mb-1">{course.students}</div>
-                    <div className="text-sm text-gray-600">Студентов</div>
+                    <div className="text-2xl font-bold text-primary mb-1">{course.passScore || 70}%</div>
+                    <div className="text-sm text-gray-600">Проходной балл</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-primary mb-1">{course.rating}</div>
-                    <div className="text-sm text-gray-600">Рейтинг</div>
+                    <div className="text-2xl font-bold text-primary mb-1">{course.instructor || '—'}</div>
+                    <div className="text-sm text-gray-600">Преподаватель</div>
                   </div>
                 </div>
               </CardContent>
