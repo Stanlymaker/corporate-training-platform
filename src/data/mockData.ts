@@ -374,10 +374,14 @@ export const mockTests: Test[] = [
     status: 'published',
     createdAt: '10.12.2024',
     updatedAt: '15.12.2024',
+    isFinal: true,
+    requiresAllLessons: true,
+    requiresAllTests: true,
   },
   {
     id: 'test2',
     courseId: '2',
+    lessonId: 'l9',
     title: 'Проверка знаний: Ценностное предложение',
     description: 'Оцените свое понимание принципов создания ценностного предложения',
     passScore: 75,
@@ -387,6 +391,7 @@ export const mockTests: Test[] = [
     status: 'published',
     createdAt: '05.12.2024',
     updatedAt: '12.12.2024',
+    isFinal: false,
   },
   {
     id: 'test3',
@@ -400,6 +405,8 @@ export const mockTests: Test[] = [
     status: 'published',
     createdAt: '01.12.2024',
     updatedAt: '10.12.2024',
+    isFinal: true,
+    requiresAllLessons: true,
   },
   {
     id: 'test4',
@@ -408,6 +415,7 @@ export const mockTests: Test[] = [
     description: 'Комплексная проверка знаний по бизнес-моделям и финансовому планированию',
     passScore: 85,
     timeLimit: 45,
+    isFinal: false,
     attempts: 2,
     questionsCount: 12,
     status: 'draft',
@@ -506,6 +514,31 @@ export const mockQuestions: Question[] = [
     correctAnswer: ['SWOT-анализ', 'Матрица БКГ', 'Конкурентная карта'],
     points: 15,
     order: 1,
+  },
+  {
+    id: 'q7',
+    testId: 'test1',
+    type: 'matching',
+    text: 'Сопоставьте типы сегментации с их примерами',
+    matchingPairs: [
+      { left: 'Демографическая', right: 'Возраст, пол, доход' },
+      { left: 'Психографическая', right: 'Ценности, интересы, образ жизни' },
+      { left: 'Поведенческая', right: 'Частота покупок, лояльность' },
+      { left: 'Географическая', right: 'Регион, климат, город' }
+    ],
+    correctAnswer: [],
+    points: 20,
+    order: 5,
+  },
+  {
+    id: 'q8',
+    testId: 'test2',
+    type: 'text',
+    text: 'Опишите основное отличие вашего продукта от конкурентов',
+    correctAnswer: 'уникальное ценностное предложение',
+    textCheckType: 'manual',
+    points: 15,
+    order: 2,
   },
 ];
 

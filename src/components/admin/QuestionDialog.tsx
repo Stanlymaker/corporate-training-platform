@@ -9,11 +9,13 @@ interface Answer {
 
 interface Question {
   id: string;
-  type: 'single' | 'multiple' | 'text';
+  type: 'single' | 'multiple' | 'text' | 'matching';
   question: string;
   answers?: Answer[];
   correctText?: string;
   points: number;
+  matchingPairs?: { left: string; right: string }[];
+  textCheckType?: 'manual' | 'automatic';
 }
 
 interface QuestionDialogProps {
@@ -77,6 +79,7 @@ export default function QuestionDialog({
                 <option value="single">Один правильный ответ</option>
                 <option value="multiple">Несколько правильных ответов</option>
                 <option value="text">Текстовый ответ</option>
+                <option value="matching">Сопоставление</option>
               </select>
             </div>
 
@@ -94,7 +97,93 @@ export default function QuestionDialog({
             </div>
           </div>
 
-          {question.type !== 'text' ? (
+          {question.type === 'text' && (
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Тип проверки
+              </label>
+              <select
+                value={question.textCheckType || 'automatic'}
+                onChange={(e) => onQuestionChange('textCheckType', e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+              >
+                <option value="automatic">Автоматическая проверка</option>
+                <option value="manual">Ручная проверка</option>
+              </select>
+            </div>
+          )}
+
+          {question.type === 'matching' ? (
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <label className="block text-sm font-medium text-gray-700">
+                  Пары для сопоставления
+                </label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const pairs = question.matchingPairs || [];
+                    onQuestionChange('matchingPairs', [...pairs, { left: '', right: '' }]);
+                  }}
+                >
+                  <Icon name="Plus" size={14} className="mr-1" />
+                  Добавить пару
+                </Button>
+              </div>
+
+              <div className="space-y-3">
+                {question.matchingPairs?.map((pair, index) => (
+                  <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                    <input
+                      type="text"
+                      value={pair.left}
+                      onChange={(e) => {
+                        const pairs = [...(question.matchingPairs || [])];
+                        pairs[index].left = e.target.value;
+                        onQuestionChange('matchingPairs', pairs);
+                      }}
+                      placeholder="Левая часть"
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    />
+                    <Icon name="ArrowRight" size={20} className="text-gray-400" />
+                    <input
+                      type="text"
+                      value={pair.right}
+                      onChange={(e) => {
+                        const pairs = [...(question.matchingPairs || [])];
+                        pairs[index].right = e.target.value;
+                        onQuestionChange('matchingPairs', pairs);
+                      }}
+                      placeholder="Правая часть"
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        const pairs = [...(question.matchingPairs || [])];
+                        pairs.splice(index, 1);
+                        onQuestionChange('matchingPairs', pairs);
+                      }}
+                      disabled={(question.matchingPairs?.length || 0) <= 2}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <Icon name="X" size={16} />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+
+              {(!question.matchingPairs || question.matchingPairs.length === 0) && (
+                <p className="text-sm text-amber-600 mt-2">
+                  ⚠️ Добавьте минимум 2 пары для сопоставления
+                </p>
+              )}
+            </div>
+          ) : question.type !== 'text' ? (
             <div>
               <div className="flex items-center justify-between mb-3">
                 <label className="block text-sm font-medium text-gray-700">
@@ -148,23 +237,25 @@ export default function QuestionDialog({
                 </p>
               )}
             </div>
-          ) : (
+          ) : question.type === 'text' ? (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Правильный ответ (текст)
+                {question.textCheckType === 'manual' ? 'Описание ожидаемого ответа' : 'Правильный ответ (текст)'}
               </label>
               <input
                 type="text"
                 value={question.correctText || ''}
                 onChange={(e) => onQuestionChange('correctText', e.target.value)}
-                placeholder="Введите правильный ответ"
+                placeholder={question.textCheckType === 'manual' ? 'Что должен написать студент' : 'Введите правильный ответ'}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
               />
               <p className="text-xs text-gray-500 mt-1">
-                Ответ студента будет сравниваться с этим текстом (без учета регистра)
+                {question.textCheckType === 'manual' 
+                  ? 'Это описание для преподавателя. Ответ будет проверяться вручную.' 
+                  : 'Ответ студента будет сравниваться с этим текстом (без учета регистра)'}
               </p>
             </div>
-          )}
+          ) : null}
         </div>
 
         <div className="p-6 border-t flex justify-end gap-3 sticky bottom-0 bg-white">

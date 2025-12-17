@@ -17,11 +17,13 @@ interface Answer {
 
 interface Question {
   id: string;
-  type: 'single' | 'multiple' | 'text';
+  type: 'single' | 'multiple' | 'text' | 'matching';
   question: string;
   answers?: Answer[];
   correctText?: string;
   points: number;
+  matchingPairs?: { left: string; right: string }[];
+  textCheckType?: 'manual' | 'automatic';
 }
 
 interface TestFormData {
@@ -32,6 +34,9 @@ interface TestFormData {
   attempts: number;
   status: 'draft' | 'published';
   questions: Question[];
+  isFinal: boolean;
+  requiresAllLessons?: boolean;
+  requiresAllTests?: boolean;
 }
 
 const initialFormData: TestFormData = {
@@ -42,6 +47,9 @@ const initialFormData: TestFormData = {
   attempts: 3,
   status: 'draft',
   questions: [],
+  isFinal: false,
+  requiresAllLessons: false,
+  requiresAllTests: false,
 };
 
 export default function TestEditor() {

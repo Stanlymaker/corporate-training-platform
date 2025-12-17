@@ -35,13 +35,14 @@ export interface Lesson {
   courseId: string;
   title: string;
   content: string;
-  type: 'text' | 'video' | 'pdf' | 'quiz';
+  type: 'text' | 'video' | 'pdf' | 'quiz' | 'test';
   order: number;
   duration: number;
   videoUrl?: string;
   description: string;
   materials?: LessonMaterial[];
   requiresPrevious?: boolean;
+  testId?: string;
 }
 
 export interface LessonMaterial {
@@ -54,6 +55,7 @@ export interface LessonMaterial {
 export interface Test {
   id: string;
   courseId: string;
+  lessonId?: string;
   title: string;
   description: string;
   passScore: number;
@@ -63,17 +65,22 @@ export interface Test {
   status: 'draft' | 'published';
   createdAt: string;
   updatedAt: string;
+  isFinal: boolean;
+  requiresAllLessons?: boolean;
+  requiresAllTests?: boolean;
 }
 
 export interface Question {
   id: string;
   testId: string;
-  type: 'single' | 'multiple' | 'text';
+  type: 'single' | 'multiple' | 'text' | 'matching';
   text: string;
   options?: string[];
   correctAnswer: string | string[];
   points: number;
   order: number;
+  matchingPairs?: { left: string; right: string }[];
+  textCheckType?: 'manual' | 'automatic';
 }
 
 export interface Reward {

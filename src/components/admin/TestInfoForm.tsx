@@ -8,6 +8,9 @@ interface TestFormData {
   timeLimit: number;
   attempts: number;
   status: 'draft' | 'published';
+  isFinal: boolean;
+  requiresAllLessons?: boolean;
+  requiresAllTests?: boolean;
 }
 
 interface TestInfoFormProps {
@@ -113,6 +116,51 @@ export default function TestInfoForm({ formData, onInputChange }: TestInfoFormPr
             <option value="draft">Черновик</option>
             <option value="published">Опубликован</option>
           </select>
+        </div>
+
+        <div className="border-t pt-4">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={formData.isFinal}
+              onChange={(e) => onInputChange('isFinal', e.target.checked)}
+              className="w-4 h-4 text-orange-500 rounded focus:ring-orange-500"
+            />
+            <span className="text-sm font-medium text-gray-700">
+              Итоговый тест курса
+            </span>
+          </label>
+          <p className="text-xs text-gray-500 mt-1 ml-6">
+            Итоговый тест открывается только после прохождения всех уроков и тестов
+          </p>
+
+          {formData.isFinal && (
+            <div className="mt-3 ml-6 space-y-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.requiresAllLessons}
+                  onChange={(e) => onInputChange('requiresAllLessons', e.target.checked)}
+                  className="w-4 h-4 text-orange-500 rounded focus:ring-orange-500"
+                />
+                <span className="text-sm text-gray-700">
+                  Требуется пройти все уроки
+                </span>
+              </label>
+
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.requiresAllTests}
+                  onChange={(e) => onInputChange('requiresAllTests', e.target.checked)}
+                  className="w-4 h-4 text-orange-500 rounded focus:ring-orange-500"
+                />
+                <span className="text-sm text-gray-700">
+                  Требуется пройти все тесты к урокам
+                </span>
+              </label>
+            </div>
+          )}
         </div>
       </div>
     </Card>
