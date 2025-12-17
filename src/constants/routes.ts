@@ -15,7 +15,6 @@ export const ROUTES = {
     LOGS: '/admin/logs',
   },
   STUDENT: {
-    DASHBOARD: '/student/dashboard',
     COURSES: '/student/courses',
     COURSE_DETAIL: '/student/courses/:id',
     LESSON: '/student/courses/:courseId/lesson/:lessonId',

@@ -32,7 +32,7 @@ export default function Login() {
       if (user.role === 'admin') {
         navigate(ROUTES.ADMIN.DASHBOARD);
       } else {
-        navigate(ROUTES.STUDENT.DASHBOARD);
+        navigate(ROUTES.STUDENT.COURSES);
       }
     } else {
       setError('Неверный email или пароль');

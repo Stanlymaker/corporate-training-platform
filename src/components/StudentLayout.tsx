@@ -25,8 +25,8 @@ export default function StudentLayout({ children }: StudentLayoutProps) {
   const [showSettings, setShowSettings] = useState(false);
 
   const menuItems = [
-    { icon: 'Home', label: 'Главная', path: ROUTES.STUDENT.DASHBOARD },
     { icon: 'BookOpen', label: 'Мои курсы', path: ROUTES.STUDENT.COURSES },
+    { icon: 'User', label: 'Профиль', path: ROUTES.STUDENT.PROFILE },
   ];
 
   const handleLogout = () => {

@@ -10,7 +10,7 @@ import { ROUTES } from '@/constants/routes';
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
-export default function StudentDashboard() {
+export default function StudentProfile() {
   const navigate = useNavigate();
   const userId = '2';
   const [selectedReward, setSelectedReward] = useState<string | null>(null);
