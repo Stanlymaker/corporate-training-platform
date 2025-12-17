@@ -363,7 +363,7 @@ export default function AdminUsers() {
       {selectedUser && (
         <UserDetailsModal
           user={selectedUser}
-          open={showDetailsModal}
+          show={showDetailsModal}
           onClose={() => {
             setShowDetailsModal(false);
             setSelectedUser(null);
@@ -372,6 +372,7 @@ export default function AdminUsers() {
           onEditPassword={handleEditPassword}
           onEditUser={handleEditUser}
           onToggleActive={handleToggleActive}
+          userProgress={{ total: 0, completed: 0 }}
           onAssignCourse={handleAssignCourse}
           onRemoveAssignment={handleRemoveAssignment}
           assignments={assignments}
@@ -379,7 +380,7 @@ export default function AdminUsers() {
       )}
 
       <AddUserModal
-        open={showAddModal}
+        show={showAddModal}
         onClose={() => setShowAddModal(false)}
         onAdd={handleAddUser}
       />
