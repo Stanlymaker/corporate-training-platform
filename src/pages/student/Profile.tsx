@@ -149,11 +149,11 @@ export default function StudentProfile() {
                     return (
                       <div
                         key={reward.id}
-                        onClick={() => earned && setSelectedReward(reward.id)}
-                        className={`p-3 rounded-lg text-center transition-all ${
+                        onClick={() => setSelectedReward(reward.id)}
+                        className={`p-3 rounded-lg text-center transition-all cursor-pointer ${
                           earned
-                            ? 'bg-primary/10 border-2 border-primary/20 cursor-pointer hover:bg-primary/20'
-                            : 'bg-gray-100 opacity-50 cursor-not-allowed'
+                            ? 'bg-primary/10 border-2 border-primary/20 hover:bg-primary/20'
+                            : 'bg-gray-100 opacity-50 hover:opacity-70'
                         }`}
                       >
                         <div className="text-3xl mb-1">{reward.icon}</div>
@@ -163,7 +163,7 @@ export default function StudentProfile() {
                   })}
                 </div>
                 <p className="text-xs text-gray-500 text-center mt-3">
-                  Нажмите на полученную награду, чтобы узнать подробности
+                  Нажмите на награду, чтобы узнать подробности
                 </p>
               </CardContent>
             </Card>
@@ -184,19 +184,6 @@ export default function StudentProfile() {
               <p className="text-sm font-medium text-blue-900 mb-2">Как получить эту награду:</p>
               <p className="text-sm text-blue-700">{selectedRewardData?.condition}</p>
             </div>
-            {selectedRewardData?.bonuses && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <p className="text-sm font-medium text-green-900 mb-2">Бонусы награды:</p>
-                <ul className="text-sm text-green-700 space-y-1">
-                  {selectedRewardData.bonuses.map((bonus, idx) => (
-                    <li key={idx} className="flex items-start gap-2">
-                      <Icon name="Check" size={16} className="mt-0.5" />
-                      <span>{bonus}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
           </div>
         </DialogContent>
       </Dialog>
