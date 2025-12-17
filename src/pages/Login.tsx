@@ -147,10 +147,6 @@ export default function Login() {
             </Tabs>
           </CardContent>
         </Card>
-
-        <div className="mt-6 text-center text-sm text-gray-600">
-          <p>Демо-версия платформы корпоративного обучения</p>
-        </div>
       </div>
     </div>
   );
