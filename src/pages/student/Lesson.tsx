@@ -54,13 +54,6 @@ export default function LessonPage() {
     loadLessonData();
   }, [courseId, lessonId]);
 
-  useEffect(() => {
-    // Автоматически отмечаем начало изучения урока
-    if (course && lesson && userId) {
-      markLessonStarted();
-    }
-  }, [course, lesson]);
-
   const loadLessonData = async () => {
     try {
       setLoading(true);
@@ -80,6 +73,8 @@ export default function LessonPage() {
       }
 
       let lessonsData: Lesson[] = [];
+      let foundLesson: Lesson | null = null;
+      
       if (lessonsRes.ok) {
         const data = await lessonsRes.json();
         lessonsData = data.lessons || [];
@@ -87,17 +82,23 @@ export default function LessonPage() {
         
         // Находим урок по order (lessonId в URL - это order+1)
         const lessonOrder = parseInt(lessonId || '0') - 1;
-        const foundLesson = lessonsData.find(l => l.order === lessonOrder);
-        setLesson(foundLesson || null);
+        foundLesson = lessonsData.find(l => l.order === lessonOrder) || null;
+        setLesson(foundLesson);
       }
 
-      if (progressRes.ok) {
+      if (progressRes.ok && courseData && foundLesson) {
         const data = await progressRes.json();
-        const courseProgress = data.progress?.find((p: CourseProgress) => p.courseId === courseData?.id);
+        const courseProgress = data.progress?.find((p: CourseProgress) => p.courseId === courseData.id);
         setProgress(courseProgress || null);
+        setIsCompleted(courseProgress?.completedLessonIds.includes(foundLesson.id) || false);
         
-        const foundLesson = lessonsData.find(l => l.order === (parseInt(lessonId || '0') - 1));
-        setIsCompleted(courseProgress?.completedLessonIds.includes(foundLesson?.id || '') || false);
+        // Автоматически отмечаем начало изучения урока (только если прогресса еще нет или это новый урок)
+        if (foundLesson && courseData) {
+          markLessonStarted(courseData.id, foundLesson.id, courseProgress);
+        }
+      } else if (!progressRes.ok && courseData && foundLesson) {
+        // Если прогресса вообще нет (404), создаем его
+        markLessonStarted(courseData.id, foundLesson.id, null);
       }
     } catch (error) {
       console.error('Error loading lesson:', error);
@@ -106,20 +107,21 @@ export default function LessonPage() {
     }
   };
 
-  const markLessonStarted = async () => {
-    if (!course || !lesson) return;
+  const markLessonStarted = async (courseUuid: string, lessonUuid: string, currentProgress: CourseProgress | null) => {
+    // Не делаем запрос, если это уже последний открытый урок
+    if (currentProgress?.lastAccessedLesson === lessonUuid) {
+      return;
+    }
     
     try {
       await fetch(`${API_ENDPOINTS.PROGRESS}?action=start`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({
-          courseId: course.id,
-          lessonId: lesson.id
+          courseId: courseUuid,
+          lessonId: lessonUuid
         })
       });
-      // Обновляем прогресс после отметки
-      await loadLessonData();
     } catch (error) {
       console.error('Error marking lesson started:', error);
     }
@@ -156,6 +158,8 @@ export default function LessonPage() {
   const isLocked = lesson.requiresPrevious && previousLesson && !progress?.completedLessonIds.includes(previousLesson.id);
 
   const handleComplete = async () => {
+    if (!course || !lesson) return;
+    
     try {
       const response = await fetch(`${API_ENDPOINTS.PROGRESS}?action=complete`, {
         method: 'POST',
@@ -170,8 +174,16 @@ export default function LessonPage() {
         const data = await response.json();
         setIsCompleted(true);
         
-        // Обновляем прогресс для отображения актуального состояния
-        await loadLessonData();
+        // Обновляем только прогресс без перезагрузки всей страницы
+        const progressRes = await fetch(`${API_ENDPOINTS.PROGRESS}?userId=${userId}&courseId=${courseId}`, { 
+          headers: getAuthHeaders() 
+        });
+        
+        if (progressRes.ok) {
+          const progressData = await progressRes.json();
+          const courseProgress = progressData.progress?.find((p: CourseProgress) => p.courseId === course.id);
+          setProgress(courseProgress || null);
+        }
         
         // Показываем уведомление если курс завершен полностью
         if (data.completed) {

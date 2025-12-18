@@ -270,8 +270,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             )
             
             total = total_lessons
+            course_completed = len(completed_ids) >= total
             
-            if len(completed_ids) >= total:
+            if course_completed:
                 cur.execute(
                     "UPDATE course_progress SET completed = true, completed_at = %s WHERE user_id = %s AND course_id = %s",
                     (datetime.utcnow(), payload['user_id'], complete_req.courseId)
@@ -288,14 +289,25 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 )
             
             conn.commit()
+            
+            cur.close()
+            conn.close()
+            
+            return {
+                'statusCode': 200,
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'success': True, 'completed': course_completed, 'alreadyCompleted': False}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
         
+        # Урок уже был завершен ранее
         cur.close()
         conn.close()
         
         return {
             'statusCode': 200,
             'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
-            'body': json.dumps({'success': True, 'alreadyCompleted': True}, ensure_ascii=False),
+            'body': json.dumps({'success': True, 'completed': False, 'alreadyCompleted': True}, ensure_ascii=False),
             'isBase64Encoded': False
         }
     
