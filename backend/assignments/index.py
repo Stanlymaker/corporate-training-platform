@@ -3,22 +3,17 @@ import os
 import psycopg2
 import jwt
 from datetime import datetime
-from typing import Dict, Any, Optional, Union
-from pydantic import BaseModel, Field, field_validator
+from typing import Dict, Any, Optional
+from pydantic import BaseModel, Field
 
 JWT_SECRET = os.environ.get('JWT_SECRET', 'your-secret-key-change-in-production')
 JWT_ALGORITHM = 'HS256'
 
 class AssignCourseRequest(BaseModel):
     courseId: int = Field(..., ge=1)
-    userId: Union[str, int] = Field(...)
+    userId: int = Field(..., ge=1)
     dueDate: Optional[str] = None
     notes: Optional[str] = None
-    
-    @field_validator('userId')
-    @classmethod
-    def convert_user_id_to_str(cls, v):
-        return str(v)
 
 def get_db_connection():
     dsn = os.environ['DATABASE_URL']
@@ -131,7 +126,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             cur.execute(
                 "SELECT id, course_id, user_id, assigned_by, assigned_at, due_date, status, notes "
                 "FROM course_assignments_v2 WHERE user_id = %s ORDER BY assigned_at DESC",
-                (user_id_param,)
+                (int(user_id_param),)
             )
             assignments = cur.fetchall()
             assignments_list = [format_assignment_response(a) for a in assignments]
@@ -171,10 +166,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         assign_req = AssignCourseRequest(**body_data)
         
         course_id = assign_req.courseId
+        user_id = assign_req.userId
+        assigned_by = int(payload['user_id'])
         
+        # Проверка на существующее назначение
         cur.execute(
             "SELECT id FROM course_assignments_v2 WHERE course_id = %s AND user_id = %s",
-            (course_id, assign_req.userId)
+            (course_id, user_id)
         )
         if cur.fetchone():
             cur.close()
@@ -192,7 +190,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             "INSERT INTO course_assignments_v2 (course_id, user_id, assigned_by, assigned_at, due_date, status, notes, created_at) "
             "VALUES (%s, %s, %s, %s, %s, %s, %s, %s) "
             "RETURNING id, course_id, user_id, assigned_by, assigned_at, due_date, status, notes",
-            (course_id, assign_req.userId, payload['user_id'],
+            (course_id, user_id, assigned_by,
              now, assign_req.dueDate, 'assigned', assign_req.notes, now)
         )
         new_assignment = cur.fetchone()
@@ -201,7 +199,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             "INSERT INTO course_progress_v2 (course_id, user_id, completed_lessons, total_lessons, completed, started_at, created_at, updated_at) "
             "SELECT %s, %s, 0, lessons_count, false, %s, %s, %s FROM courses_v2 WHERE id = %s "
             "ON CONFLICT (course_id, user_id) DO NOTHING",
-            (course_id, assign_req.userId, now, now, now, course_id)
+            (course_id, user_id, now, now, now, course_id)
         )
         conn.commit()
         
@@ -235,7 +233,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         if course_id_int and user_id_param:
             cur.execute(
                 "DELETE FROM course_assignments_v2 WHERE course_id = %s AND user_id = %s",
-                (course_id_int, user_id_param)
+                (course_id_int, int(user_id_param))
             )
             conn.commit()
             

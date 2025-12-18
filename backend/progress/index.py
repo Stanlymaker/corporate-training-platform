@@ -112,7 +112,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 "SELECT course_id, user_id, completed_lessons, total_lessons, test_score, completed, "
                 "completed_lesson_ids, last_accessed_lesson, started_at "
                 "FROM course_progress_v2 WHERE user_id = %s AND course_id = %s",
-                (user_id, course_id_int)
+                (int(user_id), course_id_int)
             )
             progress = cur.fetchone()
             
@@ -143,7 +143,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 "SELECT course_id, user_id, completed_lessons, total_lessons, test_score, completed, "
                 "completed_lesson_ids, last_accessed_lesson, started_at "
                 "FROM course_progress_v2 WHERE user_id = %s ORDER BY started_at DESC",
-                (user_id,)
+                (int(user_id),)
             )
             progress_rows = cur.fetchall()
             progress_list = [format_progress_response(p) for p in progress_rows]
@@ -212,9 +212,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             # Для закрытых курсов проверяем назначение
             if access_type == 'closed':
-                user_id_str = str(payload['user_id'])
+                user_id_int = int(payload['user_id'])
                 cur.execute(
-                    f"SELECT id FROM course_assignments_v2 WHERE course_id = {course_id} AND user_id = '{user_id_str}'"
+                    "SELECT id FROM course_assignments_v2 WHERE course_id = %s AND user_id = %s",
+                    (course_id, user_id_int)
                 )
                 if not cur.fetchone():
                     cur.close()
@@ -233,7 +234,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 "INSERT INTO course_progress_v2 (course_id, user_id, completed_lessons, total_lessons, "
                 "completed, started_at, created_at, updated_at) "
                 "SELECT %s, %s, 0, lessons_count, false, %s, %s, %s FROM courses_v2 WHERE id = %s",
-                (course_id, payload['user_id'], now, now, now, course_id)
+                (course_id, int(payload['user_id']), now, now, now, course_id)
             )
             conn.commit()
         
@@ -314,7 +315,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # Получаем текущий прогресс
         cur.execute(
             "SELECT id, completed_lesson_ids FROM course_progress_v2 WHERE user_id = %s AND course_id = %s",
-            (payload['user_id'], course_id)
+            (int(payload['user_id']), course_id)
         )
         progress = cur.fetchone()
         
@@ -327,7 +328,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 "completed, started_at, completed_lesson_ids, last_accessed_lesson, created_at, updated_at) "
                 "SELECT %s, %s, 1, lessons_count, false, %s, %s, %s, %s, %s FROM courses_v2 WHERE id = %s "
                 "RETURNING id",
-                (course_id, payload['user_id'], now, 
+                (course_id, int(payload['user_id']), now, 
                  json.dumps([complete_req.lessonId]), complete_req.lessonId, now, now, course_id)
             )
             progress_id = cur.fetchone()[0]
@@ -353,7 +354,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             "SELECT course_id, user_id, completed_lessons, total_lessons, test_score, completed, "
             "completed_lesson_ids, last_accessed_lesson, started_at "
             "FROM course_progress_v2 WHERE user_id = %s AND course_id = %s",
-            (payload['user_id'], course_id)
+            (int(payload['user_id']), course_id)
         )
         progress = cur.fetchone()
         progress_data = format_progress_response(progress)
@@ -394,9 +395,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         access_type = course_data[0]
         
         if access_type == 'closed':
-            user_id_str = str(payload['user_id'])
+            user_id_int = int(payload['user_id'])
             cur.execute(
-                f"SELECT id FROM course_assignments_v2 WHERE course_id = {course_id} AND user_id = '{user_id_str}'"
+                "SELECT id FROM course_assignments_v2 WHERE course_id = %s AND user_id = %s",
+                (course_id, user_id_int)
             )
             if not cur.fetchone():
                 cur.close()
@@ -414,7 +416,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         cur.execute(
             "INSERT INTO test_results_v2 (test_id, user_id, answers, score, passed, submitted_at, created_at) "
             "VALUES (%s, %s, %s, 0, false, %s, %s)",
-            (test_req.testId, payload['user_id'], json.dumps(test_req.answers), now, now)
+            (test_req.testId, int(payload['user_id']), json.dumps(test_req.answers), now, now)
         )
         
         conn.commit()
