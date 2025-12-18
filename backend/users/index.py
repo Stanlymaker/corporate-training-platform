@@ -321,6 +321,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             update_fields.append('avatar = %s')
             update_values.append(update_req.avatar)
         
+        print(f"[DEBUG] update_fields: {update_fields}")
+        print(f"[DEBUG] update_values: {update_values}")
+        
         if not update_fields:
             cur.close()
             conn.close()
@@ -336,6 +339,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         update_values.append(user_id)
         
         query = f"UPDATE users_v2 SET {', '.join(update_fields)} WHERE id = %s RETURNING id, email, name, role, position, department, phone, avatar, is_active, registration_date, last_active"
+        print(f"[DEBUG] Executing query: {query}")
+        print(f"[DEBUG] Final update_values: {update_values}")
         
         cur.execute(query, update_values)
         updated_user = cur.fetchone()
