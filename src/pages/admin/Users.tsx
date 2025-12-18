@@ -421,19 +421,23 @@ export default function AdminUsers() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1 bg-gray-200 rounded-full h-2 max-w-[100px]">
-                            <div
-                              className="bg-primary h-2 rounded-full"
-                              style={{
-                                width: `${progress.total > 0 ? (progress.completed / progress.total) * 100 : 0}%`,
-                              }}
-                            />
+                        {user.role === 'student' ? (
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 bg-gray-200 rounded-full h-2 max-w-[100px]">
+                              <div
+                                className="bg-primary h-2 rounded-full"
+                                style={{
+                                  width: `${progress.total > 0 ? (progress.completed / progress.total) * 100 : 0}%`,
+                                }}
+                              />
+                            </div>
+                            <span className="text-sm text-gray-600 whitespace-nowrap">
+                              {progress.completed}/{progress.total}
+                            </span>
                           </div>
-                          <span className="text-sm text-gray-600 whitespace-nowrap">
-                            {progress.completed}/{progress.total}
-                          </span>
-                        </div>
+                        ) : (
+                          <span className="text-sm text-gray-400">—</span>
+                        )}
                       </TableCell>
                       <TableCell className="text-right">
                         <Button
