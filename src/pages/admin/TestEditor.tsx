@@ -2,6 +2,14 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import AdminLayout from '@/components/AdminLayout';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import Icon from '@/components/ui/icon';
 import { ROUTES } from '@/constants/routes';
 import { API_ENDPOINTS, getAuthHeaders } from '@/config/api';
@@ -55,6 +63,7 @@ export default function TestEditor() {
   const [formData, setFormData] = useState<TestFormData>(initialFormData);
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   const [showQuestionDialog, setShowQuestionDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [loading, setLoading] = useState(false);
   const [loadingTest, setLoadingTest] = useState(isEditMode);
 
@@ -204,9 +213,6 @@ export default function TestEditor() {
 
   const handleDeleteTest = async () => {
     if (!testId) return;
-    
-    const confirmDelete = confirm('Вы уверены, что хотите удалить этот тест? Это действие нельзя отменить.');
-    if (!confirmDelete) return;
 
     setLoading(true);
     try {
@@ -216,6 +222,7 @@ export default function TestEditor() {
       });
 
       if (response.ok) {
+        setShowDeleteDialog(false);
         navigate(ROUTES.ADMIN.TESTS);
       } else {
         throw new Error('Failed to delete test');
@@ -352,7 +359,7 @@ export default function TestEditor() {
             {isEditMode && (
               <Button
                 variant="destructive"
-                onClick={handleDeleteTest}
+                onClick={() => setShowDeleteDialog(true)}
                 disabled={loading}
               >
                 <Icon name="Trash2" className="mr-2" size={16} />
@@ -404,6 +411,38 @@ export default function TestEditor() {
         onRemoveAnswer={handleRemoveAnswer}
         onUpdateAnswer={handleUpdateAnswer}
       />
+
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                <Icon name="AlertTriangle" className="text-red-600" size={24} />
+              </div>
+              <DialogTitle>Удалить тест?</DialogTitle>
+            </div>
+            <DialogDescription className="text-base">
+              Вы действительно хотите удалить тест <span className="font-semibold text-gray-900">"{formData.title}"</span>?
+              <br /><br />
+              Это действие нельзя отменить. Тест и все его вопросы ({formData.questions.length}) будут удалены безвозвратно.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)} disabled={loading} className="flex-1">
+              Отмена
+            </Button>
+            <Button 
+              variant="destructive"
+              onClick={handleDeleteTest}
+              disabled={loading}
+              className="flex-1 bg-red-600 hover:bg-red-700"
+            >
+              <Icon name="Trash2" className="mr-2" size={16} />
+              {loading ? 'Удаление...' : 'Удалить'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 }
