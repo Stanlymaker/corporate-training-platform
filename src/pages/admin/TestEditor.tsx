@@ -83,17 +83,7 @@ export default function TestEditor() {
 
 
 
-  const handleInputChange = async (field: keyof TestFormData, value: string | number) => {
-    // Если меняем статус с published на draft - показываем предупреждение
-    if (field === 'status' && value === 'draft' && savedStatus === 'published' && isEditMode) {
-      const linked = await checkLinkedCourses();
-      if (linked.length > 0) {
-        setLinkedCourses(linked);
-        setShowStatusChangeDialog(true);
-        return; // Не меняем статус пока пользователь не подтвердит
-      }
-    }
-    
+  const handleInputChange = (field: keyof TestFormData, value: string | number) => {
     setFormData({ ...formData, [field]: value });
   };
 
@@ -150,14 +140,13 @@ export default function TestEditor() {
   const confirmStatusChange = async () => {
     setShowStatusChangeDialog(false);
     setLinkedCourses([]);
-    // Меняем статус на draft
-    setFormData({ ...formData, status: 'draft' });
+    await handleSaveTest();
+    setSavedStatus(formData.status);
   };
 
   const cancelStatusChange = () => {
     setShowStatusChangeDialog(false);
     setLinkedCourses([]);
-    // Оставляем статус без изменений (published)
   };
 
   const handleAddQuestion = () => {
