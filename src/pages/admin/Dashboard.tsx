@@ -4,6 +4,13 @@ import Icon from '@/components/ui/icon';
 import { useState, useEffect } from 'react';
 import { API_ENDPOINTS, getAuthHeaders } from '@/config/api';
 
+interface RecentActivity {
+  type: 'course_completed' | 'reward_earned' | 'lesson_completed';
+  studentName: string;
+  itemName: string;
+  timestamp: string;
+}
+
 export default function AdminDashboard() {
   const [stats, setStats] = useState({
     totalCourses: 0,
@@ -11,6 +18,7 @@ export default function AdminDashboard() {
     totalStudents: 0,
     activeUsers: 0,
   });
+  const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -21,9 +29,10 @@ export default function AdminDashboard() {
     try {
       setLoading(true);
       
-      const [usersRes, coursesRes] = await Promise.all([
+      const [usersRes, coursesRes, rewardsRes] = await Promise.all([
         fetch(API_ENDPOINTS.USERS, { headers: getAuthHeaders() }),
         fetch(API_ENDPOINTS.COURSES, { headers: getAuthHeaders() }),
+        fetch(`${API_ENDPOINTS.ADMIN_REWARDS}`, { headers: getAuthHeaders() }),
       ]);
 
       if (usersRes.ok && coursesRes.ok) {
@@ -39,6 +48,62 @@ export default function AdminDashboard() {
           totalStudents: users.filter((u: any) => u.role === 'student').length,
           activeUsers: users.filter((u: any) => u.isActive).length,
         });
+
+        // Загружаем прогресс студентов и создаем активности
+        const activities: RecentActivity[] = [];
+        const students = users.filter((u: any) => u.role === 'student');
+        
+        for (const student of students.slice(0, 10)) {
+          try {
+            const progressRes = await fetch(`${API_ENDPOINTS.PROGRESS}?userId=${student.displayId}`, {
+              headers: getAuthHeaders()
+            });
+            if (progressRes.ok) {
+              const progressData = await progressRes.json();
+              const progress = progressData.progress || [];
+
+              // Завершенные курсы
+              progress.forEach((p: any) => {
+                if (p.completedAt) {
+                  const course = courses.find((c: any) => c.displayId === p.courseId);
+                  if (course) {
+                    activities.push({
+                      type: 'course_completed',
+                      studentName: student.name,
+                      itemName: course.title,
+                      timestamp: p.completedAt
+                    });
+                  }
+                }
+
+                // Полученные награды
+                if (p.earnedRewards && p.earnedRewards.length > 0) {
+                  if (rewardsRes.ok) {
+                    const rewardsData = await rewardsRes.json();
+                    const rewards = rewardsData.rewards || [];
+                    p.earnedRewards.forEach((rewardId: number) => {
+                      const reward = rewards.find((r: any) => r.displayId === rewardId);
+                      if (reward) {
+                        activities.push({
+                          type: 'reward_earned',
+                          studentName: student.name,
+                          itemName: reward.name,
+                          timestamp: p.completedAt || new Date().toISOString()
+                        });
+                      }
+                    });
+                  }
+                }
+              });
+            }
+          } catch (err) {
+            console.error('Error loading progress for student:', err);
+          }
+        }
+
+        // Сортируем по дате и берем последние 5
+        activities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        setRecentActivities(activities.slice(0, 5));
       }
     } catch (error) {
       console.error('Error loading stats:', error);
@@ -106,7 +171,68 @@ export default function AdminDashboard() {
           ))}
         </div>
 
-        <div className="grid grid-cols-1 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card className="border shadow-sm">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Icon name="Activity" size={20} />
+                Последняя активность
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {recentActivities.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <Icon name="Inbox" size={48} className="mx-auto mb-2 opacity-20" />
+                  <p>Пока нет активности студентов</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {recentActivities.map((activity, index) => (
+                    <div key={index} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                        activity.type === 'course_completed' ? 'bg-green-100' :
+                        activity.type === 'reward_earned' ? 'bg-amber-100' :
+                        'bg-blue-100'
+                      }`}>
+                        <Icon 
+                          name={
+                            activity.type === 'course_completed' ? 'GraduationCap' :
+                            activity.type === 'reward_earned' ? 'Award' :
+                            'BookCheck'
+                          } 
+                          size={20} 
+                          className={
+                            activity.type === 'course_completed' ? 'text-green-600' :
+                            activity.type === 'reward_earned' ? 'text-amber-600' :
+                            'text-blue-600'
+                          }
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-gray-900 font-medium">
+                          {activity.studentName}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          {activity.type === 'course_completed' && `завершил курс "${activity.itemName}"`}
+                          {activity.type === 'reward_earned' && `получил награду "${activity.itemName}"`}
+                          {activity.type === 'lesson_completed' && `завершил урок "${activity.itemName}"`}
+                        </p>
+                        <p className="text-xs text-gray-400 mt-1">
+                          {new Date(activity.timestamp).toLocaleDateString('ru-RU', { 
+                            day: 'numeric', 
+                            month: 'long',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           <Card className="border shadow-sm">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
