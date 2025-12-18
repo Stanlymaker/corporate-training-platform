@@ -23,6 +23,7 @@ import { API_ENDPOINTS, getAuthHeaders } from '@/config/api';
 
 interface Test {
   id: string;
+  displayId: number;
   title: string;
   description: string;
   courseId: string;
@@ -295,7 +296,7 @@ export default function Tests() {
                   <Button 
                     variant="outline" 
                     className="flex-1"
-                    onClick={() => navigate(`/admin/tests/edit/${test.id}`)}
+                    onClick={() => navigate(`/admin/tests/edit/${test.displayId}`)}
                   >
                     <Icon name="Edit" className="mr-2" size={16} />
                     Редактировать
@@ -303,7 +304,7 @@ export default function Tests() {
                   <Button 
                     variant="outline" 
                     className="flex-1"
-                    onClick={() => navigate(`/admin/tests/view/${test.id}`)}
+                    onClick={() => navigate(`/admin/tests/view/${test.displayId}`)}
                   >
                     <Icon name="Eye" className="mr-2" size={16} />
                     Просмотр

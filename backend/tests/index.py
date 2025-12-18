@@ -71,17 +71,18 @@ def require_admin(headers: Dict[str, Any]) -> Optional[Dict[str, Any]]:
 def format_test_response(test_row: tuple) -> Dict[str, Any]:
     return {
         'id': test_row[0],
-        'courseId': test_row[1],
-        'lessonId': test_row[2],
-        'title': test_row[3],
-        'description': test_row[4],
-        'passScore': test_row[5],
-        'timeLimit': test_row[6],
-        'attempts': test_row[7],
-        'questionsCount': test_row[8],
-        'status': test_row[9],
-        'createdAt': test_row[10].isoformat() if test_row[10] else None,
-        'updatedAt': test_row[11].isoformat() if test_row[11] else None,
+        'displayId': test_row[1],
+        'courseId': test_row[2],
+        'lessonId': test_row[3],
+        'title': test_row[4],
+        'description': test_row[5],
+        'passScore': test_row[6],
+        'timeLimit': test_row[7],
+        'attempts': test_row[8],
+        'questionsCount': test_row[9],
+        'status': test_row[10],
+        'createdAt': test_row[11].isoformat() if test_row[11] else None,
+        'updatedAt': test_row[12].isoformat() if test_row[12] else None,
     }
 
 def format_question_response(question_row: tuple) -> Dict[str, Any]:
@@ -162,11 +163,18 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         }
     
     if method == 'GET' and test_id:
-        cur.execute(
-            "SELECT id, course_id, lesson_id, title, description, pass_score, time_limit, "
-            "attempts, questions_count, status, created_at, updated_at FROM tests WHERE id = %s",
-            (test_id,)
-        )
+        if test_id.isdigit():
+            cur.execute(
+                "SELECT id, display_id, course_id, lesson_id, title, description, pass_score, time_limit, "
+                "attempts, questions_count, status, created_at, updated_at FROM tests WHERE display_id = %s",
+                (int(test_id),)
+            )
+        else:
+            cur.execute(
+                "SELECT id, display_id, course_id, lesson_id, title, description, pass_score, time_limit, "
+                "attempts, questions_count, status, created_at, updated_at FROM tests WHERE id = %s",
+                (test_id,)
+            )
         test = cur.fetchone()
         
         if not test:
@@ -193,9 +201,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     
     if method == 'GET':
         cur.execute(
-            "SELECT id, course_id, lesson_id, title, description, pass_score, time_limit, "
+            "SELECT id, display_id, course_id, lesson_id, title, description, pass_score, time_limit, "
             "attempts, questions_count, status, created_at, updated_at "
-            "FROM tests ORDER BY created_at DESC"
+            "FROM tests ORDER BY display_id DESC"
         )
         tests = cur.fetchall()
         tests_list = [format_test_response(test) for test in tests]
@@ -282,7 +290,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             "INSERT INTO tests (id, course_id, lesson_id, title, description, pass_score, time_limit, "
             "attempts, questions_count, status, created_at, updated_at) "
             "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) "
-            "RETURNING id, course_id, lesson_id, title, description, pass_score, time_limit, attempts, "
+            "RETURNING id, display_id, course_id, lesson_id, title, description, pass_score, time_limit, attempts, "
             "questions_count, status, created_at, updated_at",
             (new_test_id, 'temp', None, create_req.title,
              create_req.description, create_req.passScore, create_req.timeLimit, create_req.attempts,
@@ -354,9 +362,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         update_values.append(datetime.utcnow())
         update_values.append(test_id)
         
-        query = f"UPDATE tests SET {', '.join(update_fields)} WHERE id = %s RETURNING id, course_id, lesson_id, title, description, pass_score, time_limit, attempts, questions_count, status, created_at, updated_at"
+        where_clause = "display_id = %s" if test_id.isdigit() else "id = %s"
+        query = f"UPDATE tests SET {', '.join(update_fields)} WHERE {where_clause} RETURNING id, display_id, course_id, lesson_id, title, description, pass_score, time_limit, attempts, questions_count, status, created_at, updated_at"
         
-        cur.execute(query, update_values)
+        final_values = update_values[:-1] + [int(test_id) if test_id.isdigit() else test_id]
+        cur.execute(query, final_values)
         updated_test = cur.fetchone()
         conn.commit()
         
@@ -394,8 +404,16 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'isBase64Encoded': False
             }
         
-        cur.execute("DELETE FROM questions WHERE test_id = %s", (test_id,))
-        cur.execute("DELETE FROM tests WHERE id = %s", (test_id,))
+        if test_id.isdigit():
+            cur.execute("SELECT id FROM tests WHERE display_id = %s", (int(test_id),))
+            test_row = cur.fetchone()
+            if test_row:
+                actual_test_id = test_row[0]
+                cur.execute("DELETE FROM questions WHERE test_id = %s", (actual_test_id,))
+                cur.execute("DELETE FROM tests WHERE display_id = %s", (int(test_id),))
+        else:
+            cur.execute("DELETE FROM questions WHERE test_id = %s", (test_id,))
+            cur.execute("DELETE FROM tests WHERE id = %s", (test_id,))
         conn.commit()
         
         cur.close()
