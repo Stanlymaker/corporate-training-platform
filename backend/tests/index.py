@@ -554,6 +554,24 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         test = cur.fetchone()
         test_data = format_test_response(test)
         
+        # Если тест меняется на черновик, меняем связанные опубликованные курсы на черновик
+        if request.status == 'draft':
+            # Находим все уроки, связанные с этим тестом
+            cur.execute(
+                "SELECT DISTINCT course_id FROM lessons_v2 WHERE test_id = %s",
+                (int(test_id),)
+            )
+            course_ids = [row[0] for row in cur.fetchall()]
+            
+            # Меняем статус опубликованных курсов на черновик
+            if course_ids:
+                placeholders = ','.join(['%s'] * len(course_ids))
+                cur.execute(
+                    f"UPDATE courses_v2 SET status = 'draft', published = false, updated_at = NOW() "
+                    f"WHERE id IN ({placeholders}) AND status = 'published'",
+                    course_ids
+                )
+        
         conn.commit()
         cur.close()
         conn.close()

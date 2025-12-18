@@ -83,7 +83,17 @@ export default function TestEditor() {
 
 
 
-  const handleInputChange = (field: keyof TestFormData, value: string | number) => {
+  const handleInputChange = async (field: keyof TestFormData, value: string | number) => {
+    // Если меняем статус с published на draft - показываем предупреждение
+    if (field === 'status' && value === 'draft' && savedStatus === 'published' && isEditMode) {
+      const linked = await checkLinkedCourses();
+      if (linked.length > 0) {
+        setLinkedCourses(linked);
+        setShowStatusChangeDialog(true);
+        return; // Не меняем статус пока пользователь не подтвердит
+      }
+    }
+    
     setFormData({ ...formData, [field]: value });
   };
 
@@ -112,7 +122,9 @@ export default function TestEditor() {
 
       const linked = courses.filter((course: any) => {
         const courseLessons = allLessons.filter((l: any) => l.courseId === course.id);
-        return courseLessons.some((lesson: any) => lesson.testId === testIdValue);
+        const hasTest = courseLessons.some((lesson: any) => lesson.testId === testIdValue);
+        // Показываем только опубликованные курсы
+        return hasTest && course.status === 'published';
       });
 
       return linked;
@@ -138,13 +150,14 @@ export default function TestEditor() {
   const confirmStatusChange = async () => {
     setShowStatusChangeDialog(false);
     setLinkedCourses([]);
-    await handleSaveTest();
-    setSavedStatus(formData.status);
+    // Меняем статус на draft
+    setFormData({ ...formData, status: 'draft' });
   };
 
   const cancelStatusChange = () => {
     setShowStatusChangeDialog(false);
     setLinkedCourses([]);
+    // Оставляем статус без изменений (published)
   };
 
   const handleAddQuestion = () => {
@@ -355,22 +368,25 @@ export default function TestEditor() {
               </div>
               <div>
                 <h3 className="text-lg font-bold text-gray-900 mb-2">
-                  Тест привязан к курсам
+                  Тест используется в опубликованных курсах
                 </h3>
                 <p className="text-sm text-gray-600 mb-3">
-                  Этот тест используется в следующих курсах:
+                  Этот тест используется в следующих опубликованных курсах:
                 </p>
                 <ul className="space-y-1 mb-4">
                   {linkedCourses.map((course: any) => (
                     <li key={course.id} className="text-sm font-medium text-gray-900 flex items-center gap-2">
                       <Icon name="BookOpen" size={14} className="text-orange-500" />
                       {course.title}
+                      {course.status === 'published' && (
+                        <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">Опубликован</span>
+                      )}
                     </li>
                   ))}
                 </ul>
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
                   <p className="text-sm text-amber-800 font-medium">
-                    ⚠️ Если вы переведете тест в черновик, все связанные курсы автоматически перейдут в статус "Черновик" и станут недоступны студентам. Вам нужно будет опубликовать их заново.
+                    ⚠️ Эти курсы автоматически перейдут в статус "Черновик" и станут недоступны студентам после того, как вы сохраните тест. Вам нужно будет опубликовать их заново.
                   </p>
                 </div>
               </div>
