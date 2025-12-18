@@ -295,7 +295,7 @@ export default function Tests() {
                   <Button 
                     variant="outline" 
                     className="flex-1"
-                    onClick={() => navigate(`/admin/tests/edit/${test.displayId}`)}
+                    onClick={() => navigate(`/admin/tests/edit/${test.id}`)}
                   >
                     <Icon name="Edit" className="mr-2" size={16} />
                     Редактировать
@@ -303,7 +303,7 @@ export default function Tests() {
                   <Button 
                     variant="outline" 
                     className="flex-1"
-                    onClick={() => navigate(`/admin/tests/view/${test.displayId}`)}
+                    onClick={() => navigate(`/admin/tests/view/${test.id}`)}
                   >
                     <Icon name="Eye" className="mr-2" size={16} />
                     Просмотр
