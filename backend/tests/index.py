@@ -277,6 +277,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 request.textCheckType
             )
         )
+        question_id = cur.fetchone()[0]
         
         # Update questions_count in tests_v2
         cur.execute(
