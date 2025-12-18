@@ -105,102 +105,52 @@ export default function UserCoursesManagement({
   const getCourseStatus = (course: Course) => {
     const progress = progressData.find(p => p.courseId === course.id);
     const assignment = userAssignments.find(a => a.courseId === course.id);
+    const isAssigned = assignedCourseIds.includes(course.id);
     
-    // Статус курса (архив/черновик)
-    const courseStateLabel = course.published === false ? ' (Черновик)' : 
-                            course.archived === true ? ' (Архив)' : '';
+    // Статус прогресса
+    let progressStatus = 'not_started';
+    let progressLabel = 'Не начат';
+    let progressColor = 'bg-gray-100 text-gray-700';
     
-    // Статус прогресса пользователя
     if (progress?.completed) {
-      return { 
-        status: 'completed', 
-        label: `Завершен${courseStateLabel}`, 
-        color: 'bg-green-500 text-white',
-        userStatus: 'completed',
-        courseState: course.published === false ? 'draft' : course.archived === true ? 'archived' : 'active'
-      };
+      progressStatus = 'completed';
+      progressLabel = 'Завершен';
+      progressColor = 'bg-green-100 text-green-700';
+    } else if (progress && progress.completedLessons > 0) {
+      progressStatus = 'in_progress';
+      progressLabel = 'Начат';
+      progressColor = 'bg-yellow-100 text-yellow-700';
+    } else if (progress) {
+      progressStatus = 'started';
+      progressLabel = 'Начат';
+      progressColor = 'bg-blue-100 text-blue-700';
     }
     
-    // Открытые курсы - доступны всем по умолчанию
-    if (course.accessType === 'open') {
-      // Если начал изучать
-      if (progress && progress.completedLessons > 0) {
-        return { 
-          status: 'in_progress', 
-          label: `Изучает${courseStateLabel}`, 
-          color: 'bg-yellow-50 text-yellow-700 border border-yellow-200',
-          userStatus: 'in_progress',
-          courseState: course.published === false ? 'draft' : course.archived === true ? 'archived' : 'active'
-        };
+    // Статус назначения (только для закрытых курсов)
+    let assignmentStatus = null;
+    let assignmentLabel = '';
+    let assignmentColor = '';
+    
+    if (course.accessType === 'closed') {
+      if (isAssigned) {
+        assignmentStatus = 'assigned';
+        assignmentLabel = 'Назначен';
+        assignmentColor = 'bg-blue-100 text-blue-700';
+      } else {
+        assignmentStatus = 'not_assigned';
+        assignmentLabel = 'Не назначен';
+        assignmentColor = 'bg-gray-50 text-gray-500 border border-gray-300';
       }
-      // Если есть прогресс (начал, но не завершил уроков)
-      if (progress) {
-        return { 
-          status: 'started', 
-          label: `Начат${courseStateLabel}`, 
-          color: 'bg-blue-50 text-blue-700 border border-blue-200',
-          userStatus: 'started',
-          courseState: course.published === false ? 'draft' : course.archived === true ? 'archived' : 'active'
-        };
-      }
-      // Доступен, но не начат
-      return { 
-        status: 'available', 
-        label: `Доступен${courseStateLabel}`, 
-        color: 'bg-gray-100 text-gray-700 border border-gray-200',
-        userStatus: 'not_started',
-        courseState: course.published === false ? 'draft' : course.archived === true ? 'archived' : 'active'
-      };
     }
     
-    // Закрытые курсы - только по назначению
-    if (assignment) {
-      // Если начал изучать
-      if (progress && progress.completedLessons > 0) {
-        return { 
-          status: 'in_progress', 
-          label: `Изучает${courseStateLabel}`, 
-          color: 'bg-yellow-50 text-yellow-700 border border-yellow-200',
-          userStatus: 'in_progress',
-          courseState: course.published === false ? 'draft' : course.archived === true ? 'archived' : 'active'
-        };
-      }
-      // Если есть прогресс (начал, но не завершил уроков)
-      if (progress) {
-        return { 
-          status: 'started', 
-          label: `Начат${courseStateLabel}`, 
-          color: 'bg-blue-50 text-blue-700 border border-blue-200',
-          userStatus: 'started',
-          courseState: course.published === false ? 'draft' : course.archived === true ? 'archived' : 'active'
-        };
-      }
-      // Назначен, но не начат
-      if (assignment.status === 'overdue') {
-        return { 
-          status: 'overdue', 
-          label: `Просрочен${courseStateLabel}`, 
-          color: 'bg-red-50 text-red-700 border border-red-200',
-          userStatus: 'overdue',
-          courseState: course.published === false ? 'draft' : course.archived === true ? 'archived' : 'active'
-        };
-      }
-      return { 
-        status: 'assigned', 
-        label: `Назначен${courseStateLabel}`, 
-        color: 'bg-blue-50 text-blue-700 border border-blue-200',
-        userStatus: 'assigned',
-        courseState: course.published === false ? 'draft' : course.archived === true ? 'archived' : 'active'
-      };
-    }
-    
-    // Закрытый курс без назначения
-    return { 
-      status: 'not_assigned', 
-      label: `Не назначен${courseStateLabel}`, 
-      color: 'bg-gray-50 text-gray-500 border border-gray-200',
-      userStatus: 'not_assigned',
-      courseState: course.published === false ? 'draft' : course.archived === true ? 'archived' : 'active'
+    return {
+      progressStatus,
+      progressLabel,
+      progressColor,
+      assignmentStatus,
+      assignmentLabel,
+      assignmentColor,
+      isAssigned
     };
   };
 
@@ -262,8 +212,8 @@ export default function UserCoursesManagement({
                         </div>
                       </div>
                     </div>
-                    <Badge className={courseStatus.color}>
-                      {courseStatus.label}
+                    <Badge className={courseStatus.progressColor}>
+                      {courseStatus.progressLabel}
                     </Badge>
                   </div>
                   
@@ -331,7 +281,6 @@ export default function UserCoursesManagement({
               closedCourses.map((course) => {
               const courseStatus = getCourseStatus(course);
               const assignment = userAssignments.find(a => a.courseId === course.id);
-              const isAssigned = assignedCourseIds.includes(course.id);
               
               const isExpanded = expandedCourseId === course.id;
               const lessons = lessonsData[course.id] || [];
@@ -354,10 +303,13 @@ export default function UserCoursesManagement({
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Badge className={courseStatus.color}>
-                        {courseStatus.label}
+                      <Badge className={courseStatus.assignmentColor}>
+                        {courseStatus.assignmentLabel}
                       </Badge>
-                      {!isAssigned && onAssignCourse && (
+                      <Badge className={courseStatus.progressColor}>
+                        {courseStatus.progressLabel}
+                      </Badge>
+                      {!courseStatus.isAssigned && onAssignCourse && (
                         <Button
                           size="sm"
                           variant="outline"
@@ -367,7 +319,7 @@ export default function UserCoursesManagement({
                           Назначить
                         </Button>
                       )}
-                      {isAssigned && onRemoveAssignment && assignment && (
+                      {courseStatus.isAssigned && onRemoveAssignment && assignment && (
                         <Button
                           size="sm"
                           variant="ghost"
