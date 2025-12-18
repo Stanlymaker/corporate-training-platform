@@ -146,12 +146,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             )
         else:
             cur.execute(
-                "SELECT c.id, c.display_id, c.title, c.description, c.duration, c.lessons_count, c.category, c.image, "
-                "c.published, c.pass_score, c.level, c.instructor, c.status, c.start_date, c.end_date, c.access_type "
+                "SELECT DISTINCT c.id, c.display_id, c.title, c.description, c.duration, c.lessons_count, c.category, c.image, "
+                "c.published, c.pass_score, c.level, c.instructor, c.status, c.start_date, c.end_date, c.access_type, c.created_at "
                 "FROM courses c "
-                "INNER JOIN course_assignments ca ON c.id = ca.course_id "
-                "WHERE ca.user_id = %s "
-                "ORDER BY ca.assigned_at DESC",
+                "LEFT JOIN course_assignments ca ON c.id = ca.course_id AND ca.user_id = %s "
+                "WHERE c.published = true AND (c.access_type = 'open' OR ca.user_id IS NOT NULL) "
+                "ORDER BY c.created_at DESC",
                 (payload['user_id'],)
             )
         
