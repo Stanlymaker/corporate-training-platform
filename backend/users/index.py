@@ -140,6 +140,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'isBase64Encoded': False
         }
     
+    print(f"[DEBUG] After auth check, proceeding to handlers...")
+    
     conn = get_db_connection()
     cur = conn.cursor()
     
@@ -294,8 +296,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         }
     
     if method == 'PUT' and user_id:
+        print(f"[DEBUG] PUT handler reached for user_id={user_id}")
         body_data = json.loads(event.get('body', '{}'))
+        print(f"[DEBUG] Body data: {body_data}")
         update_req = UpdateUserRequest(**body_data)
+        print(f"[DEBUG] UpdateUserRequest validated successfully")
         
         update_fields = []
         update_values = []
