@@ -276,6 +276,7 @@ export default function TestEditor() {
             <TestInfoForm
               formData={formData}
               onInputChange={handleInputChange}
+              isEditMode={isEditMode}
             />
           </div>
 
@@ -292,6 +293,7 @@ export default function TestEditor() {
           onEditQuestion={handleEditQuestion}
           onDeleteQuestion={handleDeleteQuestion}
           getQuestionTypeLabel={getQuestionTypeLabel}
+          isDisabled={isEditMode && formData.status === 'published'}
         />
       </div>
 

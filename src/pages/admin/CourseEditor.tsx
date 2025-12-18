@@ -353,6 +353,7 @@ export default function CourseEditor() {
             <CourseInfoForm
               formData={formData}
               onInputChange={handleInputChange}
+              isEditMode={isEditMode}
             />
           </div>
 
@@ -371,6 +372,7 @@ export default function CourseEditor() {
             onDeleteLesson={handleDeleteLesson}
             onReorderLesson={handleReorderLesson}
             getTypeIcon={getTypeIcon}
+            isDisabled={isEditMode && formData.status === 'published'}
           />
         </div>
       </div>

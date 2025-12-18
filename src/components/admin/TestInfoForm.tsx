@@ -13,9 +13,12 @@ interface TestFormData {
 interface TestInfoFormProps {
   formData: TestFormData;
   onInputChange: (field: keyof TestFormData, value: string | number) => void;
+  isEditMode?: boolean;
 }
 
-export default function TestInfoForm({ formData, onInputChange }: TestInfoFormProps) {
+export default function TestInfoForm({ formData, onInputChange, isEditMode = false }: TestInfoFormProps) {
+  const isPublished = formData.status === 'published';
+  const isDisabled = isEditMode && isPublished;
 
   return (
     <Card className="col-span-2 p-6 border-0 shadow-md">
@@ -31,6 +34,22 @@ export default function TestInfoForm({ formData, onInputChange }: TestInfoFormPr
           </p>
         </div>
       </div>
+
+      {isDisabled && (
+        <div className="bg-amber-50 border-2 border-amber-200 rounded-lg p-4 mb-4">
+          <div className="flex items-start gap-3">
+            <Icon name="Lock" size={20} className="text-amber-600 mt-0.5" />
+            <div>
+              <p className="font-semibold text-amber-900 mb-1">
+                Тест опубликован — редактирование заблокировано
+              </p>
+              <p className="text-sm text-amber-700">
+                Чтобы внести изменения, переведите тест в статус "Черновик". Помните, что все курсы с этим тестом также перейдут в черновик.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="space-y-4">
         <div className="bg-gradient-to-r from-orange-50 to-amber-50 border-2 border-orange-200 rounded-lg p-4">
@@ -62,7 +81,8 @@ export default function TestInfoForm({ formData, onInputChange }: TestInfoFormPr
             value={formData.title}
             onChange={(e) => onInputChange('title', e.target.value)}
             placeholder="Тест: Основы React"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+            disabled={isDisabled}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
           />
         </div>
 
@@ -75,7 +95,8 @@ export default function TestInfoForm({ formData, onInputChange }: TestInfoFormPr
             onChange={(e) => onInputChange('description', e.target.value)}
             placeholder="Проверьте свои знания основ React"
             rows={2}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"
+            disabled={isDisabled}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none disabled:bg-gray-100 disabled:cursor-not-allowed"
           />
         </div>
 
@@ -90,7 +111,8 @@ export default function TestInfoForm({ formData, onInputChange }: TestInfoFormPr
               onChange={(e) => onInputChange('passScore', parseInt(e.target.value) || 0)}
               min="0"
               max="100"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+              disabled={isDisabled}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
             />
           </div>
 
@@ -103,7 +125,8 @@ export default function TestInfoForm({ formData, onInputChange }: TestInfoFormPr
               value={formData.timeLimit}
               onChange={(e) => onInputChange('timeLimit', parseInt(e.target.value) || 0)}
               min="1"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+              disabled={isDisabled}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
             />
           </div>
 
@@ -117,7 +140,8 @@ export default function TestInfoForm({ formData, onInputChange }: TestInfoFormPr
               onChange={(e) => onInputChange('attempts', parseInt(e.target.value) || 0)}
               min="1"
               max="10"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+              disabled={isDisabled}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
             />
           </div>
         </div>

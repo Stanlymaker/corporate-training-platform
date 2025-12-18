@@ -17,6 +17,7 @@ interface TestQuestionsListProps {
   onEditQuestion: (question: Question) => void;
   onDeleteQuestion: (questionId: string) => void;
   getQuestionTypeLabel: (type: string) => string;
+  isDisabled?: boolean;
 }
 
 export default function TestQuestionsList({
@@ -25,6 +26,7 @@ export default function TestQuestionsList({
   onEditQuestion,
   onDeleteQuestion,
   getQuestionTypeLabel,
+  isDisabled = false,
 }: TestQuestionsListProps) {
   return (
     <Card className="col-span-3 p-6">
@@ -33,7 +35,7 @@ export default function TestQuestionsList({
           <Icon name="List" size={20} />
           Вопросы теста
         </h2>
-        <Button onClick={onAddQuestion}>
+        <Button onClick={onAddQuestion} disabled={isDisabled}>
           <Icon name="Plus" className="mr-2" size={16} />
           Добавить вопрос
         </Button>
@@ -90,6 +92,7 @@ export default function TestQuestionsList({
                   variant="ghost"
                   size="sm"
                   onClick={() => onEditQuestion(question)}
+                  disabled={isDisabled}
                 >
                   <Icon name="Edit" size={16} />
                 </Button>
@@ -97,6 +100,7 @@ export default function TestQuestionsList({
                   variant="ghost"
                   size="sm"
                   onClick={() => onDeleteQuestion(question.id)}
+                  disabled={isDisabled}
                   className="text-red-600 hover:text-red-700 hover:bg-red-50"
                 >
                   <Icon name="Trash2" size={16} />

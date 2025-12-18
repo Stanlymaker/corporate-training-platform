@@ -69,7 +69,8 @@ export default function CourseInfoForm({ formData, onInputChange, isEditMode = f
             value={formData.title}
             onChange={(e) => onInputChange('title', e.target.value)}
             placeholder="React для начинающих"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+            disabled={isDisabled}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
           />
         </div>
 
@@ -82,7 +83,8 @@ export default function CourseInfoForm({ formData, onInputChange, isEditMode = f
             onChange={(e) => onInputChange('description', e.target.value)}
             placeholder="Полный курс по React с нуля до продвинутого уровня..."
             rows={3}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"
+            disabled={isDisabled}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none disabled:bg-gray-100 disabled:cursor-not-allowed"
           />
         </div>
 
@@ -94,7 +96,8 @@ export default function CourseInfoForm({ formData, onInputChange, isEditMode = f
             <select
               value={formData.category}
               onChange={(e) => onInputChange('category', e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+              disabled={isDisabled}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
             >
               <option value="">Выберите категорию</option>
               <option value="Программирование">Программирование</option>
@@ -111,7 +114,8 @@ export default function CourseInfoForm({ formData, onInputChange, isEditMode = f
             <select
               value={formData.level}
               onChange={(e) => onInputChange('level', e.target.value as any)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+              disabled={isDisabled}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
             >
               <option value="Начальный">Начальный</option>
               <option value="Средний">Средний</option>
@@ -129,7 +133,8 @@ export default function CourseInfoForm({ formData, onInputChange, isEditMode = f
             value={formData.instructor}
             onChange={(e) => onInputChange('instructor', e.target.value)}
             placeholder="Анна Петрова"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+            disabled={isDisabled}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
           />
         </div>
 
@@ -157,7 +162,7 @@ export default function CourseInfoForm({ formData, onInputChange, isEditMode = f
                     id="course-image-upload"
                   />
                   <label htmlFor="course-image-upload">
-                    <Button type="button" variant="outline" size="sm" asChild disabled={uploadingImage}>
+                    <Button type="button" variant="outline" size="sm" asChild disabled={uploadingImage || isDisabled}>
                       <span>
                         <Icon name="Upload" size={14} className="mr-2" />
                         Заменить изображение
@@ -169,6 +174,7 @@ export default function CourseInfoForm({ formData, onInputChange, isEditMode = f
                     variant="outline"
                     size="sm"
                     onClick={() => onInputChange('image', '')}
+                    disabled={isDisabled}
                   >
                     <Icon name="X" size={14} className="mr-2" />
                     Удалить
@@ -190,7 +196,7 @@ export default function CourseInfoForm({ formData, onInputChange, isEditMode = f
                   id="course-image-upload-new"
                 />
                 <label htmlFor="course-image-upload-new">
-                  <Button type="button" variant="outline" size="sm" asChild disabled={uploadingImage}>
+                  <Button type="button" variant="outline" size="sm" asChild disabled={uploadingImage || isDisabled}>
                     <span>
                       <Icon name="Upload" size={14} className="mr-2" />
                       {uploadingImage ? 'Загрузка...' : 'Загрузить файл'}
@@ -225,7 +231,8 @@ export default function CourseInfoForm({ formData, onInputChange, isEditMode = f
             <select
               value={formData.accessType}
               onChange={(e) => onInputChange('accessType', e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+              disabled={isDisabled}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
             >
               <option value="open">Открытый</option>
               <option value="closed">Закрытый</option>

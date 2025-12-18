@@ -21,6 +21,7 @@ interface CourseLessonsListProps {
   onDeleteLesson: (lessonId: string) => void;
   onReorderLesson: (lessonId: string, direction: 'up' | 'down') => void;
   getTypeIcon: (type: string) => string;
+  isDisabled?: boolean;
 }
 
 export default function CourseLessonsList({
@@ -30,6 +31,7 @@ export default function CourseLessonsList({
   onDeleteLesson,
   onReorderLesson,
   getTypeIcon,
+  isDisabled = false,
 }: CourseLessonsListProps) {
   const getTypeName = (type: string) => {
     switch (type) {
@@ -60,7 +62,7 @@ export default function CourseLessonsList({
               <Badge variant="outline" className="ml-2">{lessons.length} уроков</Badge>
             )}
           </CardTitle>
-          <Button onClick={onAddLesson}>
+          <Button onClick={onAddLesson} disabled={isDisabled}>
             <Icon name="Plus" className="mr-2" size={16} />
             Добавить урок
           </Button>
@@ -75,7 +77,7 @@ export default function CourseLessonsList({
             </div>
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Уроков пока нет</h3>
             <p className="text-gray-600 mb-4">Создайте первый урок для вашего курса</p>
-            <Button onClick={onAddLesson} variant="outline">
+            <Button onClick={onAddLesson} variant="outline" disabled={isDisabled}>
               <Icon name="Plus" className="mr-2" size={16} />
               Добавить первый урок
             </Button>
@@ -118,7 +120,7 @@ export default function CourseLessonsList({
                     variant="ghost"
                     size="sm"
                     onClick={() => onReorderLesson(lesson.id, 'up')}
-                    disabled={index === 0}
+                    disabled={index === 0 || isDisabled}
                     className="opacity-0 group-hover:opacity-100 transition-opacity"
                   >
                     <Icon name="ChevronUp" size={18} />
@@ -127,7 +129,7 @@ export default function CourseLessonsList({
                     variant="ghost"
                     size="sm"
                     onClick={() => onReorderLesson(lesson.id, 'down')}
-                    disabled={index === lessons.length - 1}
+                    disabled={index === lessons.length - 1 || isDisabled}
                     className="opacity-0 group-hover:opacity-100 transition-opacity"
                   >
                     <Icon name="ChevronDown" size={18} />
@@ -136,6 +138,7 @@ export default function CourseLessonsList({
                     variant="ghost"
                     size="sm"
                     onClick={() => onEditLesson(lesson)}
+                    disabled={isDisabled}
                   >
                     <Icon name="Edit" size={18} />
                   </Button>
@@ -143,6 +146,7 @@ export default function CourseLessonsList({
                     variant="ghost"
                     size="sm"
                     onClick={() => onDeleteLesson(lesson.id)}
+                    disabled={isDisabled}
                     className="text-red-600 hover:text-red-700 hover:bg-red-50"
                   >
                     <Icon name="Trash2" size={18} />
