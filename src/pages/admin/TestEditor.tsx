@@ -60,7 +60,6 @@ export default function TestEditor() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showStatusChangeDialog, setShowStatusChangeDialog] = useState(false);
   const [linkedCourses, setLinkedCourses] = useState<any[]>([]);
-  const [pendingStatus, setPendingStatus] = useState<'draft' | 'published' | null>(null);
 
   const {
     loading,
@@ -77,22 +76,26 @@ export default function TestEditor() {
     }
   }, [testId, isEditMode]);
 
-  const handleInputChange = async (field: keyof TestFormData, value: string | number) => {
-    if (field === 'status' && value === 'draft' && formData.status === 'published' && isEditMode) {
-      await checkLinkedCourses(value as 'draft' | 'published');
-    } else {
-      setFormData({ ...formData, [field]: value });
+  const [initialStatus, setInitialStatus] = useState<'draft' | 'published'>('draft');
+
+  useEffect(() => {
+    if (isEditMode && formData.status) {
+      setInitialStatus(formData.status);
     }
+  }, [loadingTest]);
+
+  const handleInputChange = (field: keyof TestFormData, value: string | number) => {
+    setFormData({ ...formData, [field]: value });
   };
 
-  const checkLinkedCourses = async (newStatus: 'draft' | 'published') => {
+  const checkLinkedCourses = async () => {
     try {
       const [coursesRes, lessonsRes] = await Promise.all([
         fetch(`${API_ENDPOINTS.COURSES}`, { headers: getAuthHeaders() }),
         fetch(`${API_ENDPOINTS.LESSONS}`, { headers: getAuthHeaders() }),
       ]);
 
-      if (!coursesRes.ok || !lessonsRes.ok) return;
+      if (!coursesRes.ok || !lessonsRes.ok) return [];
 
       const coursesData = await coursesRes.json();
       const lessonsData = await lessonsRes.json();
@@ -104,31 +107,33 @@ export default function TestEditor() {
         return courseLessons.some((lesson: any) => lesson.testId === parseInt(testId || '0'));
       });
 
-      if (linked.length > 0) {
-        setLinkedCourses(linked);
-        setPendingStatus(newStatus);
-        setShowStatusChangeDialog(true);
-      } else {
-        setFormData({ ...formData, status: newStatus });
-      }
+      return linked;
     } catch (error) {
       console.error('Error checking linked courses:', error);
-      setFormData({ ...formData, status: newStatus });
+      return [];
     }
   };
 
-  const confirmStatusChange = () => {
-    if (pendingStatus) {
-      setFormData({ ...formData, status: pendingStatus });
+  const handleSaveWithCheck = async () => {
+    if (isEditMode && initialStatus === 'published' && formData.status === 'draft') {
+      const linked = await checkLinkedCourses();
+      if (linked.length > 0) {
+        setLinkedCourses(linked);
+        setShowStatusChangeDialog(true);
+        return;
+      }
     }
+    await handleSaveTest();
+  };
+
+  const confirmStatusChange = async () => {
     setShowStatusChangeDialog(false);
-    setPendingStatus(null);
     setLinkedCourses([]);
+    await handleSaveTest();
   };
 
   const cancelStatusChange = () => {
     setShowStatusChangeDialog(false);
-    setPendingStatus(null);
     setLinkedCourses([]);
   };
 
@@ -260,7 +265,7 @@ export default function TestEditor() {
         formTitle={formData.title}
         loading={loading}
         hasQuestions={formData.questions.length > 0}
-        onSave={handleSaveTest}
+        onSave={handleSaveWithCheck}
         onCopy={handleCopyTest}
         onDelete={() => setShowDeleteDialog(true)}
       />
