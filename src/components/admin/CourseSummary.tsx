@@ -9,7 +9,7 @@ interface Lesson {
   duration: number;
   content?: string;
   videoUrl?: string;
-  testId?: string;
+  testId?: number;
   order: number;
 }
 
@@ -19,7 +19,7 @@ interface CourseSummaryProps {
   formData: {
     status: 'draft' | 'published' | 'archived';
     accessType: 'open' | 'closed';
-    testId?: string;
+    testId?: number;
   };
 }
 

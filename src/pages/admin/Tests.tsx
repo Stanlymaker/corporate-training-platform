@@ -22,11 +22,11 @@ import Icon from '@/components/ui/icon';
 import { API_ENDPOINTS, getAuthHeaders } from '@/config/api';
 
 interface Test {
-  id: string;
+  id: number;
   title: string;
   description: string;
-  courseId: string;
-  lessonId?: string;
+  courseId: number;
+  lessonId?: number;
   status: 'draft' | 'published';
   passScore: number;
   timeLimit: number;

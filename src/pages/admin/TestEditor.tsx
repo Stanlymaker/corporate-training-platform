@@ -96,8 +96,7 @@ export default function TestEditor() {
       }
       
       const testData = await testRes.json();
-      const testUuid = testData.test.id;
-      console.log('Test UUID:', testUuid);
+      const testIdValue = testData.test.id;
 
       const [coursesRes, lessonsRes] = await Promise.all([
         fetch(`${API_ENDPOINTS.COURSES}`, { headers: getAuthHeaders() }),
@@ -111,15 +110,11 @@ export default function TestEditor() {
       const courses = coursesData.courses || [];
       const allLessons = lessonsData.lessons || [];
 
-      console.log('All lessons:', allLessons);
-      console.log('Lessons with this testId:', allLessons.filter((l: any) => l.testId === testUuid));
-
       const linked = courses.filter((course: any) => {
         const courseLessons = allLessons.filter((l: any) => l.courseId === course.id);
-        return courseLessons.some((lesson: any) => lesson.testId === testUuid);
+        return courseLessons.some((lesson: any) => lesson.testId === testIdValue);
       });
 
-      console.log('Linked courses:', linked);
       return linked;
     } catch (error) {
       console.error('Error checking linked courses:', error);
@@ -128,10 +123,8 @@ export default function TestEditor() {
   };
 
   const handleSaveWithCheck = async () => {
-    console.log('handleSaveWithCheck:', { isEditMode, savedStatus, formDataStatus: formData.status });
     if (isEditMode && savedStatus === 'published' && formData.status === 'draft') {
       const linked = await checkLinkedCourses();
-      console.log('Linked courses:', linked);
       if (linked.length > 0) {
         setLinkedCourses(linked);
         setShowStatusChangeDialog(true);

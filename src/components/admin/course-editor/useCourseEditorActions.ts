@@ -10,7 +10,7 @@ interface Lesson {
   duration: number;
   content?: string;
   videoUrl?: string;
-  testId?: string;
+  testId?: number;
   isFinalTest?: boolean;
   finalTestRequiresAllLessons?: boolean;
   finalTestRequiresAllTests?: boolean;

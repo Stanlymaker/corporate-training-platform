@@ -22,7 +22,6 @@ export default function TestView() {
   const loadTestData = async () => {
     setLoading(true);
     try {
-      // Сначала загружаем тест по display_id
       const testRes = await fetch(`${API_ENDPOINTS.TESTS}?id=${testId}`, { headers: getAuthHeaders() });
       
       if (!testRes.ok) {
@@ -32,9 +31,8 @@ export default function TestView() {
       const testData = await testRes.json();
       setTest(testData.test);
       
-      // Теперь загружаем вопросы по UUID теста
-      const testUuid = testData.test.id;
-      const questionsRes = await fetch(`${API_ENDPOINTS.TESTS}?testId=${testUuid}&action=questions`, { 
+      const testId = testData.test.id;
+      const questionsRes = await fetch(`${API_ENDPOINTS.TESTS}?testId=${testId}&action=questions`, { 
         headers: getAuthHeaders() 
       });
       
