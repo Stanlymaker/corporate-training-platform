@@ -9,6 +9,7 @@ interface CourseEditorHeaderProps {
   hasLessons: boolean;
   loading: boolean;
   onSave: () => void;
+  onDelete: () => void;
 }
 
 export default function CourseEditorHeader({
@@ -17,6 +18,7 @@ export default function CourseEditorHeader({
   hasLessons,
   loading,
   onSave,
+  onDelete,
 }: CourseEditorHeaderProps) {
   const navigate = useNavigate();
 
@@ -35,13 +37,26 @@ export default function CourseEditorHeader({
           {isEditMode ? 'Редактировать курс' : 'Создать новый курс'}
         </h1>
       </div>
-      <Button
-        onClick={onSave}
-        disabled={!courseTitle || !hasLessons || loading}
-      >
-        <Icon name="Save" className="mr-2" size={16} />
-        {loading ? 'Сохранение...' : isEditMode ? 'Сохранить изменения' : 'Создать курс'}
-      </Button>
+      <div className="flex items-center gap-3">
+        <Button
+          onClick={onSave}
+          disabled={!courseTitle || !hasLessons || loading}
+        >
+          <Icon name="Save" className="mr-2" size={16} />
+          {loading ? 'Сохранение...' : isEditMode ? 'Сохранить изменения' : 'Создать курс'}
+        </Button>
+        
+        {isEditMode && (
+          <Button
+            variant="outline"
+            onClick={onDelete}
+            disabled={loading}
+            className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+          >
+            <Icon name="Trash2" size={16} />
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

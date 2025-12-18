@@ -243,11 +243,33 @@ export function useCourseEditorActions(
     }
   };
 
+  const handleDeleteCourse = async (actualCourseId: string) => {
+    setLoading(true);
+    try {
+      const deleteRes = await fetch(`${API_ENDPOINTS.COURSES}?id=${actualCourseId || courseId}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+      });
+
+      if (!deleteRes.ok) {
+        throw new Error('Failed to delete course');
+      }
+
+      navigate(ROUTES.ADMIN.COURSES);
+    } catch (error) {
+      console.error('Error deleting course:', error);
+      alert('Ошибка при удалении курса');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     loading,
     loadingCourse,
     loadCourse,
     handleSaveCourse,
+    handleDeleteCourse,
     checkStudentsProgress,
   };
 }

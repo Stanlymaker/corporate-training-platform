@@ -8,6 +8,7 @@ import CourseLessonsList from '@/components/admin/CourseLessonsList';
 import LessonDialog from '@/components/admin/LessonDialog';
 import CourseEditorHeader from '@/components/admin/course-editor/CourseEditorHeader';
 import ProgressResetDialog from '@/components/admin/course-editor/ProgressResetDialog';
+import DeleteCourseDialog from '@/components/admin/course-editor/DeleteCourseDialog';
 import { useCourseEditorActions } from '@/components/admin/course-editor/useCourseEditorActions';
 import { API_ENDPOINTS, getAuthHeaders } from '@/config/api';
 
@@ -68,12 +69,14 @@ export default function CourseEditor() {
   const [showProgressResetDialog, setShowProgressResetDialog] = useState(false);
   const [progressResetOption, setProgressResetOption] = useState<'keep' | 'reset_tests' | 'reset_all'>('reset_tests');
   const [studentsCount, setStudentsCount] = useState(0);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const {
     loading,
     loadingCourse,
     loadCourse,
     handleSaveCourse,
+    handleDeleteCourse,
     checkStudentsProgress,
   } = useCourseEditorActions(
     courseId,
@@ -206,6 +209,11 @@ export default function CourseEditor() {
     await handleSaveCourse(progressResetOption, actualCourseId);
   };
 
+  const onDeleteConfirm = async () => {
+    await handleDeleteCourse(actualCourseId);
+    setShowDeleteDialog(false);
+  };
+
   const getTypeIcon = (type: string) => {
     switch (type) {
       case 'video': return 'Video';
@@ -238,6 +246,7 @@ export default function CourseEditor() {
         hasLessons={formData.lessons.length > 0}
         loading={loading}
         onSave={handleSaveWithCheck}
+        onDelete={() => setShowDeleteDialog(true)}
       />
 
       <div className="space-y-6">
@@ -287,6 +296,15 @@ export default function CourseEditor() {
         onOptionChange={setProgressResetOption}
         onConfirm={confirmProgressReset}
         onCancel={() => setShowProgressResetDialog(false)}
+      />
+
+      <DeleteCourseDialog
+        isOpen={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        courseTitle={formData.title}
+        lessonsCount={formData.lessons.length}
+        loading={loading}
+        onConfirm={onDeleteConfirm}
       />
     </AdminLayout>
   );
