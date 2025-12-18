@@ -24,11 +24,15 @@ export default function AdminUsers() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
   const [assignments, setAssignments] = useState<CourseAssignment[]>([]);
+  const [courses, setCourses] = useState<any[]>([]);
+  const [progressData, setProgressData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadUsers();
     loadAssignments();
+    loadCourses();
+    loadProgress();
   }, []);
 
   const loadUsers = async () => {
@@ -77,6 +81,38 @@ export default function AdminUsers() {
     }
   };
 
+  const loadCourses = async () => {
+    try {
+      const response = await fetch(API_ENDPOINTS.COURSES, {
+        headers: getAuthHeaders(),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Фильтруем только опубликованные курсы (без черновиков)
+        const publishedCourses = (data.courses || []).filter((c: any) => c.published !== false);
+        setCourses(publishedCourses);
+      }
+    } catch (error) {
+      console.error('Error loading courses:', error);
+    }
+  };
+
+  const loadProgress = async () => {
+    try {
+      const response = await fetch(API_ENDPOINTS.PROGRESS, {
+        headers: getAuthHeaders(),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setProgressData(data.progress || []);
+      }
+    } catch (error) {
+      console.error('Error loading progress:', error);
+    }
+  };
+
   const formatLastActive = (dateStr: string): string => {
     const date = new Date(dateStr);
     const now = new Date();
@@ -110,9 +146,16 @@ export default function AdminUsers() {
   });
 
   const getUserProgress = (userId: string) => {
-    const userAssignments = assignments.filter(a => a.userId === userId);
-    const completed = userAssignments.filter(a => a.status === 'completed').length;
-    return { total: userAssignments.length, completed };
+    // Получаем весь прогресс пользователя
+    const userProgress = progressData.filter(p => p.userId === userId);
+    
+    // Считаем завершенные курсы
+    const completed = userProgress.filter(p => p.completed === true).length;
+    
+    // Общее количество курсов = все опубликованные курсы
+    const total = courses.length;
+    
+    return { total, completed };
   };
 
   const getUserAssignments = (userId: string) => {
