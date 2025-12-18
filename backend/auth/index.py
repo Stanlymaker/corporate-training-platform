@@ -164,6 +164,33 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'isBase64Encoded': False
         }
     
+    if method == 'POST' and action == 'verify':
+        auth_token = headers.get('X-Auth-Token') or headers.get('x-auth-token')
+        
+        if not auth_token:
+            return {
+                'statusCode': 401,
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'Токен отсутствует'}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
+        
+        payload = verify_jwt_token(auth_token)
+        if not payload:
+            return {
+                'statusCode': 401,
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'Недействительный токен'}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
+        
+        return {
+            'statusCode': 200,
+            'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'valid': True}, ensure_ascii=False),
+            'isBase64Encoded': False
+        }
+    
     if method == 'GET' and action == 'me':
         auth_token = headers.get('X-Auth-Token') or headers.get('x-auth-token')
         

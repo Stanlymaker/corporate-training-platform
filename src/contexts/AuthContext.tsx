@@ -13,12 +13,39 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const savedUser = localStorage.getItem('currentUser');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-    }
+    const initAuth = async () => {
+      const savedUser = localStorage.getItem('currentUser');
+      const token = localStorage.getItem('authToken');
+      
+      if (savedUser && token) {
+        try {
+          const response = await fetch(`${API_ENDPOINTS.AUTH}?action=verify`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Auth-Token': token,
+            },
+          });
+
+          if (response.ok) {
+            setUser(JSON.parse(savedUser));
+          } else {
+            localStorage.removeItem('currentUser');
+            localStorage.removeItem('authToken');
+          }
+        } catch (error) {
+          console.error('Auth verification error:', error);
+          localStorage.removeItem('currentUser');
+          localStorage.removeItem('authToken');
+        }
+      }
+      setIsLoading(false);
+    };
+
+    initAuth();
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
@@ -63,6 +90,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('currentUser');
     removeAuthToken();
   };
+
+  if (isLoading) {
+    return null;
+  }
 
   return (
     <AuthContext.Provider value={{ user, login, logout, isAuthenticated: !!user }}>
