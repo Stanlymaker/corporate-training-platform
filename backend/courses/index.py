@@ -392,10 +392,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             }
         
         try:
+            print(f'DELETE request: course_id={course_id}, course_uuid={course_uuid}')
+            
             # Получаем actual_course_id (UUID)
             if course_id:
                 cur.execute("SELECT id FROM courses WHERE display_id = %s", (course_id,))
                 course_row = cur.fetchone()
+                print(f'Found course by display_id: {course_row}')
                 if not course_row:
                     cur.close()
                     conn.close()
@@ -409,11 +412,18 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             else:
                 # Используем переданный UUID напрямую
                 actual_course_id = course_uuid
+                print(f'Using UUID directly: {actual_course_id}')
+            
+            print(f'Deleting course with UUID: {actual_course_id}')
             
             # Каскадное удаление записей по UUID
+            print('Deleting progress...')
             cur.execute("DELETE FROM progress WHERE course_id = %s", (actual_course_id,))
+            print('Deleting course_assignments...')
             cur.execute("DELETE FROM course_assignments WHERE course_id = %s", (actual_course_id,))
+            print('Deleting lessons...')
             cur.execute("DELETE FROM lessons WHERE course_id = %s", (actual_course_id,))
+            print('Deleting course...')
             cur.execute("DELETE FROM courses WHERE id = %s", (actual_course_id,))
             
             conn.commit()
