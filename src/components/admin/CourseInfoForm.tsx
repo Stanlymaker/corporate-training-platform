@@ -19,10 +19,13 @@ interface CourseFormData {
 interface CourseInfoFormProps {
   formData: CourseFormData;
   onInputChange: (field: keyof CourseFormData, value: any) => void;
+  isEditMode?: boolean;
 }
 
-export default function CourseInfoForm({ formData, onInputChange }: CourseInfoFormProps) {
+export default function CourseInfoForm({ formData, onInputChange, isEditMode = false }: CourseInfoFormProps) {
   const [uploadingImage, setUploadingImage] = useState(false);
+  const isPublished = formData.status === 'published';
+  const isDisabled = isEditMode && isPublished;
 
   const handleImageUpload = async (file: File) => {
     setUploadingImage(true);
@@ -39,6 +42,22 @@ export default function CourseInfoForm({ formData, onInputChange }: CourseInfoFo
         <Icon name="BookOpen" size={20} />
         Основная информация
       </h2>
+
+      {isDisabled && (
+        <div className="bg-amber-50 border-2 border-amber-200 rounded-lg p-4 mb-4">
+          <div className="flex items-start gap-3">
+            <Icon name="Lock" size={20} className="text-amber-600 mt-0.5" />
+            <div>
+              <p className="font-semibold text-amber-900 mb-1">
+                Курс опубликован — редактирование заблокировано
+              </p>
+              <p className="text-sm text-amber-700">
+                Чтобы внести изменения, переведите курс в статус "Черновик". После внесения изменений опубликуйте курс заново.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="space-y-4">
         <div>
