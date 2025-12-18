@@ -18,30 +18,6 @@ export default function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleInitAdmin = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const response = await fetch('https://functions.poehali.dev/bd6f0226-730c-41b5-bea5-baef5b0f8a3f', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Admin initialized:', data);
-        setEmail('admin@example.com');
-        setPassword('admin123');
-        alert('Админ создан! Email: admin@example.com, Пароль: admin123');
-      } else {
-        setError('Ошибка инициализации админа');
-      }
-    } catch (err) {
-      setError('Ошибка подключения к серверу');
-    }
-    setLoading(false);
-  };
-
   const handleLogin = async (e?: FormEvent) => {
     if (e) e.preventDefault();
     
@@ -136,18 +112,6 @@ export default function Login() {
                     Войти
                   </>
                 )}
-              </Button>
-              
-              <Button 
-                type="button"
-                variant="outline"
-                className="w-full"
-                size="lg"
-                onClick={handleInitAdmin}
-                disabled={loading}
-              >
-                <Icon name="UserPlus" className="mr-2" size={18} />
-                Создать админа
               </Button>
             </form>
           </CardContent>
