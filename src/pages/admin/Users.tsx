@@ -149,25 +149,28 @@ export default function AdminUsers() {
     // Получаем весь прогресс пользователя
     const userProgress = progressData.filter(p => p.userId === userId);
     
-    // Считаем завершенные курсы (проверяем completed ИЛИ все уроки пройдены)
-    const completed = userProgress.filter(p => 
-      p.completed === true || (p.completedLessons >= p.totalLessons && p.totalLessons > 0)
-    ).length;
-    
     // Получаем назначенные закрытые курсы для пользователя
     const userAssignedClosedCourses = assignments
       .filter(a => a.userId === userId)
       .map(a => a.courseId);
     
-    // Собираем все уникальные ID курсов: либо доступные, либо с прогрессом
-    const progressCourseIds = userProgress.map(p => p.courseId);
-    const availableCourseIds = courses
-      .filter(c => c.accessType === 'open' || userAssignedClosedCourses.includes(c.id))
-      .map(c => c.id);
+    // Доступные опубликованные курсы
+    const availablePublishedCourses = courses.filter(c => 
+      c.published !== false && (c.accessType === 'open' || userAssignedClosedCourses.includes(c.id))
+    );
+    const availablePublishedCourseIds = availablePublishedCourses.map(c => c.id);
     
-    // Объединяем и удаляем дубликаты
-    const allRelevantCourseIds = [...new Set([...progressCourseIds, ...availableCourseIds])];
-    const total = allRelevantCourseIds.length;
+    // Считаем только прогресс по опубликованным доступным курсам
+    const relevantProgress = userProgress.filter(p => 
+      availablePublishedCourseIds.includes(p.courseId)
+    );
+    
+    // Считаем завершенные курсы (проверяем completed ИЛИ все уроки пройдены)
+    const completed = relevantProgress.filter(p => 
+      p.completed === true || (p.completedLessons >= p.totalLessons && p.totalLessons > 0)
+    ).length;
+    
+    const total = availablePublishedCourses.length;
     
     return { total, completed };
   };
