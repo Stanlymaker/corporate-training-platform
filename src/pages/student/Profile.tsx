@@ -190,7 +190,7 @@ export default function StudentProfile() {
                     </div>
                   ) : (
                     userProgress.map((progress) => {
-                      const course = courses.find(c => c.id === progress.courseId);
+                      const course = courses.find(c => Number(c.id) === Number(progress.courseId));
                       if (!course) return null;
                       
                       const progressPercent = (progress.completedLessons / progress.totalLessons) * 100;

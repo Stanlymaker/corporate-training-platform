@@ -9,7 +9,7 @@ import { API_ENDPOINTS, getAuthHeaders } from '@/config/api';
 import { toast } from 'sonner';
 
 export default function StudentSettings() {
-  const { user: authUser } = useAuth();
+  const { user: authUser, refreshUser } = useAuth();
   const [editedUser, setEditedUser] = useState<Partial<User>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
@@ -76,13 +76,8 @@ export default function StudentSettings() {
         throw new Error(error.error || 'Ошибка сохранения');
       }
 
-      const data = await response.json();
-      const updatedUser = data.user || data;
-      localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+      await refreshUser();
       toast.success('Профиль успешно обновлен');
-      
-      // Обновим данные в AuthContext через перезагрузку
-      setTimeout(() => window.location.reload(), 500);
     } catch (error: any) {
       console.error('Ошибка сохранения профиля:', error);
       toast.error(error.message || 'Не удалось сохранить профиль');
