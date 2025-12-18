@@ -62,28 +62,30 @@ export default function CourseInfoForm({ formData, onInputChange, isEditMode = f
       )}
 
       <div className="space-y-4">
-        <div className="bg-gradient-to-r from-orange-50 to-amber-50 border-2 border-orange-200 rounded-lg p-4">
-          <label className="block text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-            <Icon name="Settings" size={16} className="text-orange-600" />
-            Статус публикации
-          </label>
-          <select
-            value={formData.status}
-            onChange={(e) => onInputChange('status', e.target.value)}
-            className="w-full px-4 py-2.5 border-2 border-orange-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white font-medium text-gray-900"
-          >
-            <option value="draft">📝 Черновик</option>
-            <option value="published">✅ Опубликован</option>
-            <option value="archived">📦 Архив</option>
-          </select>
-          <p className="text-xs text-gray-600 mt-2">
-            {formData.status === 'draft' 
-              ? 'Курс виден только администраторам' 
-              : formData.status === 'published'
-              ? 'Курс доступен студентам для обучения'
-              : 'Курс перенесен в архив'}
-          </p>
-        </div>
+        {isEditMode && (
+          <div className="bg-gradient-to-r from-orange-50 to-amber-50 border-2 border-orange-200 rounded-lg p-4">
+            <label className="block text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+              <Icon name="Settings" size={16} className="text-orange-600" />
+              Статус публикации
+            </label>
+            <select
+              value={formData.status}
+              onChange={(e) => onInputChange('status', e.target.value)}
+              className="w-full px-4 py-2.5 border-2 border-orange-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white font-medium text-gray-900"
+            >
+              <option value="draft">📝 Черновик</option>
+              <option value="published">✅ Опубликован</option>
+              <option value="archived">📦 Архив</option>
+            </select>
+            <p className="text-xs text-gray-600 mt-2">
+              {formData.status === 'draft' 
+                ? 'Курс виден только администраторам' 
+                : formData.status === 'published'
+                ? 'Курс доступен студентам для обучения'
+                : 'Курс перенесен в архив'}
+            </p>
+          </div>
+        )}
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
