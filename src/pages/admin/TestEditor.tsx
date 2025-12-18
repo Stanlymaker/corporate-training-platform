@@ -87,14 +87,14 @@ export default function TestEditor() {
             id: q.id,
             type: q.type,
             question: q.text,
-            answers: q.options ? JSON.parse(q.options).map((opt: string, idx: number) => ({
+            answers: q.options ? q.options.map((opt: string, idx: number) => ({
               id: `${idx}`,
               text: opt,
-              isCorrect: JSON.parse(q.correctAnswer).includes(idx),
+              isCorrect: Array.isArray(q.correctAnswer) ? q.correctAnswer.includes(idx) : q.correctAnswer === idx,
             })) : [],
-            correctText: q.type === 'text' ? JSON.parse(q.correctAnswer) : undefined,
+            correctText: q.type === 'text' ? q.correctAnswer : undefined,
             points: q.points,
-            matchingPairs: q.matchingPairs ? JSON.parse(q.matchingPairs) : undefined,
+            matchingPairs: q.matchingPairs || undefined,
             textCheckType: q.textCheckType,
           })),
         });
