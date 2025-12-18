@@ -211,6 +211,78 @@ export default function TestEditor() {
     });
   };
 
+  const handleCopyTest = async () => {
+    if (!testId) return;
+
+    setLoading(true);
+    try {
+      const newTestPayload = {
+        title: `${formData.title} (копия)`,
+        description: formData.description,
+        passScore: formData.passScore,
+        timeLimit: formData.timeLimit,
+        attempts: formData.attempts,
+        status: 'draft',
+      };
+
+      const createRes = await fetch(API_ENDPOINTS.TESTS, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(newTestPayload),
+      });
+
+      if (createRes.ok) {
+        const newTestData = await createRes.json();
+        const newTestId = newTestData.test.id;
+
+        for (let i = 0; i < formData.questions.length; i++) {
+          const question = formData.questions[i];
+          
+          let correctAnswer: any;
+          let options: string[] | undefined;
+
+          if (question.type === 'single') {
+            const correctIndex = question.answers?.findIndex(a => a.isCorrect);
+            correctAnswer = correctIndex !== -1 ? correctIndex : 0;
+            options = question.answers?.map(a => a.text) || [];
+          } else if (question.type === 'multiple') {
+            correctAnswer = question.answers?.map((a, idx) => a.isCorrect ? idx : -1).filter(idx => idx !== -1) || [];
+            options = question.answers?.map(a => a.text) || [];
+          } else if (question.type === 'text') {
+            correctAnswer = question.correctText || '';
+          } else if (question.type === 'matching') {
+            correctAnswer = question.matchingPairs || [];
+          }
+
+          const questionPayload = {
+            testId: newTestId,
+            type: question.type,
+            text: question.question,
+            options: options,
+            correctAnswer: correctAnswer,
+            points: question.points,
+            order: i,
+            matchingPairs: question.type === 'matching' ? question.matchingPairs : undefined,
+            textCheckType: question.type === 'text' ? (question.textCheckType || 'manual') : undefined,
+          };
+
+          await fetch(`${API_ENDPOINTS.TESTS}?action=question`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify(questionPayload),
+          });
+        }
+
+        navigate(`/admin/tests/edit/${newTestId}`);
+      }
+    } catch (error) {
+      console.error('Error copying test:', error);
+      alert('Ошибка при копировании теста');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleDeleteTest = async () => {
     if (!testId) return;
 
@@ -357,14 +429,24 @@ export default function TestEditor() {
           </div>
           <div className="flex gap-3">
             {isEditMode && (
-              <Button
-                variant="destructive"
-                onClick={() => setShowDeleteDialog(true)}
-                disabled={loading}
-              >
-                <Icon name="Trash2" className="mr-2" size={16} />
-                Удалить тест
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  onClick={handleCopyTest}
+                  disabled={loading}
+                >
+                  <Icon name="Copy" className="mr-2" size={16} />
+                  Копировать
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => setShowDeleteDialog(true)}
+                  disabled={loading}
+                >
+                  <Icon name="Trash2" className="mr-2" size={16} />
+                  Удалить
+                </Button>
+              </>
             )}
             <Button
               onClick={handleSaveTest}

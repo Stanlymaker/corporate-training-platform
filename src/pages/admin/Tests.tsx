@@ -4,6 +4,20 @@ import AdminLayout from '@/components/AdminLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import Icon from '@/components/ui/icon';
 import { API_ENDPOINTS, getAuthHeaders } from '@/config/api';
 
@@ -27,6 +41,8 @@ export default function Tests() {
   const [filter, setFilter] = useState<'all' | 'published' | 'draft'>('all');
   const [tests, setTests] = useState<Test[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deletingTest, setDeletingTest] = useState<Test | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -44,6 +60,94 @@ export default function Tests() {
       console.error('Error loading data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteTest = async () => {
+    if (!deletingTest) return;
+
+    setActionLoading(true);
+    try {
+      const response = await fetch(`${API_ENDPOINTS.TESTS}?id=${deletingTest.id}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+      });
+
+      if (response.ok) {
+        setDeletingTest(null);
+        await loadData();
+      } else {
+        throw new Error('Failed to delete test');
+      }
+    } catch (error) {
+      console.error('Error deleting test:', error);
+      alert('Ошибка при удалении теста');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleCopyTest = async (test: Test) => {
+    setActionLoading(true);
+    try {
+      const [testRes, questionsRes] = await Promise.all([
+        fetch(`${API_ENDPOINTS.TESTS}?id=${test.id}`, { headers: getAuthHeaders() }),
+        fetch(`${API_ENDPOINTS.TESTS}?testId=${test.id}&action=questions`, { headers: getAuthHeaders() }),
+      ]);
+
+      if (testRes.ok && questionsRes.ok) {
+        const testData = await testRes.json();
+        const questionsData = await questionsRes.json();
+
+        const newTestPayload = {
+          title: `${testData.test.title} (копия)`,
+          description: testData.test.description,
+          passScore: testData.test.passScore,
+          timeLimit: testData.test.timeLimit,
+          attempts: testData.test.attempts,
+          status: 'draft',
+        };
+
+        const createRes = await fetch(API_ENDPOINTS.TESTS, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify(newTestPayload),
+        });
+
+        if (createRes.ok) {
+          const newTestData = await createRes.json();
+          const newTestId = newTestData.test.id;
+
+          for (let i = 0; i < questionsData.questions.length; i++) {
+            const question = questionsData.questions[i];
+            const questionPayload = {
+              testId: newTestId,
+              type: question.type,
+              text: question.text,
+              options: question.options,
+              correctAnswer: question.correctAnswer,
+              points: question.points,
+              order: i,
+              matchingPairs: question.matchingPairs,
+              textCheckType: question.textCheckType,
+            };
+
+            await fetch(`${API_ENDPOINTS.TESTS}?action=question`, {
+              method: 'POST',
+              headers: getAuthHeaders(),
+              body: JSON.stringify(questionPayload),
+            });
+          }
+
+          await loadData();
+          navigate(`/admin/tests/edit/${newTestId}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error copying test:', error);
+      alert('Ошибка при копировании теста');
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -204,9 +308,26 @@ export default function Tests() {
                     <Icon name="Eye" className="mr-2" size={16} />
                     Просмотр
                   </Button>
-                  <Button variant="outline" size="icon">
-                    <Icon name="MoreVertical" size={16} />
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="icon" disabled={actionLoading}>
+                        <Icon name="MoreVertical" size={16} />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleCopyTest(test)}>
+                        <Icon name="Copy" className="mr-2" size={16} />
+                        Копировать
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => setDeletingTest(test)}
+                        className="text-red-600 focus:text-red-600"
+                      >
+                        <Icon name="Trash2" className="mr-2" size={16} />
+                        Удалить
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </CardContent>
             </Card>
@@ -215,6 +336,38 @@ export default function Tests() {
         </>
         )}
       </div>
+
+      <Dialog open={!!deletingTest} onOpenChange={(open) => !open && setDeletingTest(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                <Icon name="AlertTriangle" className="text-red-600" size={24} />
+              </div>
+              <DialogTitle>Удалить тест?</DialogTitle>
+            </div>
+            <DialogDescription className="text-base">
+              Вы действительно хотите удалить тест <span className="font-semibold text-gray-900">"{deletingTest?.title}"</span>?
+              <br /><br />
+              Это действие нельзя отменить. Тест и все его вопросы будут удалены безвозвратно.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="outline" onClick={() => setDeletingTest(null)} disabled={actionLoading} className="flex-1">
+              Отмена
+            </Button>
+            <Button 
+              variant="destructive"
+              onClick={handleDeleteTest}
+              disabled={actionLoading}
+              className="flex-1 bg-red-600 hover:bg-red-700"
+            >
+              <Icon name="Trash2" className="mr-2" size={16} />
+              {actionLoading ? 'Удаление...' : 'Удалить'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 }
