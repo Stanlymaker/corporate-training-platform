@@ -60,6 +60,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     GET ?userId=x&courseId=y - прогресс по конкретному курсу
     POST ?action=complete - отметить урок завершенным
     POST ?action=submit - отправить результаты теста
+    POST ?action=reset - сбросить прогресс по курсу (только админ)
     '''
     method: str = event.get('httpMethod', 'GET')
     
@@ -428,6 +429,69 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'statusCode': 201,
             'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
             'body': json.dumps({'message': 'Результаты теста отправлены', 'resultId': result_id}, ensure_ascii=False),
+            'isBase64Encoded': False
+        }
+    
+    if method == 'POST' and action == 'reset':
+        # Только админы могут сбрасывать прогресс
+        if payload.get('role') != 'admin':
+            cur.close()
+            conn.close()
+            return {
+                'statusCode': 403,
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'Только администратор может сбрасывать прогресс'}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
+        
+        body_data = json.loads(event.get('body', '{}'))
+        reset_course_id = body_data.get('courseId')
+        reset_type = body_data.get('resetType', 'reset_all')
+        
+        if not reset_course_id:
+            cur.close()
+            conn.close()
+            return {
+                'statusCode': 400,
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'Необходимо указать courseId'}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
+        
+        if reset_type == 'reset_all':
+            # Удаляем весь прогресс по курсу
+            cur.execute(
+                "DELETE FROM course_progress_v2 WHERE course_id = %s",
+                (reset_course_id,)
+            )
+            # Удаляем все результаты тестов по курсу
+            cur.execute(
+                "DELETE FROM test_results_v2 WHERE test_id IN "
+                "(SELECT test_id FROM lessons_v2 WHERE course_id = %s AND test_id IS NOT NULL)",
+                (reset_course_id,)
+            )
+        elif reset_type == 'reset_tests':
+            # Удаляем только результаты тестов
+            cur.execute(
+                "DELETE FROM test_results_v2 WHERE test_id IN "
+                "(SELECT test_id FROM lessons_v2 WHERE course_id = %s AND test_id IS NOT NULL)",
+                (reset_course_id,)
+            )
+            # Сбрасываем test_score в прогрессе
+            cur.execute(
+                "UPDATE course_progress_v2 SET test_score = 0 WHERE course_id = %s",
+                (reset_course_id,)
+            )
+        # Если reset_type == 'keep', ничего не делаем
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return {
+            'statusCode': 200,
+            'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'message': 'Прогресс успешно сброшен'}, ensure_ascii=False),
             'isBase64Encoded': False
         }
     

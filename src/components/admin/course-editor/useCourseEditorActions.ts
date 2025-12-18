@@ -113,15 +113,24 @@ export function useCourseEditorActions(
   };
 
   const applyProgressReset = async (option: 'keep' | 'reset_tests' | 'reset_all') => {
+    if (option === 'keep') {
+      // Не нужно сбрасывать прогресс
+      return;
+    }
+    
     try {
-      await fetch(`${API_ENDPOINTS.PROGRESS}/reset`, {
+      const response = await fetch(`${API_ENDPOINTS.PROGRESS}?action=reset`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({
-          courseId: courseId,
+          courseId: parseInt(courseId || '0'),
           resetType: option,
         }),
       });
+      
+      if (!response.ok) {
+        console.error('Failed to reset progress:', await response.text());
+      }
     } catch (error) {
       console.error('Error resetting progress:', error);
     }
