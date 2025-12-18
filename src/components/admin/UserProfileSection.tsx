@@ -67,23 +67,25 @@ export default function UserProfileSection({
           </div>
         </div>
 
-        <div className="space-y-3">
-          <div>
-            <div className="text-sm text-gray-500 mb-1">Курсов в процессе</div>
-            <div className="flex items-center gap-2">
-              <Icon name="BookOpen" size={16} className="text-gray-400" />
-              <span className="font-medium">{userProgress.total}</span>
+        {user.role === 'student' && (
+          <div className="space-y-3">
+            <div>
+              <div className="text-sm text-gray-500 mb-1">Курсов в процессе</div>
+              <div className="flex items-center gap-2">
+                <Icon name="BookOpen" size={16} className="text-gray-400" />
+                <span className="font-medium">{userProgress.total}</span>
+              </div>
             </div>
-          </div>
 
-          <div>
-            <div className="text-sm text-gray-500 mb-1">Курсов завершено</div>
-            <div className="flex items-center gap-2">
-              <Icon name="CheckCircle" size={16} className="text-green-500" />
-              <span className="font-medium">{userProgress.completed}</span>
+            <div>
+              <div className="text-sm text-gray-500 mb-1">Курсов завершено</div>
+              <div className="flex items-center gap-2">
+                <Icon name="CheckCircle" size={16} className="text-green-500" />
+                <span className="font-medium">{userProgress.completed}</span>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </>
   );
