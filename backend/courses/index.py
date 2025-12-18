@@ -391,44 +391,56 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'isBase64Encoded': False
             }
         
-        if course_id:
-            cur.execute("SELECT id FROM courses WHERE display_id = %s", (course_id,))
-        else:
-            cur.execute("SELECT id FROM courses WHERE id = %s", (course_uuid,))
-        
-        course_row = cur.fetchone()
-        if not course_row:
+        try:
+            if course_id:
+                cur.execute("SELECT id FROM courses WHERE display_id = %s", (course_id,))
+            else:
+                cur.execute("SELECT id FROM courses WHERE id = %s", (course_uuid,))
+            
+            course_row = cur.fetchone()
+            if not course_row:
+                cur.close()
+                conn.close()
+                return {
+                    'statusCode': 404,
+                    'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'error': 'Курс не найден'}, ensure_ascii=False),
+                    'isBase64Encoded': False
+                }
+            
+            actual_course_id = course_row[0]
+            
+            cur.execute("DELETE FROM progress WHERE course_id = %s", (actual_course_id,))
+            cur.execute("DELETE FROM course_assignments WHERE course_id = %s", (actual_course_id,))
+            cur.execute("DELETE FROM lessons WHERE course_id = %s", (actual_course_id,))
+            
+            if course_id:
+                cur.execute("DELETE FROM courses WHERE display_id = %s", (course_id,))
+            else:
+                cur.execute("DELETE FROM courses WHERE id = %s", (course_uuid,))
+            
+            conn.commit()
+            
+            cur.close()
+            conn.close()
+            
+            return {
+                'statusCode': 200,
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'message': 'Курс успешно удален'}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
+        except Exception as e:
+            print(f'Error deleting course: {str(e)}')
+            conn.rollback()
             cur.close()
             conn.close()
             return {
-                'statusCode': 404,
+                'statusCode': 500,
                 'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'error': 'Курс не найден'}, ensure_ascii=False),
+                'body': json.dumps({'error': f'Ошибка при удалении курса: {str(e)}'}, ensure_ascii=False),
                 'isBase64Encoded': False
             }
-        
-        actual_course_id = course_row[0]
-        
-        cur.execute("DELETE FROM progress WHERE course_id = %s", (actual_course_id,))
-        cur.execute("DELETE FROM course_assignments WHERE course_id = %s", (actual_course_id,))
-        cur.execute("DELETE FROM lessons WHERE course_id = %s", (actual_course_id,))
-        
-        if course_id:
-            cur.execute("DELETE FROM courses WHERE display_id = %s", (course_id,))
-        else:
-            cur.execute("DELETE FROM courses WHERE id = %s", (course_uuid,))
-        
-        conn.commit()
-        
-        cur.close()
-        conn.close()
-        
-        return {
-            'statusCode': 200,
-            'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
-            'body': json.dumps({'message': 'Курс успешно удален'}, ensure_ascii=False),
-            'isBase64Encoded': False
-        }
     
     cur.close()
     conn.close()
