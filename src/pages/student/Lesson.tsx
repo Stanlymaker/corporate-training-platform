@@ -54,6 +54,13 @@ export default function LessonPage() {
     loadLessonData();
   }, [courseId, lessonId]);
 
+  useEffect(() => {
+    // Автоматически отмечаем начало изучения урока
+    if (course && lesson && userId) {
+      markLessonStarted();
+    }
+  }, [course, lesson]);
+
   const loadLessonData = async () => {
     try {
       setLoading(true);
@@ -99,6 +106,25 @@ export default function LessonPage() {
     }
   };
 
+  const markLessonStarted = async () => {
+    if (!course || !lesson) return;
+    
+    try {
+      await fetch(`${API_ENDPOINTS.PROGRESS}?action=start`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          courseId: course.id,
+          lessonId: lesson.id
+        })
+      });
+      // Обновляем прогресс после отметки
+      await loadLessonData();
+    } catch (error) {
+      console.error('Error marking lesson started:', error);
+    }
+  };
+
   if (loading) {
     return (
       <StudentLayout>
@@ -131,7 +157,7 @@ export default function LessonPage() {
 
   const handleComplete = async () => {
     try {
-      await fetch(`${API_ENDPOINTS.PROGRESS}?action=complete`, {
+      const response = await fetch(`${API_ENDPOINTS.PROGRESS}?action=complete`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({
@@ -139,7 +165,19 @@ export default function LessonPage() {
           lessonId: lesson.id
         })
       });
-      setIsCompleted(true);
+      
+      if (response.ok) {
+        const data = await response.json();
+        setIsCompleted(true);
+        
+        // Обновляем прогресс для отображения актуального состояния
+        await loadLessonData();
+        
+        // Показываем уведомление если курс завершен полностью
+        if (data.completed) {
+          alert('🎉 Поздравляем! Вы завершили весь курс!');
+        }
+      }
     } catch (error) {
       console.error('Error marking lesson complete:', error);
     }

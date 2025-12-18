@@ -168,27 +168,96 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'isBase64Encoded': False
         }
     
+    if method == 'POST' and action == 'start':
+        body_data = json.loads(event.get('body', '{}'))
+        start_req = CompleteLessonRequest(**body_data)
+        
+        # Проверяем, есть ли уже прогресс
+        cur.execute(
+            "SELECT course_id FROM course_progress WHERE user_id = %s AND course_id = %s",
+            (payload['user_id'], start_req.courseId)
+        )
+        existing = cur.fetchone()
+        
+        if not existing:
+            # Создаем новый прогресс
+            cur.execute(
+                "SELECT COUNT(*) FROM lessons WHERE course_id = %s",
+                (start_req.courseId,)
+            )
+            total_lessons = cur.fetchone()[0]
+            
+            now = datetime.utcnow()
+            cur.execute(
+                "INSERT INTO course_progress (course_id, user_id, completed_lessons, total_lessons, "
+                "test_score, completed, completed_lesson_ids, last_accessed_lesson, started_at, updated_at, created_at) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                (start_req.courseId, payload['user_id'], 0, total_lessons, 0, False, 
+                 json.dumps([]), start_req.lessonId, now, now, now)
+            )
+            conn.commit()
+        else:
+            # Обновляем последний урок
+            cur.execute(
+                "UPDATE course_progress SET last_accessed_lesson = %s, updated_at = %s "
+                "WHERE user_id = %s AND course_id = %s",
+                (start_req.lessonId, datetime.utcnow(), payload['user_id'], start_req.courseId)
+            )
+            conn.commit()
+        
+        cur.close()
+        conn.close()
+        
+        return {
+            'statusCode': 200,
+            'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'success': True}, ensure_ascii=False),
+            'isBase64Encoded': False
+        }
+    
     if method == 'POST' and action == 'complete':
         body_data = json.loads(event.get('body', '{}'))
         complete_req = CompleteLessonRequest(**body_data)
         
+        # Сначала проверяем/создаем прогресс
         cur.execute(
-            "SELECT completed_lesson_ids FROM course_progress WHERE user_id = %s AND course_id = %s",
+            "SELECT completed_lesson_ids, total_lessons FROM course_progress WHERE user_id = %s AND course_id = %s",
             (payload['user_id'], complete_req.courseId)
         )
         progress = cur.fetchone()
         
         if not progress:
+            # Создаем прогресс если его нет
+            cur.execute(
+                "SELECT COUNT(*) FROM lessons WHERE course_id = %s",
+                (complete_req.courseId,)
+            )
+            total_lessons = cur.fetchone()[0]
+            
+            now = datetime.utcnow()
+            completed_ids = [complete_req.lessonId]
+            
+            cur.execute(
+                "INSERT INTO course_progress (course_id, user_id, completed_lessons, total_lessons, "
+                "test_score, completed, completed_lesson_ids, last_accessed_lesson, started_at, updated_at, created_at) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                (complete_req.courseId, payload['user_id'], 1, total_lessons, 0, False, 
+                 json.dumps(completed_ids), complete_req.lessonId, now, now, now)
+            )
+            conn.commit()
+            
             cur.close()
             conn.close()
+            
             return {
-                'statusCode': 404,
+                'statusCode': 200,
                 'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'error': 'Прогресс не найден'}, ensure_ascii=False),
+                'body': json.dumps({'success': True, 'completed': False}, ensure_ascii=False),
                 'isBase64Encoded': False
             }
         
         completed_ids = progress[0] if progress[0] else []
+        total_lessons = progress[1]
         
         if complete_req.lessonId not in completed_ids:
             completed_ids.append(complete_req.lessonId)
@@ -200,11 +269,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                  datetime.utcnow(), payload['user_id'], complete_req.courseId)
             )
             
-            cur.execute(
-                "SELECT total_lessons FROM course_progress WHERE user_id = %s AND course_id = %s",
-                (payload['user_id'], complete_req.courseId)
-            )
-            total = cur.fetchone()[0]
+            total = total_lessons
             
             if len(completed_ids) >= total:
                 cur.execute(
@@ -230,7 +295,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         return {
             'statusCode': 200,
             'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
-            'body': json.dumps({'message': 'Урок отмечен как завершенный'}, ensure_ascii=False),
+            'body': json.dumps({'success': True, 'alreadyCompleted': True}, ensure_ascii=False),
             'isBase64Encoded': False
         }
     

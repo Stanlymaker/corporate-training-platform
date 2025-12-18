@@ -1,7 +1,13 @@
 {
   "tests": [
     {
-      "name": "GET ?userId=test - без токена",
+      "name": "OPTIONS - CORS preflight",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "GET без токена - должен вернуть 401",
       "method": "GET",
       "path": "/?userId=test-user-id",
       "expectedStatus": 401,
