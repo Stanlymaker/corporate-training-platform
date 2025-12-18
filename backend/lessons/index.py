@@ -144,9 +144,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         course_id_int = int(course_id)
         
         if payload.get('role') != 'admin':
-            user_id_int = int(payload['user_id'])
+            user_id_str = str(payload['user_id'])
             cur.execute(
-                f"SELECT id FROM course_assignments_v2 WHERE course_id = {course_id_int} AND user_id = {user_id_int}"
+                f"SELECT id FROM course_assignments_v2 WHERE course_id = {course_id_int} AND user_id = '{user_id_str}'"
             )
             if not cur.fetchone():
                 cur.close()
@@ -208,10 +208,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             }
         
         if payload.get('role') != 'admin':
-            user_id_int = int(payload['user_id'])
+            user_id_str = str(payload['user_id'])
             course_id_from_lesson = int(lesson[1])
             cur.execute(
-                f"SELECT id FROM course_assignments_v2 WHERE course_id = {course_id_from_lesson} AND user_id = {user_id_int}"
+                f"SELECT id FROM course_assignments_v2 WHERE course_id = {course_id_from_lesson} AND user_id = '{user_id_str}'"
             )
             if not cur.fetchone():
                 cur.close()
