@@ -88,8 +88,10 @@ export default function TestEditor() {
   };
 
   const checkLinkedCourses = async () => {
+    console.log('[DEBUG checkLinkedCourses] Starting check for testId:', testId);
     try {
       const testRes = await fetch(`${API_ENDPOINTS.TESTS}?id=${testId}`, { headers: getAuthHeaders() });
+      console.log('[DEBUG checkLinkedCourses] Test fetch response status:', testRes.status);
       if (!testRes.ok) {
         console.log('Test not found:', testId);
         return [];
@@ -97,6 +99,7 @@ export default function TestEditor() {
       
       const testData = await testRes.json();
       const testIdValue = testData.test.id;
+      console.log('[DEBUG checkLinkedCourses] Test ID value:', testIdValue);
 
       const [coursesRes, lessonsRes] = await Promise.all([
         fetch(`${API_ENDPOINTS.COURSES}`, { headers: getAuthHeaders() }),
@@ -117,6 +120,7 @@ export default function TestEditor() {
         return hasTest && course.status === 'published';
       });
 
+      console.log('[DEBUG checkLinkedCourses] Linked courses:', linked);
       return linked;
     } catch (error) {
       console.error('Error checking linked courses:', error);
@@ -125,8 +129,10 @@ export default function TestEditor() {
   };
 
   const handleSaveWithCheck = async () => {
-    if (isEditMode && savedStatus === 'published' && formData.status === 'draft') {
+    if (isEditMode && testId && savedStatus === 'published' && formData.status === 'draft') {
+      console.log('[DEBUG] Checking linked courses for test status change');
       const linked = await checkLinkedCourses();
+      console.log('[DEBUG] Linked courses found:', linked);
       if (linked.length > 0) {
         setLinkedCourses(linked);
         setShowStatusChangeDialog(true);
