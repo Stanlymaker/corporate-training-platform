@@ -141,6 +141,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 "pass_score, level, instructor, status, start_date, end_date, access_type "
                 "FROM courses_v2 ORDER BY created_at DESC"
             )
+            courses = cur.fetchall()
         else:
             user_id_int = int(payload['user_id'])
             
@@ -168,9 +169,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             courses = open_courses + closed_courses
             courses.sort(key=lambda x: x[0], reverse=True)
-        
-        if payload.get('role') == 'admin':
-            courses = cur.fetchall()
         
         courses_list = [format_course_response(course) for course in courses]
         
