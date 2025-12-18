@@ -11,6 +11,8 @@ JWT_SECRET = os.environ.get('JWT_SECRET', 'your-secret-key-change-in-production'
 JWT_ALGORITHM = 'HS256'
 
 class CreateTestRequest(BaseModel):
+    courseId: str = Field(..., min_length=1)
+    lessonId: Optional[str] = None
     title: str = Field(..., min_length=1)
     description: Optional[str] = None
     passScore: int = Field(default=70, ge=0, le=100)
@@ -283,7 +285,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) "
             "RETURNING id, course_id, lesson_id, title, description, pass_score, time_limit, attempts, "
             "questions_count, status, created_at, updated_at",
-            (new_test_id, None, None, create_req.title,
+            (new_test_id, create_req.courseId, create_req.lessonId, create_req.title,
              create_req.description, create_req.passScore, create_req.timeLimit, create_req.attempts,
              0, 'draft', now, now)
         )

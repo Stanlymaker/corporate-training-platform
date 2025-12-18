@@ -1,7 +1,11 @@
+import { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import Icon from '@/components/ui/icon';
+import { API_ENDPOINTS, getAuthHeaders } from '@/config/api';
 
 interface TestFormData {
+  courseId: string;
+  lessonId?: string;
   title: string;
   description: string;
   passScore: number;
@@ -15,23 +19,60 @@ interface TestInfoFormProps {
   onInputChange: (field: keyof TestFormData, value: string | number) => void;
 }
 
+interface Course {
+  id: string;
+  title: string;
+}
+
 export default function TestInfoForm({ formData, onInputChange }: TestInfoFormProps) {
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loadingCourses, setLoadingCourses] = useState(true);
+
+  useEffect(() => {
+    loadCourses();
+  }, []);
+
+  const loadCourses = async () => {
+    try {
+      const response = await fetch(API_ENDPOINTS.COURSES, { headers: getAuthHeaders() });
+      if (response.ok) {
+        const data = await response.json();
+        setCourses(data.courses || []);
+      }
+    } catch (error) {
+      console.error('Error loading courses:', error);
+    } finally {
+      setLoadingCourses(false);
+    }
+  };
+
   return (
     <Card className="col-span-2 p-6 border-0 shadow-md">
       <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
         <Icon name="ClipboardList" size={20} />
         Основная информация
       </h2>
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-        <div className="flex items-start gap-2">
-          <Icon name="Info" size={16} className="text-blue-600 mt-0.5" />
-          <p className="text-xs text-blue-700">
-            Тест создается независимо от курсов. После создания вы сможете привязать его к урокам через редактор курса.
-          </p>
-        </div>
-      </div>
 
       <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Курс *
+          </label>
+          <select
+            value={formData.courseId}
+            onChange={(e) => onInputChange('courseId', e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+            disabled={loadingCourses}
+          >
+            <option value="">Выберите курс</option>
+            {courses.map(course => (
+              <option key={course.id} value={course.id}>
+                {course.title}
+              </option>
+            ))}
+          </select>
+        </div>
+
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Название теста *
