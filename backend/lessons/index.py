@@ -374,6 +374,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 create_req.finalTestRequiresAllTests
             )
         )
+        lesson_id = cur.fetchone()[0]
         
         conn.commit()
         

@@ -414,7 +414,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         cur.execute(
             "INSERT INTO test_results_v2 (test_id, user_id, answers, score, passed, submitted_at, created_at) "
             "VALUES (%s, %s, %s, 0, false, %s, %s)",
-            (test_req.testId, payload['user_id'], json.dumps(test_req.answers), now, now
+            (test_req.testId, payload['user_id'], json.dumps(test_req.answers), now, now)
         )
         
         conn.commit()
