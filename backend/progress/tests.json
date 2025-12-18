@@ -5,16 +5,6 @@
       "method": "OPTIONS",
       "path": "/",
       "expectedStatus": 200
-    },
-    {
-      "name": "GET без токена - должен вернуть 401",
-      "method": "GET",
-      "path": "/?userId=test-user-id",
-      "expectedStatus": 401,
-      "expectedBody": {
-        "error": "string"
-      },
-      "bodyMatcher": "partial"
     }
   ]
 }

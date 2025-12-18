@@ -180,6 +180,22 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         existing = cur.fetchone()
         
         if not existing:
+            # Создаем назначение курса (assignment), если его еще нет
+            cur.execute(
+                "SELECT id FROM course_assignments WHERE course_id = %s AND user_id = %s",
+                (start_req.courseId, payload['user_id'])
+            )
+            assignment = cur.fetchone()
+            
+            if not assignment:
+                assignment_id = str(uuid.uuid4())
+                now = datetime.utcnow()
+                cur.execute(
+                    "INSERT INTO course_assignments (id, course_id, user_id, assigned_by, assigned_at, status, created_at) "
+                    "VALUES (%s, %s, %s, %s, %s, %s, %s)",
+                    (assignment_id, start_req.courseId, payload['user_id'], payload['user_id'], now, 'assigned', now)
+                )
+            
             # Создаем новый прогресс
             cur.execute(
                 "SELECT COUNT(*) FROM lessons WHERE course_id = %s",
