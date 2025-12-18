@@ -40,7 +40,7 @@ export function useTestEditorActions(
   const [loading, setLoading] = useState(false);
   const [loadingTest, setLoadingTest] = useState(isEditMode);
 
-  const loadTest = async (id: string) => {
+  const loadTest = async (id: string): Promise<'draft' | 'published' | null> => {
     setLoadingTest(true);
     try {
       // Сначала загружаем тест по display_id, чтобы получить UUID
@@ -52,6 +52,7 @@ export function useTestEditorActions(
       
       const testData = await testRes.json();
       const testUuid = testData.test.id; // Получаем UUID теста
+      const testStatus = testData.test.status || 'draft';
       
       // Теперь загружаем вопросы по UUID
       const questionsRes = await fetch(`${API_ENDPOINTS.TESTS}?testId=${testUuid}&action=questions`, { 
@@ -67,7 +68,7 @@ export function useTestEditorActions(
           passScore: testData.test.passScore || 70,
           timeLimit: testData.test.timeLimit || 30,
           attempts: testData.test.attempts || 3,
-          status: testData.test.status || 'draft',
+          status: testStatus,
           questions: (questionsData.questions || []).map((q: any) => ({
             id: q.id, // Сохраняем UUID из БД для существующих вопросов
             type: q.type,
@@ -84,8 +85,10 @@ export function useTestEditorActions(
           })),
         });
       }
+      return testStatus;
     } catch (error) {
       console.error('Error loading test:', error);
+      return null;
     } finally {
       setLoadingTest(false);
     }

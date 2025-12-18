@@ -73,15 +73,13 @@ export default function TestEditor() {
 
   useEffect(() => {
     if (isEditMode && testId) {
-      loadTest(testId);
+      loadTest(testId).then((status) => {
+        if (status) {
+          setSavedStatus(status);
+        }
+      });
     }
   }, [testId, isEditMode]);
-
-  useEffect(() => {
-    if (isEditMode && formData.status && !loadingTest) {
-      setSavedStatus(formData.status);
-    }
-  }, [loadingTest, formData.status, isEditMode]);
 
 
 
