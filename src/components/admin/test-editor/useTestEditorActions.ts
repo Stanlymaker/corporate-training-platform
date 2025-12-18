@@ -43,13 +43,22 @@ export function useTestEditorActions(
   const loadTest = async (id: string) => {
     setLoadingTest(true);
     try {
-      const [testRes, questionsRes] = await Promise.all([
-        fetch(`${API_ENDPOINTS.TESTS}?id=${id}`, { headers: getAuthHeaders() }),
-        fetch(`${API_ENDPOINTS.TESTS}?testId=${id}&action=questions`, { headers: getAuthHeaders() }),
-      ]);
-
-      if (testRes.ok && questionsRes.ok) {
-        const testData = await testRes.json();
+      // Сначала загружаем тест по display_id, чтобы получить UUID
+      const testRes = await fetch(`${API_ENDPOINTS.TESTS}?id=${id}`, { headers: getAuthHeaders() });
+      
+      if (!testRes.ok) {
+        throw new Error('Failed to load test');
+      }
+      
+      const testData = await testRes.json();
+      const testUuid = testData.test.id; // Получаем UUID теста
+      
+      // Теперь загружаем вопросы по UUID
+      const questionsRes = await fetch(`${API_ENDPOINTS.TESTS}?testId=${testUuid}&action=questions`, { 
+        headers: getAuthHeaders() 
+      });
+      
+      if (questionsRes.ok) {
         const questionsData = await questionsRes.json();
         
         setFormData({
