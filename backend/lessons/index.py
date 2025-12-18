@@ -144,19 +144,37 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         course_id_int = int(course_id)
         
         if payload.get('role') != 'admin':
-            user_id_str = str(payload['user_id'])
             cur.execute(
-                f"SELECT id FROM course_assignments_v2 WHERE course_id = {course_id_int} AND user_id = '{user_id_str}'"
+                f"SELECT access_type FROM courses_v2 WHERE id = {course_id_int}"
             )
-            if not cur.fetchone():
+            course_data = cur.fetchone()
+            
+            if not course_data:
                 cur.close()
                 conn.close()
                 return {
-                    'statusCode': 403,
+                    'statusCode': 404,
                     'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
-                    'body': json.dumps({'error': 'Доступ к курсу запрещен'}, ensure_ascii=False),
+                    'body': json.dumps({'error': 'Курс не найден'}, ensure_ascii=False),
                     'isBase64Encoded': False
                 }
+            
+            access_type = course_data[0]
+            
+            if access_type == 'closed':
+                user_id_str = str(payload['user_id'])
+                cur.execute(
+                    f"SELECT id FROM course_assignments_v2 WHERE course_id = {course_id_int} AND user_id = '{user_id_str}'"
+                )
+                if not cur.fetchone():
+                    cur.close()
+                    conn.close()
+                    return {
+                        'statusCode': 403,
+                        'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'error': 'Доступ к курсу запрещен'}, ensure_ascii=False),
+                        'isBase64Encoded': False
+                    }
         
         cur.execute(
             "SELECT id, course_id, title, content, type, \"order\", duration, video_url, "
@@ -208,20 +226,27 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             }
         
         if payload.get('role') != 'admin':
-            user_id_str = str(payload['user_id'])
             course_id_from_lesson = int(lesson[1])
+            
             cur.execute(
-                f"SELECT id FROM course_assignments_v2 WHERE course_id = {course_id_from_lesson} AND user_id = '{user_id_str}'"
+                f"SELECT access_type FROM courses_v2 WHERE id = {course_id_from_lesson}"
             )
-            if not cur.fetchone():
-                cur.close()
-                conn.close()
-                return {
-                    'statusCode': 403,
-                    'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
-                    'body': json.dumps({'error': 'Доступ к уроку запрещен'}, ensure_ascii=False),
-                    'isBase64Encoded': False
-                }
+            course_data = cur.fetchone()
+            
+            if course_data and course_data[0] == 'closed':
+                user_id_str = str(payload['user_id'])
+                cur.execute(
+                    f"SELECT id FROM course_assignments_v2 WHERE course_id = {course_id_from_lesson} AND user_id = '{user_id_str}'"
+                )
+                if not cur.fetchone():
+                    cur.close()
+                    conn.close()
+                    return {
+                        'statusCode': 403,
+                        'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'error': 'Доступ к уроку запрещен'}, ensure_ascii=False),
+                        'isBase64Encoded': False
+                    }
         
         cur.execute(
             "SELECT id, title, type, url FROM lesson_materials_v2 WHERE lesson_id = %s",

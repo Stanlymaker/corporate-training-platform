@@ -94,11 +94,27 @@ export default function CourseDetails() {
     }
   };
 
-  const handleLessonClick = (lessonOrder: number, lessonIndex: number) => {
+  const handleLessonClick = async (lessonOrder: number, lessonIndex: number) => {
     const previousLesson = lessonIndex > 0 ? lessons[lessonIndex - 1] : null;
     const isLocked = previousLesson?.requiresPrevious && !progress?.completedLessonIds.includes(previousLesson.id);
     
     if (!isLocked) {
+      if (!progress && id) {
+        try {
+          await fetch(`${API_ENDPOINTS.PROGRESS}?action=start`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({
+              courseId: parseInt(id),
+              lessonId: lessons[lessonIndex].id
+            })
+          });
+          await loadCourseData();
+        } catch (error) {
+          console.error('Error starting course:', error);
+        }
+      }
+      
       // Используем order+1 для читаемого URL
       navigate(ROUTES.STUDENT.LESSON(id!, String(lessonOrder + 1)));
     }
