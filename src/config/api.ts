@@ -6,6 +6,7 @@ export const API_ENDPOINTS = {
   TESTS: 'https://functions.poehali.dev/a2077f4f-8e3e-4c2a-b24c-883317ccd3c5',
   ASSIGNMENTS: 'https://functions.poehali.dev/7d68a42a-1d58-4081-ad4a-71c29f135926',
   PROGRESS: 'https://functions.poehali.dev/e0ccef20-8709-436a-83e2-b219771219df',
+  REWARDS: 'https://functions.poehali.dev/161ddb07-9094-4922-acf0-386282c693d4',
 };
 
 export function getAuthToken(): string | null {

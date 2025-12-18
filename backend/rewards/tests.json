@@ -1,0 +1,25 @@
+{
+  "tests": [
+    {
+      "name": "GET all rewards - empty list",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "rewards": []
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "POST create reward - missing name",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "icon": "🏆",
+        "color": "#F97316",
+        "course_id": "test-course-id"
+      },
+      "expectedStatus": 422
+    }
+  ]
+}
