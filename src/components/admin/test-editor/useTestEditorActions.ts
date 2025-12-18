@@ -126,6 +126,51 @@ export function useTestEditorActions(
       const testData = await testRes.json();
       const savedTestId = testData.test.id;
 
+      // Если это создание нового теста, перенаправляем на редактирование с новым ID
+      if (!isEditMode) {
+        // Сохраняем вопросы для нового теста
+        for (let i = 0; i < formData.questions.length; i++) {
+          const question = formData.questions[i];
+          
+          let correctAnswer: any;
+          let options: string[] | undefined;
+
+          if (question.type === 'single') {
+            const correctIndex = question.answers?.findIndex(a => a.isCorrect);
+            correctAnswer = correctIndex !== -1 ? correctIndex : 0;
+            options = question.answers?.map(a => a.text) || [];
+          } else if (question.type === 'multiple') {
+            correctAnswer = question.answers?.map((a, idx) => a.isCorrect ? idx : -1).filter(idx => idx !== -1) || [];
+            options = question.answers?.map(a => a.text) || [];
+          } else if (question.type === 'text') {
+            correctAnswer = question.correctText || '';
+          } else if (question.type === 'matching') {
+            correctAnswer = question.matchingPairs || [];
+          }
+
+          const questionPayload = {
+            testId: savedTestId,
+            type: question.type,
+            text: question.question,
+            options: options,
+            correctAnswer: correctAnswer,
+            points: question.points,
+            order: i,
+            matchingPairs: question.type === 'matching' ? question.matchingPairs : undefined,
+            textCheckType: question.type === 'text' ? (question.textCheckType || 'manual') : undefined,
+          };
+
+          await fetch(`${API_ENDPOINTS.TESTS}?action=question`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify(questionPayload),
+          });
+        }
+        
+        navigate(ROUTES.ADMIN.TESTS);
+        return;
+      }
+
       // Получаем текущие вопросы из БД, если это режим редактирования
       let existingQuestions: any[] = [];
       if (isEditMode) {
