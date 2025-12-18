@@ -159,11 +159,15 @@ export default function AdminUsers() {
       .filter(a => a.userId === userId)
       .map(a => a.courseId);
     
-    // Общее количество доступных курсов = открытые + назначенные закрытые
-    const availableCourses = courses.filter(c => 
-      c.accessType === 'open' || userAssignedClosedCourses.includes(c.id)
-    );
-    const total = availableCourses.length;
+    // Собираем все уникальные ID курсов: либо доступные, либо с прогрессом
+    const progressCourseIds = userProgress.map(p => p.courseId);
+    const availableCourseIds = courses
+      .filter(c => c.accessType === 'open' || userAssignedClosedCourses.includes(c.id))
+      .map(c => c.id);
+    
+    // Объединяем и удаляем дубликаты
+    const allRelevantCourseIds = [...new Set([...progressCourseIds, ...availableCourseIds])];
+    const total = allRelevantCourseIds.length;
     
     return { total, completed };
   };
