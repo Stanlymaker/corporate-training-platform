@@ -199,19 +199,24 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         if payload.get('role') != 'admin':
             actual_course_id = course[0]
-            cur.execute(
-                "SELECT id FROM course_assignments WHERE course_id = %s AND user_id = %s",
-                (actual_course_id, payload['user_id'])
-            )
-            if not cur.fetchone():
-                cur.close()
-                conn.close()
-                return {
-                    'statusCode': 403,
-                    'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
-                    'body': json.dumps({'error': 'Доступ к курсу запрещен'}, ensure_ascii=False),
-                    'isBase64Encoded': False
-                }
+            course_access_type = course[15]  # access_type в 15-й позиции
+            
+            # Если курс закрытый, проверяем назначение
+            if course_access_type == 'closed':
+                cur.execute(
+                    "SELECT id FROM course_assignments WHERE course_id = %s AND user_id = %s",
+                    (actual_course_id, payload['user_id'])
+                )
+                if not cur.fetchone():
+                    cur.close()
+                    conn.close()
+                    return {
+                        'statusCode': 403,
+                        'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'error': 'Доступ к курсу запрещен'}, ensure_ascii=False),
+                        'isBase64Encoded': False
+                    }
+            # Открытые курсы доступны всем
         
         course_data = format_course_response(course)
         

@@ -101,7 +101,6 @@ export default function UserCoursesManagement({
 
   const userAssignments = assignments;
   const assignedCourseIds = userAssignments.map(a => a.courseId);
-  const completedCourseIds = userAssignments.filter(a => a.status === 'completed').map(a => a.courseId);
 
   const getCourseStatus = (course: Course) => {
     const progress = progressData.find(p => p.courseId === course.id);
@@ -332,9 +331,7 @@ export default function UserCoursesManagement({
               closedCourses.map((course) => {
               const courseStatus = getCourseStatus(course);
               const assignment = userAssignments.find(a => a.courseId === course.id);
-              const progress = progressData.find(p => p.courseId === course.id);
-              // Курс считается назначенным, если есть assignment ИЛИ есть progress (автоназначение)
-              const isAssigned = assignedCourseIds.includes(course.id) || !!progress;
+              const isAssigned = assignedCourseIds.includes(course.id);
               
               const isExpanded = expandedCourseId === course.id;
               const lessons = lessonsData[course.id] || [];

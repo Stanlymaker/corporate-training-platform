@@ -152,8 +152,16 @@ export default function AdminUsers() {
     // Считаем завершенные курсы
     const completed = userProgress.filter(p => p.completed === true).length;
     
-    // Общее количество курсов = все опубликованные курсы
-    const total = courses.length;
+    // Получаем назначенные закрытые курсы для пользователя
+    const userAssignedClosedCourses = assignments
+      .filter(a => a.userId === userId)
+      .map(a => a.courseId);
+    
+    // Общее количество доступных курсов = открытые + назначенные закрытые
+    const availableCourses = courses.filter(c => 
+      c.accessType === 'open' || userAssignedClosedCourses.includes(c.id)
+    );
+    const total = availableCourses.length;
     
     return { total, completed };
   };

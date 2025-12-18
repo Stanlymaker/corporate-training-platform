@@ -180,21 +180,40 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         existing = cur.fetchone()
         
         if not existing:
-            # Создаем назначение курса (assignment), если его еще нет
+            # Проверяем тип доступа курса
             cur.execute(
-                "SELECT id FROM course_assignments WHERE course_id = %s AND user_id = %s",
-                (start_req.courseId, payload['user_id'])
+                "SELECT access_type FROM courses WHERE id = %s",
+                (start_req.courseId,)
             )
-            assignment = cur.fetchone()
+            course_data = cur.fetchone()
             
-            if not assignment:
-                assignment_id = str(uuid.uuid4())
-                now = datetime.utcnow()
+            if not course_data:
+                cur.close()
+                conn.close()
+                return {
+                    'statusCode': 404,
+                    'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'error': 'Курс не найден'}, ensure_ascii=False),
+                    'isBase64Encoded': False
+                }
+            
+            access_type = course_data[0]
+            
+            # Для закрытых курсов проверяем назначение
+            if access_type == 'closed':
                 cur.execute(
-                    "INSERT INTO course_assignments (id, course_id, user_id, assigned_by, assigned_at, status, created_at) "
-                    "VALUES (%s, %s, %s, %s, %s, %s, %s)",
-                    (assignment_id, start_req.courseId, payload['user_id'], payload['user_id'], now, 'assigned', now)
+                    "SELECT id FROM course_assignments WHERE course_id = %s AND user_id = %s",
+                    (start_req.courseId, payload['user_id'])
                 )
+                if not cur.fetchone():
+                    cur.close()
+                    conn.close()
+                    return {
+                        'statusCode': 403,
+                        'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'error': 'Курс не назначен. Обратитесь к администратору.'}, ensure_ascii=False),
+                        'isBase64Encoded': False
+                    }
             
             # Создаем новый прогресс
             cur.execute(
