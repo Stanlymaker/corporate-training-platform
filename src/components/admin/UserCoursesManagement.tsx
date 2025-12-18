@@ -199,7 +199,7 @@ export default function UserCoursesManagement({
                                   {isCompleted ? (
                                     <Icon name="Check" size={14} className="text-white" />
                                   ) : (
-                                    <span className="text-xs text-gray-500">{lesson.order}</span>
+                                    <span className="text-xs text-gray-500">{lesson.order + 1}</span>
                                   )}
                                 </div>
                                 <div>
@@ -306,7 +306,7 @@ export default function UserCoursesManagement({
                                   {isCompleted ? (
                                     <Icon name="Check" size={14} className="text-white" />
                                   ) : (
-                                    <span className="text-xs text-gray-500">{lesson.order}</span>
+                                    <span className="text-xs text-gray-500">{lesson.order + 1}</span>
                                   )}
                                 </div>
                                 <div>
