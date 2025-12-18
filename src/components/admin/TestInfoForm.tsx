@@ -14,10 +14,12 @@ interface TestInfoFormProps {
   formData: TestFormData;
   onInputChange: (field: keyof TestFormData, value: string | number) => void;
   isEditMode?: boolean;
+  savedStatus?: 'draft' | 'published';
 }
 
-export default function TestInfoForm({ formData, onInputChange, isEditMode = false }: TestInfoFormProps) {
-  const isPublished = formData.status === 'published';
+export default function TestInfoForm({ formData, onInputChange, isEditMode = false, savedStatus }: TestInfoFormProps) {
+  const actualStatus = savedStatus || formData.status;
+  const isPublished = actualStatus === 'published';
   const isDisabled = isEditMode && isPublished;
 
   return (

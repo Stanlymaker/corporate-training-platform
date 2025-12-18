@@ -355,25 +355,17 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             if update_req.status == 'draft':
                 cur.execute(
-                    "SELECT id FROM tests WHERE display_id = %s",
+                    "SELECT DISTINCT course_id FROM lessons WHERE test_id = %s AND course_id IS NOT NULL",
                     (int(test_id),)
                 )
-                test_uuid_result = cur.fetchone()
-                if test_uuid_result:
-                    test_uuid = test_uuid_result[0]
-                    
+                linked_courses = cur.fetchall()
+                
+                for course_row in linked_courses:
+                    course_id = course_row[0]
                     cur.execute(
-                        "SELECT DISTINCT course_id FROM lessons WHERE test_id = %s AND course_id IS NOT NULL",
-                        (int(test_id),)
+                        "UPDATE courses SET status = 'draft', updated_at = %s WHERE id = %s",
+                        (datetime.utcnow(), course_id)
                     )
-                    linked_courses = cur.fetchall()
-                    
-                    for course_row in linked_courses:
-                        course_id = course_row[0]
-                        cur.execute(
-                            "UPDATE courses SET status = 'draft', updated_at = %s WHERE id = %s",
-                            (datetime.utcnow(), course_id)
-                        )
         
         if not update_fields:
             cur.close()

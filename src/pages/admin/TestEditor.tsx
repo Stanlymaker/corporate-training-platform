@@ -55,6 +55,7 @@ export default function TestEditor() {
   const isEditMode = !!testId;
 
   const [formData, setFormData] = useState<TestFormData>(initialFormData);
+  const [savedStatus, setSavedStatus] = useState<'draft' | 'published'>('draft');
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   const [showQuestionDialog, setShowQuestionDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -76,13 +77,13 @@ export default function TestEditor() {
     }
   }, [testId, isEditMode]);
 
-  const [initialStatus, setInitialStatus] = useState<'draft' | 'published'>('draft');
-
   useEffect(() => {
     if (isEditMode && formData.status) {
-      setInitialStatus(formData.status);
+      setSavedStatus(formData.status);
     }
   }, [loadingTest]);
+
+
 
   const handleInputChange = (field: keyof TestFormData, value: string | number) => {
     setFormData({ ...formData, [field]: value });
@@ -115,7 +116,7 @@ export default function TestEditor() {
   };
 
   const handleSaveWithCheck = async () => {
-    if (isEditMode && initialStatus === 'published' && formData.status === 'draft') {
+    if (isEditMode && savedStatus === 'published' && formData.status === 'draft') {
       const linked = await checkLinkedCourses();
       if (linked.length > 0) {
         setLinkedCourses(linked);
@@ -124,12 +125,14 @@ export default function TestEditor() {
       }
     }
     await handleSaveTest();
+    setSavedStatus(formData.status);
   };
 
   const confirmStatusChange = async () => {
     setShowStatusChangeDialog(false);
     setLinkedCourses([]);
     await handleSaveTest();
+    setSavedStatus(formData.status);
   };
 
   const cancelStatusChange = () => {
@@ -277,6 +280,7 @@ export default function TestEditor() {
               formData={formData}
               onInputChange={handleInputChange}
               isEditMode={isEditMode}
+              savedStatus={savedStatus}
             />
           </div>
 
@@ -293,7 +297,7 @@ export default function TestEditor() {
           onEditQuestion={handleEditQuestion}
           onDeleteQuestion={handleDeleteQuestion}
           getQuestionTypeLabel={getQuestionTypeLabel}
-          isDisabled={isEditMode && formData.status === 'published'}
+          isDisabled={isEditMode && savedStatus === 'published'}
         />
       </div>
 
