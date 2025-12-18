@@ -101,6 +101,7 @@ def format_lesson_response(lesson_row: tuple, materials: list = None) -> Dict[st
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     '''
     Управление уроками
+    GET - все уроки (только админ)
     GET ?courseId=x - все уроки курса
     GET ?id=x - один урок
     POST - создать урок (только админ)
@@ -268,6 +269,37 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'statusCode': 200,
             'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
             'body': json.dumps({'lesson': lesson_data}, ensure_ascii=False),
+            'isBase64Encoded': False
+        }
+    
+    if method == 'GET':
+        admin_error = require_admin(headers)
+        if admin_error:
+            cur.close()
+            conn.close()
+            return {
+                'statusCode': admin_error['statusCode'],
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': admin_error['error']}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
+        
+        cur.execute(
+            "SELECT id, course_id, title, content, type, \"order\", duration, video_url, "
+            "description, requires_previous, test_id, is_final_test, "
+            "final_test_requires_all_lessons, final_test_requires_all_tests "
+            "FROM lessons_v2 ORDER BY course_id, \"order\""
+        )
+        lessons = cur.fetchall()
+        lessons_list = [format_lesson_response(lesson) for lesson in lessons]
+        
+        cur.close()
+        conn.close()
+        
+        return {
+            'statusCode': 200,
+            'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'lessons': lessons_list}, ensure_ascii=False),
             'isBase64Encoded': False
         }
     
