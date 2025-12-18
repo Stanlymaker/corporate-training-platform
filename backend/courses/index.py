@@ -1,6 +1,7 @@
 import json
 import os
 import psycopg2
+import psycopg2.extras
 import jwt
 import uuid
 from datetime import datetime
@@ -420,6 +421,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 print(f'Using UUID directly: {actual_course_id}')
             
             print(f'Deleting course with UUID: {actual_course_id}')
+            
+            # Преобразуем UUID строку в UUID объект
+            if isinstance(actual_course_id, str):
+                actual_course_id = uuid.UUID(actual_course_id)
+            
+            print(f'UUID object: {actual_course_id}, type: {type(actual_course_id)}')
             
             # Каскадное удаление записей по UUID
             print('Deleting progress...')
