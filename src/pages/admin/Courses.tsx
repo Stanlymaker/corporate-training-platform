@@ -197,15 +197,17 @@ export default function AdminCourses() {
                     <Icon name="Eye" className="mr-1" size={14} />
                     Вид
                   </Button>
-                  <Button
-                    variant="default" 
-                    size="sm"
-                    onClick={() => handleAssignStudents(course)}
-                    className="bg-green-600 hover:bg-green-700"
-                  >
-                    <Icon name="UserPlus" className="mr-1" size={14} />
-                    Наз.
-                  </Button>
+                  {course.accessType === 'closed' && (
+                    <Button
+                      variant="default" 
+                      size="sm"
+                      onClick={() => handleAssignStudents(course)}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      <Icon name="UserPlus" className="mr-1" size={14} />
+                      Наз.
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
