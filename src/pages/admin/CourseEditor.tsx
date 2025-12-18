@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import AdminLayout from '@/components/AdminLayout';
-import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
-import { ROUTES } from '@/constants/routes';
-import { API_ENDPOINTS, getAuthHeaders } from '@/config/api';
 import CourseInfoForm from '@/components/admin/CourseInfoForm';
 import CourseSummary from '@/components/admin/CourseSummary';
 import CourseLessonsList from '@/components/admin/CourseLessonsList';
 import LessonDialog from '@/components/admin/LessonDialog';
+import CourseEditorHeader from '@/components/admin/course-editor/CourseEditorHeader';
+import ProgressResetDialog from '@/components/admin/course-editor/ProgressResetDialog';
+import { useCourseEditorActions } from '@/components/admin/course-editor/useCourseEditorActions';
 
 interface Lesson {
   id: string;
@@ -55,7 +55,6 @@ const initialFormData: CourseFormData = {
 };
 
 export default function CourseEditor() {
-  const navigate = useNavigate();
   const { courseId } = useParams();
   const isEditMode = !!courseId;
 
@@ -64,67 +63,33 @@ export default function CourseEditor() {
   const [wasEverPublished, setWasEverPublished] = useState(false);
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
   const [showLessonDialog, setShowLessonDialog] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [loadingCourse, setLoadingCourse] = useState(isEditMode);
   const [actualCourseId, setActualCourseId] = useState<string>('');
   const [showProgressResetDialog, setShowProgressResetDialog] = useState(false);
   const [progressResetOption, setProgressResetOption] = useState<'keep' | 'reset_tests' | 'reset_all'>('reset_tests');
   const [studentsCount, setStudentsCount] = useState(0);
+
+  const {
+    loading,
+    loadingCourse,
+    loadCourse,
+    handleSaveCourse,
+    checkStudentsProgress,
+  } = useCourseEditorActions(
+    courseId,
+    isEditMode,
+    formData,
+    setFormData,
+    savedStatus,
+    setSavedStatus,
+    setWasEverPublished,
+    setActualCourseId
+  );
 
   useEffect(() => {
     if (isEditMode && courseId) {
       loadCourse(courseId);
     }
   }, [courseId, isEditMode]);
-
-  const loadCourse = async (id: string) => {
-    setLoadingCourse(true);
-    try {
-      const courseRes = await fetch(`${API_ENDPOINTS.COURSES}?id=${id}`, { headers: getAuthHeaders() });
-
-      if (courseRes.ok) {
-        const courseData = await courseRes.json();
-        setActualCourseId(courseData.course.id);
-        
-        const lessonsRes = await fetch(`${API_ENDPOINTS.LESSONS}?courseId=${courseData.course.id}`, { headers: getAuthHeaders() });
-        const lessonsData = lessonsRes.ok ? await lessonsRes.json() : { lessons: [] };
-        
-        setFormData({
-          title: courseData.course.title || '',
-          description: courseData.course.description || '',
-          category: courseData.course.category || '',
-          level: courseData.course.level || 'Начальный',
-          instructor: courseData.course.instructor || '',
-          image: courseData.course.image || '',
-          lessons: (lessonsData.lessons || []).map((l: any) => ({
-            id: l.id,
-            title: l.title,
-            type: l.type,
-            duration: l.duration || 0,
-            content: l.content,
-            videoUrl: l.videoUrl,
-            testId: l.testId,
-            isFinalTest: l.isFinalTest,
-            finalTestRequiresAllLessons: l.finalTestRequiresAllLessons,
-            finalTestRequiresAllTests: l.finalTestRequiresAllTests,
-            order: l.order,
-            description: l.description,
-            materials: l.materials || [],
-            requiresPrevious: l.requiresPrevious,
-          })),
-          status: courseData.course.status || 'draft',
-          accessType: courseData.course.accessType || 'open',
-          sequenceType: 'linear',
-        });
-        setSavedStatus(courseData.course.status || 'draft');
-        setWasEverPublished(courseData.course.status === 'published');
-      }
-    } catch (error) {
-      console.error('Error loading course:', error);
-    } finally {
-      setLoadingCourse(false);
-    }
-  };
 
   const handleInputChange = (field: keyof CourseFormData, value: any) => {
     setFormData({ ...formData, [field]: value });
@@ -199,27 +164,10 @@ export default function CourseEditor() {
     setFormData({ ...formData, lessons: newLessons });
   };
 
-  const checkStudentsProgress = async () => {
-    try {
-      const progressRes = await fetch(`${API_ENDPOINTS.PROGRESS}?courseId=${actualCourseId || courseId}`, {
-        headers: getAuthHeaders(),
-      });
-      if (progressRes.ok) {
-        const progressData = await progressRes.json();
-        const uniqueStudents = new Set((progressData.progress || []).map((p: any) => p.userId));
-        return uniqueStudents.size;
-      }
-      return 0;
-    } catch (error) {
-      console.error('Error checking students progress:', error);
-      return 0;
-    }
-  };
-
   const handleSaveWithCheck = async () => {
     console.log('CourseEditor handleSaveWithCheck:', { isEditMode, wasEverPublished, formDataStatus: formData.status, savedStatus });
     if (isEditMode && wasEverPublished && formData.status === 'published' && savedStatus !== 'published') {
-      const count = await checkStudentsProgress();
+      const count = await checkStudentsProgress(actualCourseId);
       console.log('Students with progress:', count);
       if (count > 0) {
         setStudentsCount(count);
@@ -227,140 +175,12 @@ export default function CourseEditor() {
         return;
       }
     }
-    await handleSaveCourse();
-  };
-
-  const applyProgressReset = async (option: 'keep' | 'reset_tests' | 'reset_all') => {
-    try {
-      await fetch(`${API_ENDPOINTS.PROGRESS}/reset`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({
-          courseId: actualCourseId || courseId,
-          resetType: option,
-        }),
-      });
-    } catch (error) {
-      console.error('Error resetting progress:', error);
-    }
+    await handleSaveCourse(undefined, actualCourseId);
   };
 
   const confirmProgressReset = async () => {
     setShowProgressResetDialog(false);
-    await handleSaveCourse(progressResetOption);
-  };
-
-  const handleSaveCourse = async (resetOption?: 'keep' | 'reset_tests' | 'reset_all') => {
-    setLoading(true);
-    try {
-      const method = isEditMode ? 'PUT' : 'POST';
-      const url = isEditMode ? `${API_ENDPOINTS.COURSES}?id=${actualCourseId || courseId}` : API_ENDPOINTS.COURSES;
-
-      const coursePayload = {
-        title: formData.title,
-        description: formData.description,
-        category: formData.category,
-        level: formData.level,
-        instructor: formData.instructor,
-        image: formData.image,
-        status: formData.status,
-        accessType: formData.accessType,
-        duration: totalDuration,
-        passScore: 70,
-        published: formData.status === 'published',
-      };
-
-      const courseRes = await fetch(url, {
-        method,
-        headers: getAuthHeaders(),
-        body: JSON.stringify(coursePayload),
-      });
-
-      if (!courseRes.ok) {
-        throw new Error('Failed to save course');
-      }
-
-      const courseData = await courseRes.json();
-      const savedCourseId = courseData.course.id;
-
-      if (isEditMode) {
-        const existingLessonsRes = await fetch(`${API_ENDPOINTS.LESSONS}?courseId=${savedCourseId}`, {
-          headers: getAuthHeaders(),
-        });
-        const existingLessons = existingLessonsRes.ok ? (await existingLessonsRes.json()).lessons : [];
-        const existingLessonIds = new Set(existingLessons.map((l: any) => l.id));
-
-        for (const lesson of formData.lessons) {
-          const lessonPayload = {
-            courseId: savedCourseId,
-            title: lesson.title,
-            content: lesson.content,
-            type: lesson.type,
-            order: lesson.order,
-            duration: lesson.duration,
-            videoUrl: lesson.videoUrl,
-            description: lesson.description,
-            requiresPrevious: lesson.requiresPrevious || false,
-            testId: lesson.testId,
-            isFinalTest: lesson.isFinalTest || false,
-            finalTestRequiresAllLessons: lesson.finalTestRequiresAllLessons || false,
-            finalTestRequiresAllTests: lesson.finalTestRequiresAllTests || false,
-          };
-
-          if (existingLessonIds.has(lesson.id)) {
-            await fetch(`${API_ENDPOINTS.LESSONS}?id=${lesson.id}`, {
-              method: 'PUT',
-              headers: getAuthHeaders(),
-              body: JSON.stringify(lessonPayload),
-            });
-          } else {
-            await fetch(API_ENDPOINTS.LESSONS, {
-              method: 'POST',
-              headers: getAuthHeaders(),
-              body: JSON.stringify(lessonPayload),
-            });
-          }
-        }
-      } else {
-        for (const lesson of formData.lessons) {
-          const lessonPayload = {
-            courseId: savedCourseId,
-            title: lesson.title,
-            content: lesson.content,
-            type: lesson.type,
-            order: lesson.order,
-            duration: lesson.duration,
-            videoUrl: lesson.videoUrl,
-            description: lesson.description,
-            requiresPrevious: lesson.requiresPrevious || false,
-            testId: lesson.testId,
-            isFinalTest: lesson.isFinalTest || false,
-            finalTestRequiresAllLessons: lesson.finalTestRequiresAllLessons || false,
-            finalTestRequiresAllTests: lesson.finalTestRequiresAllTests || false,
-          };
-
-          await fetch(API_ENDPOINTS.LESSONS, {
-            method: 'POST',
-            headers: getAuthHeaders(),
-            body: JSON.stringify(lessonPayload),
-          });
-        }
-      }
-
-      setSavedStatus(formData.status);
-      if (formData.status === 'published') {
-        setWasEverPublished(true);
-      }
-      if (resetOption) {
-        await applyProgressReset(resetOption);
-      }
-      navigate(ROUTES.ADMIN.COURSES);
-    } catch (error) {
-      console.error('Error saving course:', error);
-      alert('Ошибка при сохранении курса');
-    } finally {
-      setLoading(false);
-    }
+    await handleSaveCourse(progressResetOption, actualCourseId);
   };
 
   const getTypeIcon = (type: string) => {
@@ -389,28 +209,13 @@ export default function CourseEditor() {
 
   return (
     <AdminLayout>
-      <div className="flex items-center justify-between mb-6">
-          <div>
-            <Button
-              variant="ghost"
-              className="mb-2"
-              onClick={() => navigate(ROUTES.ADMIN.COURSES)}
-            >
-              <Icon name="ArrowLeft" className="mr-2" size={16} />
-              Назад к курсам
-            </Button>
-            <h1 className="text-3xl font-bold text-gray-900">
-              {isEditMode ? 'Редактировать курс' : 'Создать новый курс'}
-            </h1>
-          </div>
-          <Button
-            onClick={handleSaveWithCheck}
-            disabled={!formData.title || formData.lessons.length === 0 || loading}
-          >
-            <Icon name="Save" className="mr-2" size={16} />
-            {loading ? 'Сохранение...' : isEditMode ? 'Сохранить изменения' : 'Создать курс'}
-          </Button>
-        </div>
+      <CourseEditorHeader
+        isEditMode={isEditMode}
+        courseTitle={formData.title}
+        hasLessons={formData.lessons.length > 0}
+        loading={loading}
+        onSave={handleSaveWithCheck}
+      />
 
       <div className="space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -451,90 +256,15 @@ export default function CourseEditor() {
         onLessonChange={handleLessonChange}
       />
 
-      {showProgressResetDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-lg w-full p-6">
-            <div className="flex items-start gap-4 mb-4">
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <Icon name="Users" size={24} className="text-blue-600" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-gray-900 mb-2">
-                  Курс проходят {studentsCount} {studentsCount === 1 ? 'студент' : studentsCount < 5 ? 'студента' : 'студентов'}
-                </h3>
-                <p className="text-sm text-gray-600 mb-4">
-                  Вы редактируете опубликованный курс. Выберите, что делать с прогрессом студентов:
-                </p>
-                
-                <div className="space-y-3">
-                  <label className="flex items-start gap-3 p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
-                    style={{ borderColor: progressResetOption === 'keep' ? '#f97316' : '#e5e7eb' }}>
-                    <input
-                      type="radio"
-                      name="resetOption"
-                      value="keep"
-                      checked={progressResetOption === 'keep'}
-                      onChange={(e) => setProgressResetOption(e.target.value as any)}
-                      className="mt-1"
-                    />
-                    <div>
-                      <div className="font-medium text-gray-900">Сохранить весь прогресс</div>
-                      <div className="text-xs text-gray-600 mt-1">
-                        Подходит если вы исправляли опечатки и мелкие правки
-                      </div>
-                    </div>
-                  </label>
-
-                  <label className="flex items-start gap-3 p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
-                    style={{ borderColor: progressResetOption === 'reset_tests' ? '#f97316' : '#e5e7eb' }}>
-                    <input
-                      type="radio"
-                      name="resetOption"
-                      value="reset_tests"
-                      checked={progressResetOption === 'reset_tests'}
-                      onChange={(e) => setProgressResetOption(e.target.value as any)}
-                      className="mt-1"
-                    />
-                    <div>
-                      <div className="font-medium text-gray-900">Сбросить только результаты тестов</div>
-                      <div className="text-xs text-gray-600 mt-1">
-                        Если вы меняли вопросы или правильные ответы в тестах
-                      </div>
-                    </div>
-                  </label>
-
-                  <label className="flex items-start gap-3 p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
-                    style={{ borderColor: progressResetOption === 'reset_all' ? '#f97316' : '#e5e7eb' }}>
-                    <input
-                      type="radio"
-                      name="resetOption"
-                      value="reset_all"
-                      checked={progressResetOption === 'reset_all'}
-                      onChange={(e) => setProgressResetOption(e.target.value as any)}
-                      className="mt-1"
-                    />
-                    <div>
-                      <div className="font-medium text-gray-900">Полностью сбросить прогресс</div>
-                      <div className="text-xs text-gray-600 mt-1">
-                        Если курс сильно изменился по структуре или содержанию
-                      </div>
-                    </div>
-                  </label>
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex justify-end gap-3 mt-6">
-              <Button variant="outline" onClick={() => setShowProgressResetDialog(false)}>
-                Отмена
-              </Button>
-              <Button onClick={confirmProgressReset} disabled={loading}>
-                {loading ? 'Сохранение...' : 'Сохранить курс'}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ProgressResetDialog
+        isOpen={showProgressResetDialog}
+        studentsCount={studentsCount}
+        progressResetOption={progressResetOption}
+        loading={loading}
+        onOptionChange={setProgressResetOption}
+        onConfirm={confirmProgressReset}
+        onCancel={() => setShowProgressResetDialog(false)}
+      />
     </AdminLayout>
   );
 }
