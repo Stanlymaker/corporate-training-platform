@@ -2,7 +2,6 @@ import json
 import os
 import psycopg2
 import jwt
-import uuid
 from datetime import datetime
 from typing import Dict, Any, Optional
 from pydantic import BaseModel, Field
@@ -263,14 +262,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'isBase64Encoded': False
             }
         
-        # Generate UUID for question
-        question_id = str(uuid.uuid4())
-        
         cur.execute(
-            "INSERT INTO questions_v2 (id, test_id, type, text, options, correct_answer, points, \"order\", "
-            "matching_pairs, text_check_type) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
+            "INSERT INTO questions_v2 (test_id, type, text, options, correct_answer, points, \"order\", "
+            "matching_pairs, text_check_type) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
             (
-                question_id,
                 request.testId,
                 request.type,
                 request.text,

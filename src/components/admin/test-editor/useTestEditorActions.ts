@@ -10,7 +10,7 @@ interface Answer {
 }
 
 interface Question {
-  id: string;
+  id?: number;
   type: 'single' | 'multiple' | 'text' | 'matching';
   question: string;
   answers?: Answer[];
@@ -69,7 +69,7 @@ export function useTestEditorActions(
           attempts: testData.test.attempts || 3,
           status: testStatus,
           questions: (questionsData.questions || []).map((q: any) => ({
-            id: q.id, // Сохраняем UUID из БД для существующих вопросов
+            id: q.id,
             type: q.type,
             question: q.text,
             answers: q.options ? q.options.map((opt: string, idx: number) => ({
@@ -198,7 +198,7 @@ export function useTestEditorActions(
       // Определяем, какие вопросы нужно удалить (есть в БД, но нет в форме)
       const formQuestionIds = new Set(
         formData.questions
-          .filter(q => !q.id.startsWith('new-'))
+          .filter(q => q.id !== undefined)
           .map(q => q.id)
       );
       const questionsToDelete = existingQuestions.filter(q => !formQuestionIds.has(q.id));
@@ -249,8 +249,8 @@ export function useTestEditorActions(
           questionPayload.textCheckType = question.textCheckType || 'manual';
         }
 
-        // Проверяем, это существующий вопрос (UUID) или новый (начинается с "new-")
-        const isNewQuestion = question.id.startsWith('new-');
+        // Проверяем, это существующий вопрос (есть id) или новый (id === undefined)
+        const isNewQuestion = question.id === undefined;
         
         if (isNewQuestion) {
           // Создаём новый вопрос

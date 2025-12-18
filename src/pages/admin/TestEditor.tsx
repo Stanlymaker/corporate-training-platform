@@ -19,7 +19,7 @@ interface Answer {
 }
 
 interface Question {
-  id: string;
+  id?: number;
   type: 'single' | 'multiple' | 'text' | 'matching';
   question: string;
   imageUrl?: string;
@@ -156,7 +156,6 @@ export default function TestEditor() {
 
   const handleAddQuestion = () => {
     setEditingQuestion({
-      id: `new-${Date.now()}`,
       type: 'single',
       question: '',
       answers: [
