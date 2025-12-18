@@ -17,6 +17,9 @@ export default function AdminDashboard() {
     publishedCourses: 0,
     totalStudents: 0,
     activeUsers: 0,
+    totalLessons: 0,
+    completedCourses: 0,
+    totalRewards: 0,
   });
   const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
@@ -44,16 +47,15 @@ export default function AdminDashboard() {
         const courses = coursesData.courses || [];
         const rewards = rewardsData.rewards || [];
 
-        setStats({
-          totalCourses: courses.length,
-          publishedCourses: courses.filter((c: any) => c.published).length,
-          totalStudents: users.filter((u: any) => u.role === 'student').length,
-          activeUsers: users.filter((u: any) => u.isActive).length,
-        });
+        // Считаем уроки
+        const lessonsRes = await fetch(API_ENDPOINTS.LESSONS, { headers: getAuthHeaders() });
+        const lessonsData = lessonsRes.ok ? await lessonsRes.json() : { lessons: [] };
+        const allLessons = lessonsData.lessons || [];
 
         // Загружаем прогресс студентов и создаем активности
         const activities: RecentActivity[] = [];
         const students = users.filter((u: any) => u.role === 'student');
+        const completedCoursesCount = 0;
         
         for (const student of students.slice(0, 10)) {
           try {
@@ -67,6 +69,7 @@ export default function AdminDashboard() {
               // Завершенные курсы и награды
               for (const p of progress) {
                 if (p.completedAt) {
+                  completedCoursesCount++;
                   const course = courses.find((c: any) => c.displayId === p.courseId);
                   if (course) {
                     activities.push({
@@ -102,6 +105,17 @@ export default function AdminDashboard() {
         // Сортируем по дате и берем последние 5
         activities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
         setRecentActivities(activities.slice(0, 5));
+
+        // Обновляем статистику
+        setStats({
+          totalCourses: courses.length,
+          publishedCourses: courses.filter((c: any) => c.published).length,
+          totalStudents: users.filter((u: any) => u.role === 'student').length,
+          activeUsers: users.filter((u: any) => u.isActive).length,
+          totalLessons: allLessons.length,
+          completedCourses: completedCoursesCount,
+          totalRewards: rewards.length,
+        });
       }
     } catch (error) {
       console.error('Error loading stats:', error);
@@ -242,41 +256,41 @@ export default function AdminDashboard() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
-                      <Icon name="BookOpen" size={20} className="text-orange-600" />
+                    <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                      <Icon name="FileText" size={20} className="text-purple-600" />
                     </div>
                     <div>
-                      <p className="font-semibold text-gray-900">Курсы</p>
-                      <p className="text-sm text-gray-600">{stats.publishedCourses} из {stats.totalCourses} опубликованы</p>
+                      <p className="font-semibold text-gray-900">Всего уроков</p>
+                      <p className="text-sm text-gray-600">В {stats.totalCourses} курсах</p>
                     </div>
                   </div>
-                  <div className="text-2xl font-bold text-gray-900">{stats.totalCourses}</div>
-                </div>
-
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                      <Icon name="Users" size={20} className="text-blue-600" />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-gray-900">Студенты</p>
-                      <p className="text-sm text-gray-600">{stats.activeUsers} активных пользователей</p>
-                    </div>
-                  </div>
-                  <div className="text-2xl font-bold text-gray-900">{stats.totalStudents}</div>
+                  <div className="text-2xl font-bold text-gray-900">{stats.totalLessons}</div>
                 </div>
 
                 <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                      <Icon name="Award" size={20} className="text-green-600" />
+                      <Icon name="GraduationCap" size={20} className="text-green-600" />
                     </div>
                     <div>
-                      <p className="font-semibold text-gray-900">Система готова</p>
-                      <p className="text-sm text-gray-600">Начните создавать курсы и назначать студентам</p>
+                      <p className="font-semibold text-gray-900">Завершено курсов</p>
+                      <p className="text-sm text-gray-600">Студентами всего</p>
                     </div>
                   </div>
-                  <Icon name="CheckCircle" size={32} className="text-green-500" />
+                  <div className="text-2xl font-bold text-gray-900">{stats.completedCourses}</div>
+                </div>
+
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                      <Icon name="Award" size={20} className="text-amber-600" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-900">Всего наград</p>
+                      <p className="text-sm text-gray-600">Доступно для получения</p>
+                    </div>
+                  </div>
+                  <div className="text-2xl font-bold text-gray-900">{stats.totalRewards}</div>
                 </div>
               </div>
             </CardContent>
