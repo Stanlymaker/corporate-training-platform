@@ -142,6 +142,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 "FROM courses_v2 ORDER BY created_at DESC"
             )
         else:
+            user_id_int = int(payload['user_id'])
+            
             cur.execute(
                 "SELECT id, title, description, duration, lessons_count, category, image, "
                 "published, pass_score, level, instructor, status, start_date, end_date, access_type "
@@ -150,8 +152,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             open_courses = list(cur.fetchall())
             
             cur.execute(
-                "SELECT course_id FROM course_assignments_v2 WHERE user_id = %s",
-                (payload['user_id'],)
+                f"SELECT course_id FROM course_assignments_v2 WHERE user_id = {user_id_int}"
             )
             assigned_course_ids = [row[0] for row in cur.fetchall()]
             

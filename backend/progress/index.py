@@ -212,9 +212,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             # Для закрытых курсов проверяем назначение
             if access_type == 'closed':
+                user_id_int = int(payload['user_id'])
                 cur.execute(
-                    "SELECT id FROM course_assignments_v2 WHERE course_id = %s AND user_id = %s",
-                    (course_id, payload['user_id'])
+                    f"SELECT id FROM course_assignments_v2 WHERE course_id = {course_id} AND user_id = {user_id_int}"
                 )
                 if not cur.fetchone():
                     cur.close()
@@ -282,9 +282,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         access_type = course_data[0]
         
         if access_type == 'closed':
+            user_id_int = int(payload['user_id'])
             cur.execute(
-                "SELECT id FROM course_assignments_v2 WHERE course_id = %s AND user_id = %s",
-                (course_id, payload['user_id'])
+                f"SELECT id FROM course_assignments_v2 WHERE course_id = {course_id} AND user_id = {user_id_int}"
             )
             if not cur.fetchone():
                 cur.close()
@@ -394,9 +394,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         access_type = course_data[0]
         
         if access_type == 'closed':
+            user_id_int = int(payload['user_id'])
             cur.execute(
-                "SELECT id FROM course_assignments_v2 WHERE course_id = %s AND user_id = %s",
-                (course_id, payload['user_id'])
+                f"SELECT id FROM course_assignments_v2 WHERE course_id = {course_id} AND user_id = {user_id_int}"
             )
             if not cur.fetchone():
                 cur.close()
