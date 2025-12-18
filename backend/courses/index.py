@@ -395,7 +395,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             if course_id:
                 cur.execute("SELECT id FROM courses WHERE display_id = %s", (course_id,))
             else:
-                cur.execute("SELECT id FROM courses WHERE id = %s", (course_uuid,))
+                cur.execute("SELECT id FROM courses WHERE id::text = %s", (course_uuid,))
             
             course_row = cur.fetchone()
             if not course_row:
@@ -408,16 +408,16 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'isBase64Encoded': False
                 }
             
-            actual_course_id = course_row[0]
+            actual_course_id = str(course_row[0])
             
-            cur.execute("DELETE FROM progress WHERE course_id = %s", (actual_course_id,))
-            cur.execute("DELETE FROM course_assignments WHERE course_id = %s", (actual_course_id,))
-            cur.execute("DELETE FROM lessons WHERE course_id = %s", (actual_course_id,))
+            cur.execute("DELETE FROM progress WHERE course_id::text = %s", (actual_course_id,))
+            cur.execute("DELETE FROM course_assignments WHERE course_id::text = %s", (actual_course_id,))
+            cur.execute("DELETE FROM lessons WHERE course_id::text = %s", (actual_course_id,))
             
             if course_id:
                 cur.execute("DELETE FROM courses WHERE display_id = %s", (course_id,))
             else:
-                cur.execute("DELETE FROM courses WHERE id = %s", (course_uuid,))
+                cur.execute("DELETE FROM courses WHERE id::text = %s", (course_uuid,))
             
             conn.commit()
             
