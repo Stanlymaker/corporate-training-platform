@@ -1,19 +1,56 @@
 import { useNavigate, useParams } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import AdminLayout from '@/components/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
 import { ROUTES } from '@/constants/routes';
-import { mockCourses, mockLessons } from '@/data/mockData';
+import { API_ENDPOINTS, getAuthHeaders } from '@/config/api';
 
 export default function CourseView() {
   const { courseId } = useParams();
   const navigate = useNavigate();
+  const [course, setCourse] = useState<any>(null);
+  const [courseLessons, setCourseLessons] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   
-  const course = mockCourses.find(c => c.id === courseId);
-  const courseLessons = mockLessons.filter(l => l.courseId === courseId);
+  useEffect(() => {
+    loadCourseData();
+  }, [courseId]);
+  
+  const loadCourseData = async () => {
+    setLoading(true);
+    try {
+      const courseRes = await fetch(`${API_ENDPOINTS.COURSES}?id=${courseId}`, { headers: getAuthHeaders() });
+      
+      if (courseRes.ok) {
+        const courseData = await courseRes.json();
+        setCourse(courseData.course);
+        
+        const lessonsRes = await fetch(`${API_ENDPOINTS.LESSONS}?courseId=${courseData.course.id}`, { headers: getAuthHeaders() });
+        if (lessonsRes.ok) {
+          const lessonsData = await lessonsRes.json();
+          setCourseLessons(lessonsData.lessons || []);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading course:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center h-64">
+          <Icon name="Loader2" className="animate-spin" size={32} />
+        </div>
+      </AdminLayout>
+    );
+  }
+  
   if (!course) {
     return (
       <AdminLayout>
@@ -54,7 +91,7 @@ export default function CourseView() {
             Назад к курсам
           </Button>
           <Button
-            onClick={() => navigate(ROUTES.ADMIN.COURSE_EDITOR.replace(':courseId?', courseId || ''))}
+            onClick={() => navigate(ROUTES.ADMIN.COURSE_EDITOR.replace(':courseId?', course.displayId?.toString() || ''))}
           >
             <Icon name="Edit" className="mr-2" size={16} />
             Редактировать

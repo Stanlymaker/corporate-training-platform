@@ -71,20 +71,21 @@ def require_admin(headers: Dict[str, Any]) -> Optional[Dict[str, Any]]:
 def format_course_response(course_row: tuple) -> Dict[str, Any]:
     return {
         'id': course_row[0],
-        'title': course_row[1],
-        'description': course_row[2],
-        'duration': course_row[3],
-        'lessonsCount': course_row[4],
-        'category': course_row[5],
-        'image': course_row[6],
-        'published': course_row[7],
-        'passScore': course_row[8],
-        'level': course_row[9],
-        'instructor': course_row[10],
-        'status': course_row[11],
-        'startDate': course_row[12].isoformat() if course_row[12] else None,
-        'endDate': course_row[13].isoformat() if course_row[13] else None,
-        'accessType': course_row[14],
+        'displayId': course_row[1],
+        'title': course_row[2],
+        'description': course_row[3],
+        'duration': course_row[4],
+        'lessonsCount': course_row[5],
+        'category': course_row[6],
+        'image': course_row[7],
+        'published': course_row[8],
+        'passScore': course_row[9],
+        'level': course_row[10],
+        'instructor': course_row[11],
+        'status': course_row[12],
+        'startDate': course_row[13].isoformat() if course_row[13] else None,
+        'endDate': course_row[14].isoformat() if course_row[14] else None,
+        'accessType': course_row[15],
     }
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
@@ -130,13 +131,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     if method == 'GET' and not course_id:
         if payload.get('role') == 'admin':
             cur.execute(
-                "SELECT id, title, description, duration, lessons_count, category, image, published, "
+                "SELECT id, display_id, title, description, duration, lessons_count, category, image, published, "
                 "pass_score, level, instructor, status, start_date, end_date, access_type "
                 "FROM courses ORDER BY created_at DESC"
             )
         else:
             cur.execute(
-                "SELECT c.id, c.title, c.description, c.duration, c.lessons_count, c.category, c.image, "
+                "SELECT c.id, c.display_id, c.title, c.description, c.duration, c.lessons_count, c.category, c.image, "
                 "c.published, c.pass_score, c.level, c.instructor, c.status, c.start_date, c.end_date, c.access_type "
                 "FROM courses c "
                 "INNER JOIN course_assignments ca ON c.id = ca.course_id "
@@ -160,10 +161,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     
     if method == 'GET' and course_id:
         cur.execute(
-            "SELECT id, title, description, duration, lessons_count, category, image, published, "
+            "SELECT id, display_id, title, description, duration, lessons_count, category, image, published, "
             "pass_score, level, instructor, status, start_date, end_date, access_type "
-            "FROM courses WHERE id = %s",
-            (course_id,)
+            "FROM courses WHERE display_id = %s",
+            (int(course_id),)
         )
         course = cur.fetchone()
         
@@ -178,9 +179,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             }
         
         if payload.get('role') != 'admin':
+            actual_course_id = course[0]
             cur.execute(
                 "SELECT id FROM course_assignments WHERE course_id = %s AND user_id = %s",
-                (course_id, payload['user_id'])
+                (actual_course_id, payload['user_id'])
             )
             if not cur.fetchone():
                 cur.close()
@@ -226,7 +228,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             "INSERT INTO courses (id, title, description, duration, lessons_count, category, image, "
             "published, pass_score, level, instructor, status, access_type, created_at, updated_at) "
             "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) "
-            "RETURNING id, title, description, duration, lessons_count, category, image, published, "
+            "RETURNING id, display_id, title, description, duration, lessons_count, category, image, published, "
             "pass_score, level, instructor, status, start_date, end_date, access_type",
             (new_course_id, create_req.title, create_req.description, create_req.duration, 0,
              create_req.category, create_req.image, False, create_req.passScore, create_req.level,
@@ -319,7 +321,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         update_values.append(datetime.utcnow())
         update_values.append(course_id)
         
-        query = f"UPDATE courses SET {', '.join(update_fields)} WHERE id = %s RETURNING id, title, description, duration, lessons_count, category, image, published, pass_score, level, instructor, status, start_date, end_date, access_type"
+        query = f"UPDATE courses SET {', '.join(update_fields)} WHERE display_id = %s RETURNING id, display_id, title, description, duration, lessons_count, category, image, published, pass_score, level, instructor, status, start_date, end_date, access_type"
         
         cur.execute(query, update_values)
         updated_course = cur.fetchone()

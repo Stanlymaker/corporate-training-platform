@@ -64,6 +64,7 @@ export default function CourseEditor() {
   const [showLessonDialog, setShowLessonDialog] = useState(false);
   const [loading, setLoading] = useState(false);
   const [loadingCourse, setLoadingCourse] = useState(isEditMode);
+  const [actualCourseId, setActualCourseId] = useState<string>('');
 
   useEffect(() => {
     if (isEditMode && courseId) {
@@ -74,14 +75,14 @@ export default function CourseEditor() {
   const loadCourse = async (id: string) => {
     setLoadingCourse(true);
     try {
-      const [courseRes, lessonsRes] = await Promise.all([
-        fetch(`${API_ENDPOINTS.COURSES}?id=${id}`, { headers: getAuthHeaders() }),
-        fetch(`${API_ENDPOINTS.LESSONS}?courseId=${id}`, { headers: getAuthHeaders() }),
-      ]);
+      const courseRes = await fetch(`${API_ENDPOINTS.COURSES}?id=${id}`, { headers: getAuthHeaders() });
 
-      if (courseRes.ok && lessonsRes.ok) {
+      if (courseRes.ok) {
         const courseData = await courseRes.json();
-        const lessonsData = await lessonsRes.json();
+        setActualCourseId(courseData.course.id);
+        
+        const lessonsRes = await fetch(`${API_ENDPOINTS.LESSONS}?courseId=${courseData.course.id}`, { headers: getAuthHeaders() });
+        const lessonsData = lessonsRes.ok ? await lessonsRes.json() : { lessons: [] };
         
         setFormData({
           title: courseData.course.title || '',
@@ -195,7 +196,7 @@ export default function CourseEditor() {
     setLoading(true);
     try {
       const method = isEditMode ? 'PUT' : 'POST';
-      const url = isEditMode ? `${API_ENDPOINTS.COURSES}?id=${courseId}` : API_ENDPOINTS.COURSES;
+      const url = isEditMode ? `${API_ENDPOINTS.COURSES}?id=${actualCourseId || courseId}` : API_ENDPOINTS.COURSES;
 
       const coursePayload = {
         title: formData.title,
