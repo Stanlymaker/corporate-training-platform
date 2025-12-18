@@ -109,43 +109,65 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         except ValueError:
             course_uuid = course_id_param  # Это UUID
     
-    if method == 'GET' and user_id_param:
-        cur.execute(
-            "SELECT id, course_id, user_id, assigned_by, assigned_at, due_date, status, notes "
-            "FROM course_assignments WHERE user_id = %s ORDER BY assigned_at DESC",
-            (user_id_param,)
-        )
-        assignments = cur.fetchall()
-        assignments_list = [format_assignment_response(a) for a in assignments]
+    if method == 'GET':
+        # GET без параметров - все assignments (только для админа)
+        if not user_id_param and not course_uuid:
+            cur.execute(
+                "SELECT id, course_id, user_id, assigned_by, assigned_at, due_date, status, notes "
+                "FROM course_assignments ORDER BY assigned_at DESC"
+            )
+            assignments = cur.fetchall()
+            assignments_list = [format_assignment_response(a) for a in assignments]
+            
+            cur.close()
+            conn.close()
+            
+            return {
+                'statusCode': 200,
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'assignments': assignments_list}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
         
-        cur.close()
-        conn.close()
+        # GET с userId - assignments конкретного пользователя
+        if user_id_param:
+            cur.execute(
+                "SELECT id, course_id, user_id, assigned_by, assigned_at, due_date, status, notes "
+                "FROM course_assignments WHERE user_id = %s ORDER BY assigned_at DESC",
+                (user_id_param,)
+            )
+            assignments = cur.fetchall()
+            assignments_list = [format_assignment_response(a) for a in assignments]
+            
+            cur.close()
+            conn.close()
+            
+            return {
+                'statusCode': 200,
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'assignments': assignments_list}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
         
-        return {
-            'statusCode': 200,
-            'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
-            'body': json.dumps({'assignments': assignments_list}, ensure_ascii=False),
-            'isBase64Encoded': False
-        }
-    
-    if method == 'GET' and course_uuid:
-        cur.execute(
-            "SELECT id, course_id, user_id, assigned_by, assigned_at, due_date, status, notes "
-            "FROM course_assignments WHERE course_id = %s ORDER BY assigned_at DESC",
-            (course_uuid,)
-        )
-        assignments = cur.fetchall()
-        assignments_list = [format_assignment_response(a) for a in assignments]
-        
-        cur.close()
-        conn.close()
-        
-        return {
-            'statusCode': 200,
-            'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
-            'body': json.dumps({'assignments': assignments_list}, ensure_ascii=False),
-            'isBase64Encoded': False
-        }
+        # GET с courseId - assignments конкретного курса
+        if course_uuid:
+            cur.execute(
+                "SELECT id, course_id, user_id, assigned_by, assigned_at, due_date, status, notes "
+                "FROM course_assignments WHERE course_id = %s ORDER BY assigned_at DESC",
+                (course_uuid,)
+            )
+            assignments = cur.fetchall()
+            assignments_list = [format_assignment_response(a) for a in assignments]
+            
+            cur.close()
+            conn.close()
+            
+            return {
+                'statusCode': 200,
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'assignments': assignments_list}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
     
     if method == 'POST':
         body_data = json.loads(event.get('body', '{}'))

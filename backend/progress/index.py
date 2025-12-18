@@ -118,42 +118,64 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         except ValueError:
             course_uuid = course_id  # Это UUID
     
-    if method == 'GET' and user_id and course_uuid:
-        cur.execute(
-            "SELECT course_id, user_id, completed_lessons, total_lessons, test_score, completed, "
-            "completed_lesson_ids, last_accessed_lesson, started_at "
-            "FROM course_progress WHERE user_id = %s AND course_id = %s",
-            (user_id, course_uuid)
-        )
-        progress = cur.fetchone()
-        
-        cur.close()
-        conn.close()
-        
-        if not progress:
-            # Возвращаем пустой массив, а не 404
+    if method == 'GET':
+        # GET с userId и courseId - прогресс по конкретному курсу
+        if user_id and course_uuid:
+            cur.execute(
+                "SELECT course_id, user_id, completed_lessons, total_lessons, test_score, completed, "
+                "completed_lesson_ids, last_accessed_lesson, started_at "
+                "FROM course_progress WHERE user_id = %s AND course_id = %s",
+                (user_id, course_uuid)
+            )
+            progress = cur.fetchone()
+            
+            cur.close()
+            conn.close()
+            
+            if not progress:
+                # Возвращаем пустой массив, а не 404
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'progress': []}, ensure_ascii=False),
+                    'isBase64Encoded': False
+                }
+            
+            progress_data = format_progress_response(progress)
+            
             return {
                 'statusCode': 200,
                 'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'progress': []}, ensure_ascii=False),
+                'body': json.dumps({'progress': [progress_data]}, ensure_ascii=False),
                 'isBase64Encoded': False
             }
         
-        progress_data = format_progress_response(progress)
+        # GET с userId - весь прогресс пользователя
+        if user_id:
+            cur.execute(
+                "SELECT course_id, user_id, completed_lessons, total_lessons, test_score, completed, "
+                "completed_lesson_ids, last_accessed_lesson, started_at "
+                "FROM course_progress WHERE user_id = %s ORDER BY started_at DESC",
+                (user_id,)
+            )
+            progress_rows = cur.fetchall()
+            progress_list = [format_progress_response(p) for p in progress_rows]
+            
+            cur.close()
+            conn.close()
+            
+            return {
+                'statusCode': 200,
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'progress': progress_list}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
         
-        return {
-            'statusCode': 200,
-            'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
-            'body': json.dumps({'progress': [progress_data]}, ensure_ascii=False),
-            'isBase64Encoded': False
-        }
-    
-    if method == 'GET' and user_id:
+        # GET без параметров - весь прогресс (только для админа)
         cur.execute(
             "SELECT course_id, user_id, completed_lessons, total_lessons, test_score, completed, "
             "completed_lesson_ids, last_accessed_lesson, started_at "
-            "FROM course_progress WHERE user_id = %s ORDER BY started_at DESC",
-            (user_id,)
+            "FROM course_progress ORDER BY started_at DESC"
         )
         progress_rows = cur.fetchall()
         progress_list = [format_progress_response(p) for p in progress_rows]
