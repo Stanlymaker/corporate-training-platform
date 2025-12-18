@@ -376,6 +376,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         )
         lesson_id = cur.fetchone()[0]
         
+        cur.execute(
+            "UPDATE courses_v2 SET lessons_count = lessons_count + 1, updated_at = NOW() WHERE id = %s",
+            (course_id,)
+        )
+        
         conn.commit()
         
         cur.execute(
