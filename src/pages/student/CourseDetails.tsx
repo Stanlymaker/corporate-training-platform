@@ -94,12 +94,13 @@ export default function CourseDetails() {
     }
   };
 
-  const handleLessonClick = (lessonId: string, lessonIndex: number) => {
+  const handleLessonClick = (lessonOrder: number, lessonIndex: number) => {
     const previousLesson = lessonIndex > 0 ? lessons[lessonIndex - 1] : null;
     const isLocked = previousLesson?.requiresPrevious && !progress?.completedLessonIds.includes(previousLesson.id);
     
     if (!isLocked) {
-      navigate(ROUTES.STUDENT.LESSON(displayId!, lessonId));
+      // Используем order+1 для читаемого URL
+      navigate(ROUTES.STUDENT.LESSON(displayId!, String(lessonOrder + 1)));
     }
   };
 
@@ -218,7 +219,7 @@ export default function CourseDetails() {
                   return (
                     <button
                       key={lesson.id}
-                      onClick={() => handleLessonClick(lesson.id, index)}
+                      onClick={() => handleLessonClick(lesson.order, index)}
                       disabled={isLocked}
                       className={`w-full text-left p-4 rounded-lg border transition-all ${
                         isLastAccessed
@@ -241,7 +242,7 @@ export default function CourseDetails() {
                           ) : isCompleted ? (
                             <Icon name="Check" size={18} />
                           ) : (
-                            <span className="font-bold text-sm">{lesson.order}</span>
+                            <span className="font-bold text-sm">{lesson.order + 1}</span>
                           )}
                         </div>
                         

@@ -4,25 +4,109 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import Icon from '@/components/ui/icon';
-import { mockLessons, mockProgress, mockCourses } from '@/data/mockData';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
+import { API_ENDPOINTS, getAuthHeaders } from '@/config/api';
+
+interface Course {
+  id: string;
+  displayId: number;
+  title: string;
+  description: string;
+}
+
+interface Lesson {
+  id: string;
+  courseId: string;
+  title: string;
+  description: string;
+  content: string;
+  type: string;
+  order: number;
+  duration: number;
+  videoUrl?: string;
+}
+
+interface CourseProgress {
+  courseId: string;
+  userId: string;
+  completedLessons: number;
+  totalLessons: number;
+  completedLessonIds: string[];
+  lastAccessedLesson: string | null;
+}
 
 export default function LessonPage() {
   const { courseId, lessonId } = useParams();
   const navigate = useNavigate();
-  const userId = '2';
+  const userId = JSON.parse(localStorage.getItem('currentUser') || '{}').id;
 
-  const course = mockCourses.find(c => c.id === courseId);
-  const lesson = mockLessons.find(l => l.id === lessonId && l.courseId === courseId);
-  const courseLessons = mockLessons.filter(l => l.courseId === courseId).sort((a, b) => a.order - b.order);
-  const progress = mockProgress.find(p => p.courseId === courseId && p.userId === userId);
+  const [course, setCourse] = useState<Course | null>(null);
+  const [lesson, setLesson] = useState<Lesson | null>(null);
+  const [courseLessons, setCourseLessons] = useState<Lesson[]>([]);
+  const [progress, setProgress] = useState<CourseProgress | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [isCompleted, setIsCompleted] = useState(false);
 
-  const [isCompleted, setIsCompleted] = useState(
-    progress?.completedLessonIds.includes(lessonId || '') || false
-  );
+  useEffect(() => {
+    loadLessonData();
+  }, [courseId, lessonId]);
+
+  const loadLessonData = async () => {
+    try {
+      setLoading(true);
+      
+      // Загружаем курс, уроки и прогресс
+      const [courseRes, lessonsRes, progressRes] = await Promise.all([
+        fetch(`${API_ENDPOINTS.COURSES}?id=${courseId}`, { headers: getAuthHeaders() }),
+        fetch(`${API_ENDPOINTS.LESSONS}?courseId=${courseId}`, { headers: getAuthHeaders() }),
+        fetch(`${API_ENDPOINTS.PROGRESS}?userId=${userId}&courseId=${courseId}`, { headers: getAuthHeaders() }),
+      ]);
+
+      let courseData = null;
+      if (courseRes.ok) {
+        courseData = await courseRes.json();
+        setCourse(courseData);
+      }
+
+      let lessonsData: Lesson[] = [];
+      if (lessonsRes.ok) {
+        const data = await lessonsRes.json();
+        lessonsData = data.lessons || [];
+        setCourseLessons(lessonsData);
+        
+        // Находим урок по order (lessonId в URL - это order+1)
+        const lessonOrder = parseInt(lessonId || '0') - 1;
+        const foundLesson = lessonsData.find(l => l.order === lessonOrder);
+        setLesson(foundLesson || null);
+      }
+
+      if (progressRes.ok) {
+        const data = await progressRes.json();
+        const courseProgress = data.progress?.find((p: CourseProgress) => p.courseId === courseData?.id);
+        setProgress(courseProgress || null);
+        
+        const foundLesson = lessonsData.find(l => l.order === (parseInt(lessonId || '0') - 1));
+        setIsCompleted(courseProgress?.completedLessonIds.includes(foundLesson?.id || '') || false);
+      }
+    } catch (error) {
+      console.error('Error loading lesson:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <StudentLayout>
+        <div className="flex items-center justify-center h-64">
+          <Icon name="Loader2" className="animate-spin" size={32} />
+        </div>
+      </StudentLayout>
+    );
+  }
 
   if (!course || !lesson) {
     return (
@@ -38,18 +122,31 @@ export default function LessonPage() {
     );
   }
 
-  const currentIndex = courseLessons.findIndex(l => l.id === lessonId);
+  const currentIndex = courseLessons.findIndex(l => l.id === lesson.id);
   const previousLesson = currentIndex > 0 ? courseLessons[currentIndex - 1] : null;
   const nextLesson = currentIndex < courseLessons.length - 1 ? courseLessons[currentIndex + 1] : null;
 
   const isLocked = lesson.requiresPrevious && previousLesson && !progress?.completedLessonIds.includes(previousLesson.id);
 
-  const handleComplete = () => {
-    setIsCompleted(true);
+  const handleComplete = async () => {
+    try {
+      await fetch(`${API_ENDPOINTS.PROGRESS}?action=complete`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          courseId: course.id,
+          lessonId: lesson.id
+        })
+      });
+      setIsCompleted(true);
+    } catch (error) {
+      console.error('Error marking lesson complete:', error);
+    }
   };
 
-  const handleNavigateLesson = (targetLessonId: string) => {
-    navigate(ROUTES.STUDENT.LESSON.replace(':courseId', courseId!).replace(':lessonId', targetLessonId));
+  const handleNavigateLesson = (targetLesson: Lesson) => {
+    // Используем order+1 для URL
+    navigate(ROUTES.STUDENT.LESSON(courseId!, String(targetLesson.order + 1)));
   };
 
   const progressPercent = progress ? (progress.completedLessons / progress.totalLessons) * 100 : 0;
@@ -60,7 +157,7 @@ export default function LessonPage() {
         <div className="mb-6">
           <Button
             variant="ghost"
-            onClick={() => navigate(ROUTES.STUDENT.COURSE_DETAIL.replace(':id', courseId!))}
+            onClick={() => navigate(`/student/courses/${courseId}`)}
             className="mb-4"
           >
             <Icon name="ArrowLeft" size={16} className="mr-2" />
@@ -81,7 +178,7 @@ export default function LessonPage() {
               <Badge variant="outline" className="text-base px-4 py-2 mb-6">
                 {previousLesson?.title}
               </Badge>
-              <Button onClick={() => handleNavigateLesson(previousLesson!.id)}>
+              <Button onClick={() => handleNavigateLesson(previousLesson!)}>
                 Перейти к предыдущему уроку
               </Button>
             </div>
@@ -96,7 +193,7 @@ export default function LessonPage() {
       <div className="mb-6">
         <Button
           variant="ghost"
-          onClick={() => navigate(ROUTES.STUDENT.COURSE_DETAIL.replace(':id', courseId!))}
+          onClick={() => navigate(`/student/courses/${courseId}`)}
           className="mb-4"
         >
           <Icon name="ArrowLeft" size={16} className="mr-2" />
@@ -105,7 +202,7 @@ export default function LessonPage() {
         <div className="flex items-start justify-between gap-4 mb-4">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <Badge variant="outline">Урок {lesson.order}</Badge>
+              <Badge variant="outline">Урок {lesson.order + 1}</Badge>
               {isCompleted && (
                 <Badge className="bg-green-500">
                   <Icon name="CheckCircle" size={14} className="mr-1" />
@@ -179,7 +276,7 @@ export default function LessonPage() {
               variant="outline"
               size="lg"
               disabled={!previousLesson}
-              onClick={() => previousLesson && handleNavigateLesson(previousLesson.id)}
+              onClick={() => previousLesson && handleNavigateLesson(previousLesson)}
             >
               <Icon name="ChevronLeft" size={20} className="mr-2" />
               Предыдущий урок
@@ -195,7 +292,7 @@ export default function LessonPage() {
             <Button
               size="lg"
               disabled={!nextLesson}
-              onClick={() => nextLesson && handleNavigateLesson(nextLesson.id)}
+              onClick={() => nextLesson && handleNavigateLesson(nextLesson)}
             >
               Следующий урок
               <Icon name="ChevronRight" size={20} className="ml-2" />
@@ -216,12 +313,12 @@ export default function LessonPage() {
                 {courseLessons.map((l, index) => {
                   const lessonCompleted = progress?.completedLessonIds.includes(l.id);
                   const lessonLocked = l.requiresPrevious && index > 0 && !progress?.completedLessonIds.includes(courseLessons[index - 1].id);
-                  const isActive = l.id === lessonId;
+                  const isActive = l.id === lesson.id;
 
                   return (
                     <button
                       key={l.id}
-                      onClick={() => !lessonLocked && handleNavigateLesson(l.id)}
+                      onClick={() => !lessonLocked && handleNavigateLesson(l)}
                       disabled={lessonLocked}
                       className={`w-full text-left p-3 rounded-lg transition-colors ${
                         isActive
@@ -239,7 +336,7 @@ export default function LessonPage() {
                         ) : (
                           <Icon name="Circle" size={16} className="text-gray-300" />
                         )}
-                        <span className="text-xs font-medium">Урок {l.order}</span>
+                        <span className="text-xs font-medium">Урок {l.order + 1}</span>
                         <span className="ml-auto text-xs">{l.duration} мин</span>
                       </div>
                       <div className="text-sm font-medium line-clamp-2">{l.title}</div>
