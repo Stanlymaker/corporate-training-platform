@@ -221,9 +221,10 @@ export default function StudentProfile() {
                               Завершено {progress.testScore ? `• Результат теста: ${progress.testScore}%` : ''}
                             </div>
                           )}
-                      </div>
-                    );
-                  })}
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
               </CardContent>
             </Card>
