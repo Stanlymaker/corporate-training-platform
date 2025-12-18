@@ -113,11 +113,19 @@ export default function TestEditor() {
       const courses = coursesData.courses || [];
       const allLessons = lessonsData.lessons || [];
 
+      console.log('[DEBUG checkLinkedCourses] All courses count:', courses.length);
+      console.log('[DEBUG checkLinkedCourses] All lessons count:', allLessons.length);
+      console.log('[DEBUG checkLinkedCourses] Looking for testId:', testIdValue);
+
       const linked = courses.filter((course: any) => {
         const courseLessons = allLessons.filter((l: any) => l.courseId === course.id);
         const hasTest = courseLessons.some((lesson: any) => lesson.testId === testIdValue);
+        const isPublished = course.status === 'published';
+        
+        console.log(`[DEBUG checkLinkedCourses] Course "${course.title}" (id=${course.id}): hasTest=${hasTest}, isPublished=${isPublished}, status=${course.status}`);
+        
         // Показываем только опубликованные курсы
-        return hasTest && course.status === 'published';
+        return hasTest && isPublished;
       });
 
       console.log('[DEBUG checkLinkedCourses] Linked courses:', linked);
