@@ -145,7 +145,7 @@ export default function AdminUsers() {
     return matchesSearch && matchesRole && matchesActivity;
   });
 
-  const getUserProgress = (userId: string) => {
+  const getUserProgress = (userId: number) => {
     // Получаем весь прогресс пользователя
     const userProgress = progressData.filter(p => p.userId === userId);
     
@@ -166,7 +166,7 @@ export default function AdminUsers() {
     return { total, completed };
   };
 
-  const getUserAssignments = (userId: string) => {
+  const getUserAssignments = (userId: number) => {
     return assignments.filter(a => a.userId === userId);
   };
 
@@ -175,7 +175,7 @@ export default function AdminUsers() {
     setShowDetailsModal(true);
   };
 
-  const handleEditRole = async (userId: string, newRole: 'admin' | 'student') => {
+  const handleEditRole = async (userId: number, newRole: 'admin' | 'student') => {
     try {
       const response = await fetch(`${API_ENDPOINTS.USERS}?id=${userId}&action=role`, {
         method: 'PUT',
@@ -218,7 +218,7 @@ export default function AdminUsers() {
     }
   };
 
-  const handleEditPassword = async (userId: string, newPassword: string) => {
+  const handleEditPassword = async (userId: number, newPassword: string) => {
     try {
       const response = await fetch(`${API_ENDPOINTS.USERS}?id=${userId}&action=password`, {
         method: 'PUT',
@@ -234,7 +234,7 @@ export default function AdminUsers() {
     }
   };
 
-  const handleEditUser = async (userId: string, userData: Partial<User>) => {
+  const handleEditUser = async (userId: number, userData: Partial<User>) => {
     try {
       const response = await fetch(`${API_ENDPOINTS.USERS}?id=${userId}`, {
         method: 'PUT',

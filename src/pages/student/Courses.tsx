@@ -11,7 +11,7 @@ import { ROUTES } from '@/constants/routes';
 import { API_ENDPOINTS, getAuthHeaders } from '@/config/api';
 
 interface Course {
-  id: string;
+  id: number;
   title: string;
   description: string;
   category: string;
@@ -24,7 +24,7 @@ interface Course {
 
 interface CourseProgress {
   id: string;
-  courseId: string;
+  courseId: number;
   completedLessons: number;
   totalLessons: number;
   completed: boolean;

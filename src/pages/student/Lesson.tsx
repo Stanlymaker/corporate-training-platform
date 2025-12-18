@@ -11,14 +11,14 @@ import ReactMarkdown from 'react-markdown';
 import { API_ENDPOINTS, getAuthHeaders } from '@/config/api';
 
 interface Course {
-  id: string;
+  id: number;
   title: string;
   description: string;
 }
 
 interface Lesson {
   id: string;
-  courseId: string;
+  courseId: number;
   title: string;
   description: string;
   content: string;
@@ -29,8 +29,8 @@ interface Lesson {
 }
 
 interface CourseProgress {
-  courseId: string;
-  userId: string;
+  courseId: number;
+  userId: number;
   completedLessons: number;
   totalLessons: number;
   completedLessonIds: string[];
@@ -106,7 +106,7 @@ export default function LessonPage() {
     }
   };
 
-  const markLessonStarted = async (courseUuid: string, lessonUuid: string, currentProgress: CourseProgress | null) => {
+  const markLessonStarted = async (courseId: number, lessonUuid: string, currentProgress: CourseProgress | null) => {
     // Не делаем запрос, если это уже последний открытый урок
     if (currentProgress?.lastAccessedLesson === lessonUuid) {
       return;
@@ -117,7 +117,7 @@ export default function LessonPage() {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({
-          courseId: courseUuid,
+          courseId: courseId,
           lessonId: lessonUuid
         })
       });

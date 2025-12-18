@@ -8,7 +8,7 @@ import { API_ENDPOINTS, getAuthHeaders } from '@/config/api';
 interface UserCoursesManagementProps {
   user: User;
   assignments: CourseAssignment[];
-  onAssignCourse?: (userId: string, courseId: string) => void;
+  onAssignCourse?: (userId: number, courseId: number) => void;
   onRemoveAssignment?: (assignmentId: string) => void;
 }
 
@@ -18,12 +18,12 @@ export default function UserCoursesManagement({
   onAssignCourse, 
   onRemoveAssignment 
 }: UserCoursesManagementProps) {
-  const [expandedCourseId, setExpandedCourseId] = useState<string | null>(null);
+  const [expandedCourseId, setExpandedCourseId] = useState<number | null>(null);
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
-  const [lessonsData, setLessonsData] = useState<Record<string, Lesson[]>>({});
+  const [lessonsData, setLessonsData] = useState<Record<number, Lesson[]>>({});
   const [progressData, setProgressData] = useState<CourseProgress[]>([]);
-  const [testResults, setTestResults] = useState<Record<string, TestResult[]>>({});
+  const [testResults, setTestResults] = useState<Record<number, TestResult[]>>({});
 
   useEffect(() => {
     loadCourses();
@@ -57,7 +57,7 @@ export default function UserCoursesManagement({
     }
   };
 
-  const loadCourseLessons = async (courseId: string) => {
+  const loadCourseLessons = async (courseId: number) => {
     if (lessonsData[courseId]) return;
     
     try {
@@ -71,7 +71,7 @@ export default function UserCoursesManagement({
     }
   };
 
-  const loadTestResults = async (courseId: string) => {
+  const loadTestResults = async (courseId: number) => {
     if (testResults[courseId]) return;
     
     try {
@@ -85,7 +85,7 @@ export default function UserCoursesManagement({
     }
   };
 
-  const toggleCourse = async (courseId: string) => {
+  const toggleCourse = async (courseId: number) => {
     if (expandedCourseId === courseId) {
       setExpandedCourseId(null);
     } else {

@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import { API_ENDPOINTS, getAuthHeaders } from '@/config/api';
 
 interface Student {
-  id: string;
+  id: number;
   name: string;
   email: string;
   isActive: boolean;
@@ -14,7 +14,7 @@ interface Student {
 
 interface AssignStudentsModalProps {
   show: boolean;
-  courseId: string;
+  courseId: number;
   courseTitle: string;
   onClose: () => void;
   onAssigned: () => void;
@@ -28,8 +28,8 @@ export default function AssignStudentsModal({
   onAssigned,
 }: AssignStudentsModalProps) {
   const [students, setStudents] = useState<Student[]>([]);
-  const [assignedStudents, setAssignedStudents] = useState<Set<string>>(new Set());
-  const [selectedStudents, setSelectedStudents] = useState<Set<string>>(new Set());
+  const [assignedStudents, setAssignedStudents] = useState<Set<number>>(new Set());
+  const [selectedStudents, setSelectedStudents] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -69,7 +69,7 @@ export default function AssignStudentsModal({
     }
   };
 
-  const handleToggleStudent = (studentId: string) => {
+  const handleToggleStudent = (studentId: number) => {
     const newSelected = new Set(selectedStudents);
     if (newSelected.has(studentId)) {
       newSelected.delete(studentId);

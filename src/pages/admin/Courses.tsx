@@ -10,7 +10,7 @@ import { API_ENDPOINTS, getAuthHeaders } from '@/config/api';
 import AssignStudentsModal from '@/components/admin/AssignStudentsModal';
 
 interface Course {
-  id: string;
+  id: number;
   title: string;
   description: string;
   category: string;
