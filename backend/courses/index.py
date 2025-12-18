@@ -143,7 +143,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             )
             courses = cur.fetchall()
         else:
-            user_id_int = int(payload['user_id'])
+            user_id_str = str(payload['user_id'])
             
             cur.execute(
                 "SELECT id, title, description, duration, lessons_count, category, image, "
@@ -153,7 +153,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             open_courses = list(cur.fetchall())
             
             cur.execute(
-                f"SELECT course_id FROM course_assignments_v2 WHERE user_id = {user_id_int}"
+                f"SELECT course_id FROM course_assignments_v2 WHERE user_id = '{user_id_str}'"
             )
             assigned_course_ids = [row[0] for row in cur.fetchall()]
             
