@@ -145,7 +145,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         if payload.get('role') != 'admin':
             cur.execute(
-                f"SELECT access_type FROM courses_v2 WHERE id = {course_id_int}"
+                "SELECT access_type FROM courses_v2 WHERE id = %s",
+                (course_id_int,)
             )
             course_data = cur.fetchone()
             
@@ -162,9 +163,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             access_type = course_data[0]
             
             if access_type == 'closed':
-                user_id_str = str(payload['user_id'])
+                user_id_int = int(payload['user_id'])
                 cur.execute(
-                    f"SELECT id FROM course_assignments_v2 WHERE course_id = {course_id_int} AND user_id = '{user_id_str}'"
+                    "SELECT id FROM course_assignments_v2 WHERE course_id = %s AND user_id = %s",
+                    (course_id_int, user_id_int)
                 )
                 if not cur.fetchone():
                     cur.close()
@@ -229,14 +231,16 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             course_id_from_lesson = int(lesson[1])
             
             cur.execute(
-                f"SELECT access_type FROM courses_v2 WHERE id = {course_id_from_lesson}"
+                "SELECT access_type FROM courses_v2 WHERE id = %s",
+                (course_id_from_lesson,)
             )
             course_data = cur.fetchone()
             
             if course_data and course_data[0] == 'closed':
-                user_id_str = str(payload['user_id'])
+                user_id_int = int(payload['user_id'])
                 cur.execute(
-                    f"SELECT id FROM course_assignments_v2 WHERE course_id = {course_id_from_lesson} AND user_id = '{user_id_str}'"
+                    "SELECT id FROM course_assignments_v2 WHERE course_id = %s AND user_id = %s",
+                    (course_id_from_lesson, user_id_int)
                 )
                 if not cur.fetchone():
                     cur.close()
