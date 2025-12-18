@@ -32,7 +32,7 @@ export default function AdminDashboard() {
       const [usersRes, coursesRes, rewardsRes] = await Promise.all([
         fetch(API_ENDPOINTS.USERS, { headers: getAuthHeaders() }),
         fetch(API_ENDPOINTS.COURSES, { headers: getAuthHeaders() }),
-        fetch(`${API_ENDPOINTS.ADMIN_REWARDS}`, { headers: getAuthHeaders() }),
+        fetch(API_ENDPOINTS.REWARDS, { headers: getAuthHeaders() }),
       ]);
 
       if (usersRes.ok && coursesRes.ok) {
