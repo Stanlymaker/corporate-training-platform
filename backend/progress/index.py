@@ -92,7 +92,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'isBase64Encoded': False
         }
     
-    if payload.get('role') != 'admin' and user_id != payload['user_id']:
+    # Проверка доступа только для GET запросов с userId
+    if method == 'GET' and user_id and payload.get('role') != 'admin' and user_id != payload['user_id']:
         return {
             'statusCode': 403,
             'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
@@ -126,25 +127,24 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         )
         progress = cur.fetchone()
         
+        cur.close()
+        conn.close()
+        
         if not progress:
-            cur.close()
-            conn.close()
+            # Возвращаем пустой массив, а не 404
             return {
-                'statusCode': 404,
+                'statusCode': 200,
                 'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'error': 'Прогресс не найден'}, ensure_ascii=False),
+                'body': json.dumps({'progress': []}, ensure_ascii=False),
                 'isBase64Encoded': False
             }
         
         progress_data = format_progress_response(progress)
         
-        cur.close()
-        conn.close()
-        
         return {
             'statusCode': 200,
             'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
-            'body': json.dumps({'progress': progress_data}, ensure_ascii=False),
+            'body': json.dumps({'progress': [progress_data]}, ensure_ascii=False),
             'isBase64Encoded': False
         }
     
