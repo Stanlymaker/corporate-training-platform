@@ -55,7 +55,7 @@ export default function AdminDashboard() {
         // Загружаем прогресс студентов и создаем активности
         const activities: RecentActivity[] = [];
         const students = users.filter((u: any) => u.role === 'student');
-        const completedCoursesCount = 0;
+        let completedCoursesCount = 0;
         
         for (const student of students.slice(0, 10)) {
           try {
