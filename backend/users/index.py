@@ -125,7 +125,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     current_user_role = payload.get('role')
     
     # Проверка прав: админы могут все, студенты только свой профиль
-    if method == 'PUT' and user_id and user_id == current_user_id:
+    if method == 'PUT' and user_id and int(user_id) == current_user_id:
         # Студент редактирует свой профиль - разрешено
         pass
     elif current_user_role != 'admin':
