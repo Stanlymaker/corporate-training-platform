@@ -149,8 +149,10 @@ export default function AdminUsers() {
     // Получаем весь прогресс пользователя
     const userProgress = progressData.filter(p => p.userId === userId);
     
-    // Считаем завершенные курсы
-    const completed = userProgress.filter(p => p.completed === true).length;
+    // Считаем завершенные курсы (проверяем completed ИЛИ все уроки пройдены)
+    const completed = userProgress.filter(p => 
+      p.completed === true || (p.completedLessons >= p.totalLessons && p.totalLessons > 0)
+    ).length;
     
     // Получаем назначенные закрытые курсы для пользователя
     const userAssignedClosedCourses = assignments
