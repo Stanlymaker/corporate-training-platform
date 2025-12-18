@@ -82,9 +82,9 @@ export default function CourseDetails() {
         setLessons(lessonsData.lessons || []);
       }
 
-      if (progressRes.ok && courseUuid) {
+      if (progressRes.ok) {
         const progressData = await progressRes.json();
-        const courseProgress = progressData.progress?.find((p: CourseProgress) => p.courseId === courseUuid);
+        const courseProgress = progressData.progress?.find((p: CourseProgress) => p.courseId === Number(id));
         setProgress(courseProgress || null);
       }
     } catch (error) {
