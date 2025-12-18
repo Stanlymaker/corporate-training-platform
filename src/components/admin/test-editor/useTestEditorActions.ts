@@ -99,10 +99,14 @@ export function useTestEditorActions(
       return;
     }
 
+    console.log('[DEBUG] handleSaveTest:', { isEditMode, testId, questionsCount: formData.questions.length });
+
     setLoading(true);
     try {
       const method = isEditMode ? 'PUT' : 'POST';
       const url = isEditMode ? `${API_ENDPOINTS.TESTS}?id=${testId}` : API_ENDPOINTS.TESTS;
+      
+      console.log('[DEBUG] Request:', { method, url });
 
       const testPayload = {
         title: formData.title,
@@ -125,9 +129,12 @@ export function useTestEditorActions(
 
       const testData = await testRes.json();
       const savedTestId = testData.test.id;
+      
+      console.log('[DEBUG] Test saved:', { savedTestId, testData: testData.test });
 
       // Если это создание нового теста, перенаправляем на редактирование с новым ID
       if (!isEditMode) {
+        console.log('[DEBUG] Creating questions for new test:', formData.questions.length);
         // Сохраняем вопросы для нового теста
         for (let i = 0; i < formData.questions.length; i++) {
           const question = formData.questions[i];
