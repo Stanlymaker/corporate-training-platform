@@ -217,21 +217,7 @@ export default function QuestionDialog({
             </div>
           </div>
 
-          {question.type === 'text' && (
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Тип проверки
-              </label>
-              <select
-                value={question.textCheckType || 'automatic'}
-                onChange={(e) => onQuestionChange('textCheckType', e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-              >
-                <option value="automatic">Автоматическая проверка</option>
-                <option value="manual">Ручная проверка</option>
-              </select>
-            </div>
-          )}
+
 
           {question.type === 'matching' ? (
             <div>
@@ -360,19 +346,17 @@ export default function QuestionDialog({
           ) : question.type === 'text' ? (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                {question.textCheckType === 'manual' ? 'Описание ожидаемого ответа' : 'Правильный ответ (текст)'}
+                Правильный ответ (текст)
               </label>
               <input
                 type="text"
                 value={question.correctText || ''}
                 onChange={(e) => onQuestionChange('correctText', e.target.value)}
-                placeholder={question.textCheckType === 'manual' ? 'Что должен написать студент' : 'Введите правильный ответ'}
+                placeholder="Введите правильный ответ"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
               />
               <p className="text-xs text-gray-500 mt-1">
-                {question.textCheckType === 'manual' 
-                  ? 'Это описание для преподавателя. Ответ будет проверяться вручную.' 
-                  : 'Ответ студента будет сравниваться с этим текстом (без учета регистра)'}
+                Ответ студента будет сравниваться с этим текстом (без учета регистра)
               </p>
             </div>
           ) : null}
