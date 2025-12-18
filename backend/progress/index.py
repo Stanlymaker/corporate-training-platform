@@ -187,12 +187,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             )
             total_lessons = cur.fetchone()[0]
             
+            progress_id = str(uuid.uuid4())
             now = datetime.utcnow()
             cur.execute(
-                "INSERT INTO course_progress (course_id, user_id, completed_lessons, total_lessons, "
+                "INSERT INTO course_progress (id, course_id, user_id, completed_lessons, total_lessons, "
                 "test_score, completed, completed_lesson_ids, last_accessed_lesson, started_at, updated_at, created_at) "
-                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                (start_req.courseId, payload['user_id'], 0, total_lessons, 0, False, 
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                (progress_id, start_req.courseId, payload['user_id'], 0, total_lessons, 0, False, 
                  json.dumps([]), start_req.lessonId, now, now, now)
             )
             conn.commit()
@@ -234,14 +235,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             )
             total_lessons = cur.fetchone()[0]
             
+            progress_id = str(uuid.uuid4())
             now = datetime.utcnow()
             completed_ids = [complete_req.lessonId]
             
             cur.execute(
-                "INSERT INTO course_progress (course_id, user_id, completed_lessons, total_lessons, "
+                "INSERT INTO course_progress (id, course_id, user_id, completed_lessons, total_lessons, "
                 "test_score, completed, completed_lesson_ids, last_accessed_lesson, started_at, updated_at, created_at) "
-                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                (complete_req.courseId, payload['user_id'], 1, total_lessons, 0, False, 
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                (progress_id, complete_req.courseId, payload['user_id'], 1, total_lessons, 0, False, 
                  json.dumps(completed_ids), complete_req.lessonId, now, now, now)
             )
             conn.commit()
