@@ -39,7 +39,7 @@ export default function CourseDetails() {
     const isLocked = previousLesson?.requiresPrevious && !progress?.completedLessonIds.includes(previousLesson.id);
     
     if (!isLocked) {
-      navigate(ROUTES.STUDENT.LESSON.replace(':courseId', courseId!).replace(':lessonId', lessonId));
+      navigate(ROUTES.STUDENT.LESSON(courseId!, lessonId));
     }
   };
 
