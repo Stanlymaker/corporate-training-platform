@@ -392,32 +392,29 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             }
         
         try:
+            # Получаем actual_course_id (UUID)
             if course_id:
                 cur.execute("SELECT id FROM courses WHERE display_id = %s", (course_id,))
+                course_row = cur.fetchone()
+                if not course_row:
+                    cur.close()
+                    conn.close()
+                    return {
+                        'statusCode': 404,
+                        'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'error': 'Курс не найден'}, ensure_ascii=False),
+                        'isBase64Encoded': False
+                    }
+                actual_course_id = course_row[0]
             else:
-                cur.execute("SELECT id FROM courses WHERE id::text = %s", (course_uuid,))
+                # Используем переданный UUID напрямую
+                actual_course_id = course_uuid
             
-            course_row = cur.fetchone()
-            if not course_row:
-                cur.close()
-                conn.close()
-                return {
-                    'statusCode': 404,
-                    'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
-                    'body': json.dumps({'error': 'Курс не найден'}, ensure_ascii=False),
-                    'isBase64Encoded': False
-                }
-            
-            actual_course_id = str(course_row[0])
-            
-            cur.execute("DELETE FROM progress WHERE course_id::text = %s", (actual_course_id,))
-            cur.execute("DELETE FROM course_assignments WHERE course_id::text = %s", (actual_course_id,))
-            cur.execute("DELETE FROM lessons WHERE course_id::text = %s", (actual_course_id,))
-            
-            if course_id:
-                cur.execute("DELETE FROM courses WHERE display_id = %s", (course_id,))
-            else:
-                cur.execute("DELETE FROM courses WHERE id::text = %s", (course_uuid,))
+            # Каскадное удаление записей по UUID
+            cur.execute("DELETE FROM progress WHERE course_id = %s", (actual_course_id,))
+            cur.execute("DELETE FROM course_assignments WHERE course_id = %s", (actual_course_id,))
+            cur.execute("DELETE FROM lessons WHERE course_id = %s", (actual_course_id,))
+            cur.execute("DELETE FROM courses WHERE id = %s", (actual_course_id,))
             
             conn.commit()
             
