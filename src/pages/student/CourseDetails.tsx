@@ -48,7 +48,7 @@ interface CourseProgress {
 }
 
 export default function CourseDetails() {
-  const { id: displayId } = useParams();
+  const { courseId: displayId } = useParams();
   const navigate = useNavigate();
   const [course, setCourse] = useState<Course | null>(null);
   const [lessons, setLessons] = useState<Lesson[]>([]);
