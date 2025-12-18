@@ -149,20 +149,13 @@ export default function AdminCourseView() {
             )}
           </div>
           
-          <div className="mt-6 flex gap-2">
+          <div className="mt-6">
             <Button
               onClick={() => navigate(`/admin/courses/edit/${course.displayId}`)}
               className="bg-primary"
             >
               <Icon name="Edit" className="mr-2" size={16} />
               Редактировать курс
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => navigate(`/admin/lessons?courseId=${course.displayId}`)}
-            >
-              <Icon name="List" className="mr-2" size={16} />
-              Управление уроками
             </Button>
           </div>
         </div>
