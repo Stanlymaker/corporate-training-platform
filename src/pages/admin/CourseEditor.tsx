@@ -193,7 +193,7 @@ export default function CourseEditor() {
     }
     
     if (isEditMode && formData.status === 'published' && savedStatus !== 'published') {
-      const count = await checkStudentsProgress(actualCourseId);
+      const count = await checkStudentsProgress();
       console.log('Students with progress:', count);
       if (count > 0) {
         setStudentsCount(count);
@@ -201,12 +201,12 @@ export default function CourseEditor() {
         return;
       }
     }
-    await handleSaveCourse(undefined, actualCourseId);
+    await handleSaveCourse();
   };
 
   const confirmProgressReset = async () => {
     setShowProgressResetDialog(false);
-    await handleSaveCourse(progressResetOption, actualCourseId);
+    await handleSaveCourse(progressResetOption);
   };
 
   const onDeleteConfirm = async () => {

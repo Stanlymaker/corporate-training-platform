@@ -55,9 +55,9 @@ export function useCourseEditorActions(
 
       if (courseRes.ok) {
         const courseData = await courseRes.json();
-        setActualCourseId(courseData.course.id);
+        setActualCourseId(courseData.course.displayId);
         
-        const lessonsRes = await fetch(`${API_ENDPOINTS.LESSONS}?courseId=${courseData.course.id}`, { headers: getAuthHeaders() });
+        const lessonsRes = await fetch(`${API_ENDPOINTS.LESSONS}?courseId=${courseData.course.displayId}`, { headers: getAuthHeaders() });
         const lessonsData = lessonsRes.ok ? await lessonsRes.json() : { lessons: [] };
         
         setFormData({
@@ -97,9 +97,9 @@ export function useCourseEditorActions(
     }
   };
 
-  const checkStudentsProgress = async (actualCourseId: string) => {
+  const checkStudentsProgress = async () => {
     try {
-      const progressRes = await fetch(`${API_ENDPOINTS.PROGRESS}?courseId=${actualCourseId || courseId}`, {
+      const progressRes = await fetch(`${API_ENDPOINTS.PROGRESS}?courseId=${courseId}`, {
         headers: getAuthHeaders(),
       });
       if (progressRes.ok) {
@@ -114,13 +114,13 @@ export function useCourseEditorActions(
     }
   };
 
-  const applyProgressReset = async (option: 'keep' | 'reset_tests' | 'reset_all', actualCourseId: string) => {
+  const applyProgressReset = async (option: 'keep' | 'reset_tests' | 'reset_all') => {
     try {
       await fetch(`${API_ENDPOINTS.PROGRESS}/reset`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({
-          courseId: actualCourseId || courseId,
+          courseId: courseId,
           resetType: option,
         }),
       });
@@ -129,12 +129,12 @@ export function useCourseEditorActions(
     }
   };
 
-  const handleSaveCourse = async (resetOption?: 'keep' | 'reset_tests' | 'reset_all', actualCourseId?: string) => {
+  const handleSaveCourse = async (resetOption?: 'keep' | 'reset_tests' | 'reset_all') => {
     setLoading(true);
     try {
       const totalDuration = formData.lessons.reduce((sum, lesson) => sum + lesson.duration, 0);
       const method = isEditMode ? 'PUT' : 'POST';
-      const url = isEditMode ? `${API_ENDPOINTS.COURSES}?id=${actualCourseId || courseId}` : API_ENDPOINTS.COURSES;
+      const url = isEditMode ? `${API_ENDPOINTS.COURSES}?id=${courseId}` : API_ENDPOINTS.COURSES;
 
       const coursePayload = {
         title: formData.title,
@@ -161,7 +161,7 @@ export function useCourseEditorActions(
       }
 
       const courseData = await courseRes.json();
-      const savedCourseId = courseData.course.id;
+      const savedCourseId = courseData.course.displayId;
 
       if (isEditMode) {
         const existingLessonsRes = await fetch(`${API_ENDPOINTS.LESSONS}?courseId=${savedCourseId}`, {
@@ -231,8 +231,8 @@ export function useCourseEditorActions(
       if (formData.status === 'published') {
         setWasEverPublished(true);
       }
-      if (resetOption && actualCourseId) {
-        await applyProgressReset(resetOption, actualCourseId);
+      if (resetOption) {
+        await applyProgressReset(resetOption);
       }
       navigate(ROUTES.ADMIN.COURSES);
     } catch (error) {

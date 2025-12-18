@@ -11,11 +11,11 @@ JWT_SECRET = os.environ.get('JWT_SECRET', 'your-secret-key-change-in-production'
 JWT_ALGORITHM = 'HS256'
 
 class CompleteLessonRequest(BaseModel):
-    courseId: str = Field(..., min_length=1)
+    courseId: int = Field(..., ge=1)
     lessonId: str = Field(..., min_length=1)
 
 class SubmitTestRequest(BaseModel):
-    courseId: str = Field(..., min_length=1)
+    courseId: int = Field(..., ge=1)
     testId: str = Field(..., min_length=1)
     answers: Dict[str, Any]
 
@@ -104,7 +104,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     conn = get_db_connection()
     cur = conn.cursor()
     
-    # Если course_id - это display_id (число), преобразуем в UUID
+    # Конвертируем display_id в UUID
     course_uuid = None
     if course_id:
         try:
@@ -113,10 +113,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             course_row = cur.fetchone()
             if course_row:
                 course_uuid = course_row[0]
-            else:
-                course_uuid = course_id  # Возможно это уже UUID
         except ValueError:
-            course_uuid = course_id  # Это UUID
+            pass  # Игнорируем невалидные ID
     
     if method == 'GET':
         # GET с userId и courseId - прогресс по конкретному курсу
@@ -194,10 +192,24 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         body_data = json.loads(event.get('body', '{}'))
         start_req = CompleteLessonRequest(**body_data)
         
+        # Конвертируем display_id в UUID
+        cur.execute("SELECT id FROM courses WHERE display_id = %s", (start_req.courseId,))
+        course_row = cur.fetchone()
+        if not course_row:
+            cur.close()
+            conn.close()
+            return {
+                'statusCode': 404,
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'Курс не найден'}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
+        course_uuid = course_row[0]
+        
         # Проверяем, есть ли уже прогресс
         cur.execute(
             "SELECT course_id FROM course_progress WHERE user_id = %s AND course_id = %s",
-            (payload['user_id'], start_req.courseId)
+            (payload['user_id'], course_uuid)
         )
         existing = cur.fetchone()
         
@@ -205,7 +217,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             # Проверяем тип доступа курса
             cur.execute(
                 "SELECT access_type FROM courses WHERE id = %s",
-                (start_req.courseId,)
+                (course_uuid,)
             )
             course_data = cur.fetchone()
             
@@ -225,7 +237,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             if access_type == 'closed':
                 cur.execute(
                     "SELECT id FROM course_assignments WHERE course_id = %s AND user_id = %s",
-                    (start_req.courseId, payload['user_id'])
+                    (course_uuid, payload['user_id'])
                 )
                 if not cur.fetchone():
                     cur.close()
@@ -240,7 +252,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             # Создаем новый прогресс
             cur.execute(
                 "SELECT COUNT(*) FROM lessons WHERE course_id = %s",
-                (start_req.courseId,)
+                (course_uuid,)
             )
             total_lessons = cur.fetchone()[0]
             
@@ -250,7 +262,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 "INSERT INTO course_progress (id, course_id, user_id, completed_lessons, total_lessons, "
                 "test_score, completed, completed_lesson_ids, last_accessed_lesson, started_at, updated_at, created_at) "
                 "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                (progress_id, start_req.courseId, payload['user_id'], 0, total_lessons, 0, False, 
+                (progress_id, course_uuid, payload['user_id'], 0, total_lessons, 0, False, 
                  json.dumps([]), start_req.lessonId, now, now, now)
             )
             conn.commit()
@@ -259,7 +271,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             cur.execute(
                 "UPDATE course_progress SET last_accessed_lesson = %s, updated_at = %s "
                 "WHERE user_id = %s AND course_id = %s",
-                (start_req.lessonId, datetime.utcnow(), payload['user_id'], start_req.courseId)
+                (start_req.lessonId, datetime.utcnow(), payload['user_id'], course_uuid)
             )
             conn.commit()
         
@@ -277,10 +289,24 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         body_data = json.loads(event.get('body', '{}'))
         complete_req = CompleteLessonRequest(**body_data)
         
+        # Конвертируем display_id в UUID
+        cur.execute("SELECT id FROM courses WHERE display_id = %s", (complete_req.courseId,))
+        course_row = cur.fetchone()
+        if not course_row:
+            cur.close()
+            conn.close()
+            return {
+                'statusCode': 404,
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'Курс не найден'}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
+        course_uuid = course_row[0]
+        
         # Сначала проверяем/создаем прогресс
         cur.execute(
             "SELECT completed_lesson_ids, total_lessons FROM course_progress WHERE user_id = %s AND course_id = %s",
-            (payload['user_id'], complete_req.courseId)
+            (payload['user_id'], course_uuid)
         )
         progress = cur.fetchone()
         
@@ -288,7 +314,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             # Создаем прогресс если его нет
             cur.execute(
                 "SELECT COUNT(*) FROM lessons WHERE course_id = %s",
-                (complete_req.courseId,)
+                (course_uuid,)
             )
             total_lessons = cur.fetchone()[0]
             
@@ -300,7 +326,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 "INSERT INTO course_progress (id, course_id, user_id, completed_lessons, total_lessons, "
                 "test_score, completed, completed_lesson_ids, last_accessed_lesson, started_at, updated_at, created_at) "
                 "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                (progress_id, complete_req.courseId, payload['user_id'], 1, total_lessons, 0, False, 
+                (progress_id, course_uuid, payload['user_id'], 1, total_lessons, 0, False, 
                  json.dumps(completed_ids), complete_req.lessonId, now, now, now)
             )
             conn.commit()
@@ -325,7 +351,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 "UPDATE course_progress SET completed_lessons = %s, completed_lesson_ids = %s, "
                 "last_accessed_lesson = %s, updated_at = %s WHERE user_id = %s AND course_id = %s",
                 (len(completed_ids), json.dumps(completed_ids), complete_req.lessonId,
-                 datetime.utcnow(), payload['user_id'], complete_req.courseId)
+                 datetime.utcnow(), payload['user_id'], course_uuid)
             )
             
             total = total_lessons
@@ -334,17 +360,17 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             if course_completed:
                 cur.execute(
                     "UPDATE course_progress SET completed = true, completed_at = %s WHERE user_id = %s AND course_id = %s",
-                    (datetime.utcnow(), payload['user_id'], complete_req.courseId)
+                    (datetime.utcnow(), payload['user_id'], course_uuid)
                 )
                 
                 cur.execute(
                     "UPDATE course_assignments SET status = 'completed' WHERE user_id = %s AND course_id = %s",
-                    (payload['user_id'], complete_req.courseId)
+                    (payload['user_id'], course_uuid)
                 )
             else:
                 cur.execute(
                     "UPDATE course_assignments SET status = 'in_progress' WHERE user_id = %s AND course_id = %s",
-                    (payload['user_id'], complete_req.courseId)
+                    (payload['user_id'], course_uuid)
                 )
             
             conn.commit()
