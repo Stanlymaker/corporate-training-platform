@@ -1,4 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import StudentLayout from '@/components/StudentLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,17 +7,109 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import Icon from '@/components/ui/icon';
 import { ROUTES } from '@/constants/routes';
-import { mockCourses, mockLessons, mockProgress, mockTests } from '@/data/mockData';
+import { API_ENDPOINTS, getAuthHeaders } from '@/config/api';
+
+interface Course {
+  id: string;
+  displayId: number;
+  title: string;
+  description: string;
+  category: string;
+  duration: number;
+  lessonsCount: number;
+  passScore: number;
+  level: string;
+  instructor: string;
+  image?: string;
+}
+
+interface Lesson {
+  id: string;
+  courseId: string;
+  title: string;
+  description: string;
+  type: 'video' | 'text' | 'quiz' | 'interactive';
+  order: number;
+  duration: number;
+  content: string;
+  videoUrl?: string;
+  requiresPrevious: boolean;
+  published: boolean;
+}
+
+interface CourseProgress {
+  id: string;
+  courseId: string;
+  completedLessons: number;
+  totalLessons: number;
+  completed: boolean;
+  completedLessonIds: string[];
+  lastAccessedLesson: string | null;
+}
 
 export default function CourseDetails() {
-  const { courseId } = useParams();
+  const { id: displayId } = useParams();
   const navigate = useNavigate();
-  const userId = '2';
+  const [course, setCourse] = useState<Course | null>(null);
+  const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [progress, setProgress] = useState<CourseProgress | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const course = mockCourses.find(c => c.id === courseId);
-  const lessons = mockLessons.filter(l => l.courseId === courseId).sort((a, b) => a.order - b.order);
-  const progress = mockProgress.find(p => p.courseId === courseId && p.userId === userId);
-  const courseTest = mockTests.find(t => t.courseId === courseId && t.status === 'published');
+  const userId = JSON.parse(localStorage.getItem('currentUser') || '{}').id;
+
+  useEffect(() => {
+    loadCourseData();
+  }, [displayId]);
+
+  const loadCourseData = async () => {
+    try {
+      setLoading(true);
+      const [courseRes, lessonsRes, progressRes] = await Promise.all([
+        fetch(`${API_ENDPOINTS.COURSES}/${displayId}`, { headers: getAuthHeaders() }),
+        fetch(`${API_ENDPOINTS.LESSONS}?courseId=${displayId}`, { headers: getAuthHeaders() }),
+        fetch(`${API_ENDPOINTS.PROGRESS}?userId=${userId}&courseId=${displayId}`, { headers: getAuthHeaders() }),
+      ]);
+
+      if (courseRes.ok) {
+        const courseData = await courseRes.json();
+        setCourse(courseData);
+      }
+
+      if (lessonsRes.ok) {
+        const lessonsData = await lessonsRes.json();
+        setLessons(lessonsData.lessons || []);
+      }
+
+      if (progressRes.ok) {
+        const progressData = await progressRes.json();
+        const courseProgress = progressData.progress?.find((p: CourseProgress) => p.courseId === displayId);
+        setProgress(courseProgress || null);
+      }
+    } catch (error) {
+      console.error('Error loading course data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLessonClick = (lessonId: string, lessonIndex: number) => {
+    const previousLesson = lessonIndex > 0 ? lessons[lessonIndex - 1] : null;
+    const isLocked = previousLesson?.requiresPrevious && !progress?.completedLessonIds.includes(previousLesson.id);
+    
+    if (!isLocked) {
+      navigate(ROUTES.STUDENT.LESSON(displayId!, lessonId));
+    }
+  };
+
+  if (loading) {
+    return (
+      <StudentLayout>
+        <div className="flex items-center justify-center h-64">
+          <Icon name="Loader2" className="animate-spin" size={32} />
+        </div>
+      </StudentLayout>
+    );
+  }
 
   if (!course) {
     return (
@@ -33,15 +126,6 @@ export default function CourseDetails() {
   }
 
   const progressPercent = progress ? (progress.completedLessons / progress.totalLessons) * 100 : 0;
-
-  const handleLessonClick = (lessonId: string, lessonIndex: number) => {
-    const previousLesson = lessonIndex > 0 ? lessons[lessonIndex - 1] : null;
-    const isLocked = previousLesson?.requiresPrevious && !progress?.completedLessonIds.includes(previousLesson.id);
-    
-    if (!isLocked) {
-      navigate(ROUTES.STUDENT.LESSON(courseId!, lessonId));
-    }
-  };
 
   return (
     <StudentLayout>
@@ -85,11 +169,13 @@ export default function CourseDetails() {
                 </div>
               </div>
             </div>
-            <img 
-              src={course.image} 
-              alt={course.title}
-              className="w-48 h-32 object-cover rounded-xl shadow-lg"
-            />
+            {course.image && (
+              <img 
+                src={course.image} 
+                alt={course.title}
+                className="w-48 h-32 object-cover rounded-xl shadow-lg"
+              />
+            )}
           </div>
           
           <div className="mt-6">
@@ -99,7 +185,7 @@ export default function CourseDetails() {
             </div>
             <Progress value={progressPercent} className="h-3" />
             <p className="text-xs text-gray-500 mt-2">
-              Завершено {progress?.completedLessons || 0} из {progress?.totalLessons || lessons.length} уроков
+              Завершено {progress?.completedLessons || 0} из {lessons.length} уроков
             </p>
           </div>
         </div>
@@ -114,159 +200,99 @@ export default function CourseDetails() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
-              {lessons.map((lesson, index) => {
-                const isCompleted = progress?.completedLessonIds.includes(lesson.id);
-                const previousLesson = index > 0 ? lessons[index - 1] : null;
-                const isLocked = lesson.requiresPrevious && previousLesson && !progress?.completedLessonIds.includes(previousLesson.id);
-                const isLastAccessed = progress?.lastAccessedLesson === lesson.id;
+            {lessons.length === 0 ? (
+              <div className="text-center py-8">
+                <Icon name="BookOpen" size={48} className="mx-auto text-gray-300 mb-3" />
+                <p className="text-gray-500">Уроки еще не добавлены</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {lessons.map((lesson, index) => {
+                  const isCompleted = progress?.completedLessonIds.includes(lesson.id);
+                  const previousLesson = index > 0 ? lessons[index - 1] : null;
+                  const isLocked = lesson.requiresPrevious && previousLesson && !progress?.completedLessonIds.includes(previousLesson.id);
+                  const isLastAccessed = progress?.lastAccessedLesson === lesson.id;
 
-                return (
-                  <button
-                    key={lesson.id}
-                    onClick={() => handleLessonClick(lesson.id, index)}
-                    disabled={isLocked}
-                    className={`w-full text-left p-4 rounded-lg border transition-all ${
-                      isLastAccessed
-                        ? 'border-primary bg-primary/5'
-                        : isLocked
-                        ? 'border-gray-200 opacity-50 cursor-not-allowed'
-                        : 'border-gray-200 hover:border-primary hover:bg-primary/5'
-                    }`}
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-                        isCompleted 
-                          ? 'bg-green-500 text-white' 
+                  return (
+                    <button
+                      key={lesson.id}
+                      onClick={() => handleLessonClick(lesson.id, index)}
+                      disabled={isLocked}
+                      className={`w-full text-left p-4 rounded-lg border transition-all ${
+                        isLastAccessed
+                          ? 'border-primary bg-primary/5'
                           : isLocked
-                          ? 'bg-gray-200 text-gray-400'
-                          : 'bg-primary/10 text-primary'
-                      }`}>
-                        {isLocked ? (
-                          <Icon name="Lock" size={18} />
-                        ) : isCompleted ? (
-                          <Icon name="Check" size={18} />
-                        ) : (
-                          <span className="font-bold text-sm">{lesson.order}</span>
-                        )}
-                      </div>
-                      
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Icon 
-                            name={
-                              lesson.type === 'video' ? 'Video' :
-                              lesson.type === 'text' ? 'FileText' :
-                              lesson.type === 'quiz' ? 'ClipboardList' :
-                              'Circle'
-                            }
-                            size={16} 
-                            className="text-gray-400" 
-                          />
-                          <span className="font-semibold text-gray-900">
-                            {lesson.title}
-                          </span>
-                          {isLastAccessed && !isCompleted && (
-                            <Badge variant="outline" className="ml-2">В процессе</Badge>
+                          ? 'border-gray-200 opacity-50 cursor-not-allowed'
+                          : 'border-gray-200 hover:border-primary hover:bg-primary/5'
+                      }`}
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                          isCompleted 
+                            ? 'bg-green-500 text-white' 
+                            : isLocked
+                            ? 'bg-gray-200 text-gray-400'
+                            : 'bg-primary/10 text-primary'
+                        }`}>
+                          {isLocked ? (
+                            <Icon name="Lock" size={18} />
+                          ) : isCompleted ? (
+                            <Icon name="Check" size={18} />
+                          ) : (
+                            <span className="font-bold text-sm">{lesson.order}</span>
                           )}
                         </div>
-                        <p className="text-sm text-gray-600 line-clamp-1">{lesson.description}</p>
-                      </div>
-
-                      <div className="flex items-center gap-3 flex-shrink-0">
-                        <div className="text-right">
-                          <div className="text-xs text-gray-500 flex items-center gap-1">
-                            <Icon name="Clock" size={12} />
-                            {lesson.duration} мин
+                        
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Icon 
+                              name={
+                                lesson.type === 'video' ? 'Video' :
+                                lesson.type === 'text' ? 'FileText' :
+                                lesson.type === 'quiz' ? 'ClipboardList' :
+                                'Circle'
+                              }
+                              size={16} 
+                              className="text-gray-400" 
+                            />
+                            <span className="font-semibold text-gray-900">
+                              {lesson.title}
+                            </span>
+                            {isLastAccessed && !isCompleted && (
+                              <Badge variant="outline" className="ml-2">В процессе</Badge>
+                            )}
                           </div>
+                          <p className="text-sm text-gray-600 line-clamp-1">{lesson.description}</p>
                         </div>
-                        <Icon 
-                          name="ChevronRight" 
-                          size={20} 
-                          className={isLocked ? 'text-gray-300' : 'text-gray-400'} 
-                        />
-                      </div>
-                    </div>
 
-                    {isLocked && previousLesson && (
-                      <div className="mt-3 pt-3 border-t border-gray-200">
-                        <p className="text-xs text-gray-500">
-                          <Icon name="Info" size={12} className="inline mr-1" />
-                          Завершите урок "{previousLesson.title}" для доступа
-                        </p>
+                        <div className="flex items-center gap-3 flex-shrink-0">
+                          <div className="text-right">
+                            <div className="text-xs text-gray-500 flex items-center gap-1">
+                              <Icon name="Clock" size={12} />
+                              {lesson.duration} мин
+                            </div>
+                          </div>
+                          <Icon 
+                            name="ChevronRight" 
+                            size={20} 
+                            className={isLocked ? 'text-gray-300' : 'text-gray-400'} 
+                          />
+                        </div>
                       </div>
-                    )}
-                  </button>
-                );
-              })}
 
-              {courseTest && (
-                <button
-                  onClick={() => navigate(`/student/courses/${courseId}/test/${courseTest.id}`)}
-                  className="w-full text-left p-4 rounded-lg border-2 border-purple-200 bg-gradient-to-r from-purple-50 to-pink-50 hover:border-purple-300 transition-all"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 text-white flex items-center justify-center flex-shrink-0">
-                      <Icon name="ClipboardCheck" size={18} />
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Icon name="FileCheck" size={16} className="text-purple-600" />
-                        <span className="font-semibold text-gray-900">{courseTest.title}</span>
-                        <Badge className="ml-2 bg-purple-500">Итоговый тест</Badge>
-                      </div>
-                      <p className="text-sm text-gray-600 line-clamp-1">{courseTest.description}</p>
-                      <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
-                        <span className="flex items-center gap-1">
-                          <Icon name="HelpCircle" size={12} />
-                          {courseTest.questionsCount} вопросов
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Icon name="Clock" size={12} />
-                          {courseTest.timeLimit} мин
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Icon name="Target" size={12} />
-                          Проходной балл: {courseTest.passScore}%
-                        </span>
-                      </div>
-                    </div>
-
-                    <Icon name="ChevronRight" size={20} className="text-purple-400" />
-                  </div>
-                </button>
-              )}
-            </div>
+                      {isLocked && previousLesson && (
+                        <div className="mt-2 pl-14 text-xs text-gray-500 flex items-center gap-1">
+                          <Icon name="Info" size={12} />
+                          Завершите урок "{previousLesson.title}" для разблокировки
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </CardContent>
         </Card>
-
-        {progress && progress.completedLessons > 0 && (
-          <Card className="border-0 shadow-md bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-green-800">
-                <Icon name="Award" size={20} />
-                Ваши достижения
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-3 gap-4">
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-green-600">{progress.completedLessons}</div>
-                  <div className="text-sm text-green-700">Уроков завершено</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-green-600">{Math.round(progressPercent)}%</div>
-                  <div className="text-sm text-green-700">Прогресс</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-green-600">{progress.earnedRewards.length}</div>
-                  <div className="text-sm text-green-700">Наград получено</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
       </div>
     </StudentLayout>
   );
