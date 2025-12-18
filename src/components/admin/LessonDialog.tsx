@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import RichTextEditor from './RichTextEditor';
-import { mockTests } from '@/data/mockData';
+import { API_ENDPOINTS, getAuthHeaders } from '@/config/api';
 
 interface LessonMaterial {
   id: string;
@@ -49,6 +49,25 @@ export default function LessonDialog({
   const [materialType, setMaterialType] = useState<'file' | 'link'>('file');
   const [linkTitle, setLinkTitle] = useState('');
   const [linkUrl, setLinkUrl] = useState('');
+  const [tests, setTests] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (show && lesson?.type === 'test') {
+      loadTests();
+    }
+  }, [show, lesson?.type]);
+
+  const loadTests = async () => {
+    try {
+      const response = await fetch(API_ENDPOINTS.TESTS, { headers: getAuthHeaders() });
+      if (response.ok) {
+        const data = await response.json();
+        setTests(data.tests || []);
+      }
+    } catch (error) {
+      console.error('Error loading tests:', error);
+    }
+  };
 
   if (!show || !lesson) return null;
 
@@ -226,7 +245,7 @@ export default function LessonDialog({
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                 >
                   <option value="">-- Выберите тест --</option>
-                  {mockTests.filter(t => t.status === 'published').map(test => (
+                  {tests.filter(t => t.status === 'published').map(test => (
                     <option key={test.id} value={test.id}>
                       {test.title} ({test.questionsCount} вопросов, {test.timeLimit} мин)
                     </option>

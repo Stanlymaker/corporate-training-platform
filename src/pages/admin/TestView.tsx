@@ -1,20 +1,58 @@
 import { useNavigate, useParams } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import AdminLayout from '@/components/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
 import { ROUTES } from '@/constants/routes';
-import { mockTests, mockCourses, mockQuestions } from '@/data/mockData';
+import { API_ENDPOINTS, getAuthHeaders } from '@/config/api';
 
 export default function TestView() {
   const { testId } = useParams();
   const navigate = useNavigate();
+  const [test, setTest] = useState<any>(null);
+  const [testQuestions, setTestQuestions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   
-  const test = mockTests.find(t => t.id === testId);
-  const testQuestions = mockQuestions.filter(q => q.testId === testId);
-  const course = test ? mockCourses.find(c => c.id === test.courseId) : null;
+  useEffect(() => {
+    loadTestData();
+  }, [testId]);
+  
+  const loadTestData = async () => {
+    setLoading(true);
+    try {
+      const [testRes, questionsRes] = await Promise.all([
+        fetch(`${API_ENDPOINTS.TESTS}?id=${testId}`, { headers: getAuthHeaders() }),
+        fetch(`${API_ENDPOINTS.TESTS}?testId=${testId}&action=questions`, { headers: getAuthHeaders() }),
+      ]);
+      
+      if (testRes.ok) {
+        const testData = await testRes.json();
+        setTest(testData.test);
+      }
+      
+      if (questionsRes.ok) {
+        const questionsData = await questionsRes.json();
+        setTestQuestions(questionsData.questions || []);
+      }
+    } catch (error) {
+      console.error('Error loading test:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center h-64">
+          <Icon name="Loader2" className="animate-spin" size={32} />
+        </div>
+      </AdminLayout>
+    );
+  }
+  
   if (!test) {
     return (
       <AdminLayout>
@@ -55,7 +93,7 @@ export default function TestView() {
             Назад к тестам
           </Button>
           <Button
-            onClick={() => navigate(`/admin/tests/edit/${testId}`)}
+            onClick={() => navigate(`/admin/tests/edit/${test.displayId}`)}
           >
             <Icon name="Edit" className="mr-2" size={16} />
             Редактировать
@@ -70,9 +108,6 @@ export default function TestView() {
                   <Badge className={getStatusColor(test.status)}>
                     {test.status === 'published' ? 'Опубликован' : 'Черновик'}
                   </Badge>
-                  {course && (
-                    <Badge variant="secondary">{course.title}</Badge>
-                  )}
                 </div>
                 
                 <h1 className="text-3xl font-bold text-gray-900 mb-4">{test.title}</h1>
@@ -130,8 +165,8 @@ export default function TestView() {
                             <div className="space-y-2 mt-3">
                               {question.options.map((option, optIndex) => {
                                 const isCorrect = Array.isArray(question.correctAnswer)
-                                  ? question.correctAnswer.includes(option)
-                                  : question.correctAnswer === option;
+                                  ? question.correctAnswer.includes(optIndex)
+                                  : question.correctAnswer === optIndex;
                                 
                                 return (
                                   <div

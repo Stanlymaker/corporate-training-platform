@@ -1,7 +1,6 @@
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
-import { mockTests } from '@/data/mockData';
 
 interface Lesson {
   id: string;
@@ -114,29 +113,7 @@ export default function CourseSummary({ lessons, totalDuration, formData }: Cour
           </div>
         )}
 
-        {formData.testId && (() => {
-          const test = mockTests.find(t => t.id === formData.testId);
-          return test ? (
-            <div className="border-t pt-4">
-              <p className="text-xs font-medium text-gray-500 mb-3">ИТОГОВЫЙ ТЕСТ</p>
-              <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
-                <div className="flex items-start gap-2 mb-2">
-                  <Icon name="FileCheck" size={16} className="text-purple-600 mt-0.5" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-purple-900">{test.title}</p>
-                    <div className="flex items-center gap-3 mt-1 text-xs text-purple-700">
-                      <span>{test.questionsCount} вопросов</span>
-                      <span>•</span>
-                      <span>{test.timeLimit} мин</span>
-                      <span>•</span>
-                      <span>Проходной {test.passScore}%</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : null;
-        })()}
+
 
         <div className="border-t pt-4">
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
