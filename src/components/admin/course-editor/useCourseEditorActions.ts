@@ -4,7 +4,7 @@ import { API_ENDPOINTS, getAuthHeaders } from '@/config/api';
 import { ROUTES } from '@/constants/routes';
 
 interface Lesson {
-  id: string;
+  id: number;
   title: string;
   type: 'video' | 'text' | 'test';
   duration: number;
@@ -16,7 +16,7 @@ interface Lesson {
   finalTestRequiresAllTests?: boolean;
   order: number;
   description?: string;
-  materials?: { id: string; title: string; type: 'pdf' | 'doc' | 'link' | 'video'; url: string }[];
+  materials?: { id: number; title: string; type: 'pdf' | 'doc' | 'link' | 'video'; url: string }[];
   requiresPrevious?: boolean;
   imageUrl?: string;
 }
@@ -185,7 +185,10 @@ export function useCourseEditorActions(
             finalTestRequiresAllTests: lesson.finalTestRequiresAllTests || false,
           };
 
-          if (existingLessonIds.has(lesson.id)) {
+          // ID > 100000 означает временный ID (Date.now()), это новый урок
+          const isNewLesson = lesson.id > 100000;
+          
+          if (!isNewLesson && existingLessonIds.has(lesson.id)) {
             await fetch(`${API_ENDPOINTS.LESSONS}?id=${lesson.id}`, {
               method: 'PUT',
               headers: getAuthHeaders(),

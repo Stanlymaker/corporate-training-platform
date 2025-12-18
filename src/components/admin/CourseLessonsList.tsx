@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
 
 interface Lesson {
-  id: string;
+  id: number;
   title: string;
   type: 'video' | 'text' | 'test';
   duration: number;
@@ -18,8 +18,8 @@ interface CourseLessonsListProps {
   lessons: Lesson[];
   onAddLesson: () => void;
   onEditLesson: (lesson: Lesson) => void;
-  onDeleteLesson: (lessonId: string) => void;
-  onReorderLesson: (lessonId: string, direction: 'up' | 'down') => void;
+  onDeleteLesson: (lessonId: number) => void;
+  onReorderLesson: (lessonId: number, direction: 'up' | 'down') => void;
   getTypeIcon: (type: string) => string;
   isDisabled?: boolean;
 }

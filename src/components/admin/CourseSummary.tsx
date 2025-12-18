@@ -3,7 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
 
 interface Lesson {
-  id: string;
+  id: number;
   title: string;
   type: 'video' | 'text' | 'test';
   duration: number;

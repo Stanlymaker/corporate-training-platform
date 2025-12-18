@@ -5,14 +5,14 @@ import RichTextEditor from './RichTextEditor';
 import { API_ENDPOINTS, getAuthHeaders } from '@/config/api';
 
 interface LessonMaterial {
-  id: string;
+  id: number;
   title: string;
   type: 'pdf' | 'doc' | 'link' | 'video';
   url: string;
 }
 
 interface Lesson {
-  id: string;
+  id: number;
   title: string;
   type: 'video' | 'text' | 'test';
   duration: number;

@@ -13,7 +13,7 @@ import { useCourseEditorActions } from '@/components/admin/course-editor/useCour
 import { API_ENDPOINTS, getAuthHeaders } from '@/config/api';
 
 interface Lesson {
-  id: string;
+  id: number;
   title: string;
   type: 'video' | 'text' | 'test';
   duration: number;
@@ -25,7 +25,7 @@ interface Lesson {
   finalTestRequiresAllTests?: boolean;
   order: number;
   description?: string;
-  materials?: { id: string; title: string; type: 'pdf' | 'doc' | 'link' | 'video'; url: string }[];
+  materials?: { id: number; title: string; type: 'pdf' | 'doc' | 'link' | 'video'; url: string }[];
   requiresPrevious?: boolean;
   imageUrl?: string;
 }
@@ -99,7 +99,7 @@ export default function CourseEditor() {
 
   const handleAddLesson = () => {
     setEditingLesson({
-      id: Date.now().toString(),
+      id: Date.now(),
       title: '',
       type: 'video',
       duration: 10,
@@ -139,14 +139,14 @@ export default function CourseEditor() {
     setEditingLesson({ ...editingLesson, [field]: value });
   };
 
-  const handleDeleteLesson = (lessonId: string) => {
+  const handleDeleteLesson = (lessonId: number) => {
     setFormData({
       ...formData,
       lessons: formData.lessons.filter(l => l.id !== lessonId),
     });
   };
 
-  const handleReorderLesson = (lessonId: string, direction: 'up' | 'down') => {
+  const handleReorderLesson = (lessonId: number, direction: 'up' | 'down') => {
     const index = formData.lessons.findIndex(l => l.id === lessonId);
     if (
       (direction === 'up' && index === 0) ||
