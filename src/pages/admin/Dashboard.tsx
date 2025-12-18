@@ -76,11 +76,14 @@ export default function AdminDashboard() {
             if (progressRes.ok) {
               const progressData = await progressRes.json();
               const progress = progressData.progress || [];
+              console.log(`Progress for ${student.name}:`, progress);
 
               // Завершенные курсы и награды
               for (const p of progress) {
+                console.log(`Checking progress item:`, p);
                 if (p.completedAt) {
                   completedCoursesCount++;
+                  console.log(`Found completed course! Total now: ${completedCoursesCount}`);
                   const course = courses.find((c: any) => c.displayId === p.courseId);
                   if (course) {
                     activities.push({
