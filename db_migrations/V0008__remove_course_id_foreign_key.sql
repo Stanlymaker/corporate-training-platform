@@ -1,0 +1,1 @@
+ALTER TABLE tests DROP CONSTRAINT tests_course_id_fkey;
