@@ -70,7 +70,8 @@ export default function AdminDashboard() {
         
         for (const student of students.slice(0, 10)) {
           try {
-            const progressRes = await fetch(`${API_ENDPOINTS.PROGRESS}?userId=${student.displayId}`, {
+            // API progress использует UUID, а не displayId
+            const progressRes = await fetch(`${API_ENDPOINTS.PROGRESS}?userId=${student.id}`, {
               headers: getAuthHeaders()
             });
             if (progressRes.ok) {
