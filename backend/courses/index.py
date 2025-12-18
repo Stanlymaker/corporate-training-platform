@@ -114,7 +114,16 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     
     headers = event.get('headers', {})
     query_params = event.get('queryStringParameters', {}) or {}
-    course_id = query_params.get('id')
+    course_id_param = query_params.get('id')
+    
+    # Определяем, что пришло - display_id (число) или UUID (строка)
+    course_id = None
+    course_uuid = None
+    if course_id_param:
+        try:
+            course_id = int(course_id_param)  # Это display_id
+        except ValueError:
+            course_uuid = course_id_param  # Это UUID
     
     payload, auth_error = require_auth(headers)
     if auth_error:
@@ -159,13 +168,23 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'isBase64Encoded': False
         }
     
-    if method == 'GET' and course_id:
-        cur.execute(
-            "SELECT id, display_id, title, description, duration, lessons_count, category, image, published, "
-            "pass_score, level, instructor, status, start_date, end_date, access_type "
-            "FROM courses WHERE display_id = %s",
-            (int(course_id),)
-        )
+    if method == 'GET' and (course_id or course_uuid):
+        if course_id:
+            # Поиск по display_id
+            cur.execute(
+                "SELECT id, display_id, title, description, duration, lessons_count, category, image, published, "
+                "pass_score, level, instructor, status, start_date, end_date, access_type "
+                "FROM courses WHERE display_id = %s",
+                (course_id,)
+            )
+        else:
+            # Поиск по UUID
+            cur.execute(
+                "SELECT id, display_id, title, description, duration, lessons_count, category, image, published, "
+                "pass_score, level, instructor, status, start_date, end_date, access_type "
+                "FROM courses WHERE id = %s",
+                (course_uuid,)
+            )
         course = cur.fetchone()
         
         if not course:
@@ -249,7 +268,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'isBase64Encoded': False
         }
     
-    if method == 'PUT' and course_id:
+    if method == 'PUT' and (course_id or course_uuid):
         admin_error = require_admin(headers)
         if admin_error:
             cur.close()
@@ -319,9 +338,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         update_fields.append('updated_at = %s')
         update_values.append(datetime.utcnow())
-        update_values.append(course_id)
         
-        query = f"UPDATE courses SET {', '.join(update_fields)} WHERE display_id = %s RETURNING id, display_id, title, description, duration, lessons_count, category, image, published, pass_score, level, instructor, status, start_date, end_date, access_type"
+        if course_id:
+            # Обновление по display_id
+            update_values.append(course_id)
+            query = f"UPDATE courses SET {', '.join(update_fields)} WHERE display_id = %s RETURNING id, display_id, title, description, duration, lessons_count, category, image, published, pass_score, level, instructor, status, start_date, end_date, access_type"
+        else:
+            # Обновление по UUID
+            update_values.append(course_uuid)
+            query = f"UPDATE courses SET {', '.join(update_fields)} WHERE id = %s RETURNING id, display_id, title, description, duration, lessons_count, category, image, published, pass_score, level, instructor, status, start_date, end_date, access_type"
         
         cur.execute(query, update_values)
         updated_course = cur.fetchone()
