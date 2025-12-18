@@ -68,6 +68,28 @@ export default function StudentCourses() {
     }
   };
 
+  const handleStartCourse = async (courseId: number) => {
+    try {
+      // Создаём прогресс через API
+      await fetch(`${API_ENDPOINTS.PROGRESS}?action=start`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          courseId: courseId,
+          lessonId: '0' // Временное значение, прогресс создастся без привязки к уроку
+        })
+      });
+      
+      // Обновляем данные и переходим на страницу курса
+      await loadData();
+      navigate(ROUTES.STUDENT.COURSE_DETAIL(String(courseId)));
+    } catch (error) {
+      console.error('Error starting course:', error);
+      // Даже если ошибка, переходим на страницу курса
+      navigate(ROUTES.STUDENT.COURSE_DETAIL(String(courseId)));
+    }
+  };
+
   const progressMap = new Map(progress.map(p => [p.courseId, p]));
 
   const notStartedCount = courses.filter(c => !progressMap.has(c.id)).length;
@@ -200,7 +222,13 @@ export default function StudentCourses() {
 
                   <Button 
                     className="w-full" 
-                    onClick={() => navigate(ROUTES.STUDENT.COURSE_DETAIL(String(course.id)))}
+                    onClick={() => {
+                      if (!courseProgress) {
+                        handleStartCourse(course.id);
+                      } else {
+                        navigate(ROUTES.STUDENT.COURSE_DETAIL(String(course.id)));
+                      }
+                    }}
                   >
                     {!courseProgress ? (
                       <>
