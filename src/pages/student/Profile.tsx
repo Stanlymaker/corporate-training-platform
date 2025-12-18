@@ -3,11 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import Icon from '@/components/ui/icon';
-import { mockCourses, mockProgress, mockRewards } from '@/data/mockData';
 import { getCategoryIcon, getCategoryGradient } from '@/utils/categoryIcons';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { API_ENDPOINTS, getAuthHeaders } from '@/config/api';
+import { Course, CourseProgress } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -15,15 +16,72 @@ export default function StudentProfile() {
   const navigate = useNavigate();
   const { user: currentUser } = useAuth();
   const [selectedReward, setSelectedReward] = useState<string | null>(null);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [userProgress, setUserProgress] = useState<CourseProgress[]>([]);
+  const [loading, setLoading] = useState(true);
   
   const userId = currentUser?.id || '';
-  const userProgress = mockProgress.filter(p => p.userId === userId);
+  
+  useEffect(() => {
+    loadData();
+  }, []);
+  
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      
+      const [coursesRes, progressRes] = await Promise.all([
+        fetch(API_ENDPOINTS.COURSES, { headers: getAuthHeaders() }),
+        fetch(`${API_ENDPOINTS.PROGRESS}?userId=${userId}`, { headers: getAuthHeaders() })
+      ]);
+      
+      if (coursesRes.ok) {
+        const coursesData = await coursesRes.json();
+        setCourses(coursesData.courses || []);
+      }
+      
+      if (progressRes.ok) {
+        const progressData = await progressRes.json();
+        setUserProgress(progressData.progress || []);
+      }
+    } catch (error) {
+      console.error('Error loading profile data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
   const completedCount = userProgress.filter(p => p.completed).length;
   const inProgressCount = userProgress.filter(p => !p.completed && p.completedLessons > 0).length;
-  const earnedRewards = userProgress.flatMap(p => p.earnedRewards);
   
-  const selectedRewardData = selectedReward ? mockRewards.find(r => r.id === selectedReward) : null;
+  const rewards = [
+    { id: '1', name: 'Первый шаг', icon: '🎯', description: 'Завершите свой первый курс', condition: 'Завершить 1 курс', count: 1 },
+    { id: '2', name: 'Опытный', icon: '⭐', description: 'Завершите 5 курсов', condition: 'Завершить 5 курсов', count: 5 },
+    { id: '3', name: 'Мастер', icon: '🏆', description: 'Завершите 10 курсов', condition: 'Завершить 10 курсов', count: 10 },
+    { id: '4', name: 'Отличник', icon: '💯', description: 'Сдайте тест на 100%', condition: 'Получить 100% на тесте', count: 0 },
+    { id: '5', name: 'Стажер', icon: '📚', description: 'Начните изучение 3 курсов', condition: 'Начать 3 курса', count: 3 },
+    { id: '6', name: 'Профессионал', icon: '🎓', description: 'Завершите все доступные курсы', condition: 'Завершить все курсы', count: courses.length },
+  ];
+  
+  const earnedRewards = rewards.filter(r => {
+    if (r.id === '4') return userProgress.some(p => p.testScore === 100);
+    if (r.id === '5') return userProgress.length >= 3;
+    if (r.id === '6') return completedCount === courses.length && courses.length > 0;
+    return completedCount >= r.count;
+  }).map(r => r.id);
+  
+  const selectedRewardData = selectedReward ? rewards.find(r => r.id === selectedReward) : null;
 
+  if (loading) {
+    return (
+      <StudentLayout>
+        <div className="flex items-center justify-center h-64">
+          <Icon name="Loader2" className="animate-spin" size={32} />
+        </div>
+      </StudentLayout>
+    );
+  }
+  
   return (
     <StudentLayout>
       <Card className="mb-6 border-0 shadow-md bg-gradient-to-br from-white to-gray-50">
@@ -123,33 +181,46 @@ export default function StudentProfile() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {userProgress.map((progress) => {
-                    const course = mockCourses.find(c => c.id === progress.courseId);
-                    if (!course) return null;
-                    
-                    const progressPercent = (progress.completedLessons / progress.totalLessons) * 100;
+                  {userProgress.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      <Icon name="BookOpen" size={48} className="mx-auto mb-3 opacity-30" />
+                      <p>Вы еще не начали ни одного курса</p>
+                      <Button 
+                        onClick={() => navigate(ROUTES.STUDENT.COURSES)} 
+                        className="mt-4"
+                        variant="outline"
+                      >
+                        Перейти к курсам
+                      </Button>
+                    </div>
+                  ) : (
+                    userProgress.map((progress) => {
+                      const course = courses.find(c => c.id === progress.courseId);
+                      if (!course) return null;
+                      
+                      const progressPercent = (progress.completedLessons / progress.totalLessons) * 100;
 
-                    return (
-                      <div key={course.id} className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer" onClick={() => navigate(`/student/courses/${course.id}`)}>
-                        <div className="flex items-start gap-3 mb-3">
-                          <div className={`w-16 h-16 rounded-lg bg-gradient-to-br ${getCategoryGradient(course.category)} flex items-center justify-center shadow-md flex-shrink-0`}>
-                            <Icon name={getCategoryIcon(course.category) as any} size={32} className="text-white" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-semibold text-base text-gray-900 mb-1">{course.title}</h4>
-                            <p className="text-xs text-gray-600 mb-2">{course.category} • {course.duration} мин</p>
-                            <div className="flex items-center gap-3">
-                              <Progress value={progressPercent} className="flex-1" />
-                              <span className="text-xs font-medium text-gray-700">{Math.round(progressPercent)}%</span>
+                      return (
+                        <div key={course.id} className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer" onClick={() => navigate(`/student/courses/${course.displayId}`)}>
+                          <div className="flex items-start gap-3 mb-3">
+                            <div className={`w-16 h-16 rounded-lg bg-gradient-to-br ${getCategoryGradient(course.category)} flex items-center justify-center shadow-md flex-shrink-0`}>
+                              <Icon name={getCategoryIcon(course.category) as any} size={32} className="text-white" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-semibold text-base text-gray-900 mb-1">{course.title}</h4>
+                              <p className="text-xs text-gray-600 mb-2">{course.category} • {course.duration} мин</p>
+                              <div className="flex items-center gap-3">
+                                <Progress value={progressPercent} className="flex-1" />
+                                <span className="text-xs font-medium text-gray-700">{Math.round(progressPercent)}%</span>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                        {progress.completed && progress.testScore && (
-                          <div className="flex items-center gap-2 text-sm text-green-600 font-medium">
-                            <Icon name="CheckCircle" size={16} />
-                            Завершено • Результат теста: {progress.testScore}%
-                          </div>
-                        )}
+                          {progress.completed && (
+                            <div className="flex items-center gap-2 text-sm text-green-600 font-medium">
+                              <Icon name="CheckCircle" size={16} />
+                              Завершено {progress.testScore ? `• Результат теста: ${progress.testScore}%` : ''}
+                            </div>
+                          )}
                       </div>
                     );
                   })}
@@ -167,13 +238,13 @@ export default function StudentProfile() {
                     Мои награды
                   </div>
                   <span className="text-sm font-normal text-gray-500">
-                    {earnedRewards.length} из {mockRewards.length}
+                    {earnedRewards.length} из {rewards.length}
                   </span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-2">
-                  {mockRewards.map((reward) => {
+                  {rewards.map((reward) => {
                     const earned = earnedRewards.includes(reward.id);
                     return (
                       <div
