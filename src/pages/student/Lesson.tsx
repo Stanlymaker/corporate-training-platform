@@ -93,11 +93,11 @@ export default function LessonPage() {
         
         // Автоматически отмечаем начало изучения урока (только если прогресса еще нет или это новый урок)
         if (foundLesson && courseData) {
-          markLessonStarted(courseData.id, foundLesson.id, courseProgress);
+          markLessonStarted(courseData.id, String(foundLesson.id), courseProgress);
         }
       } else if (!progressRes.ok && courseData && foundLesson) {
         // Если прогресса вообще нет (404), создаем его
-        markLessonStarted(courseData.id, foundLesson.id, null);
+        markLessonStarted(courseData.id, String(foundLesson.id), null);
       }
     } catch (error) {
       console.error('Error loading lesson:', error);
@@ -165,7 +165,7 @@ export default function LessonPage() {
         headers: getAuthHeaders(),
         body: JSON.stringify({
           courseId: course.id,
-          lessonId: lesson.id
+          lessonId: String(lesson.id)
         })
       });
       

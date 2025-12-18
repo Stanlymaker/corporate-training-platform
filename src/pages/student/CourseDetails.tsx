@@ -106,7 +106,7 @@ export default function CourseDetails() {
             headers: getAuthHeaders(),
             body: JSON.stringify({
               courseId: parseInt(id),
-              lessonId: lessons[lessonIndex].id
+              lessonId: String(lessons[lessonIndex].id)
             })
           });
           await loadCourseData();
