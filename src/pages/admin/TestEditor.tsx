@@ -202,6 +202,32 @@ export default function TestEditor() {
     });
   };
 
+  const handleDeleteTest = async () => {
+    if (!testId) return;
+    
+    const confirmDelete = confirm('Вы уверены, что хотите удалить этот тест? Это действие нельзя отменить.');
+    if (!confirmDelete) return;
+
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_ENDPOINTS.TESTS}?id=${testId}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+      });
+
+      if (response.ok) {
+        navigate(ROUTES.ADMIN.TESTS);
+      } else {
+        throw new Error('Failed to delete test');
+      }
+    } catch (error) {
+      console.error('Error deleting test:', error);
+      alert('Ошибка при удалении теста');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSaveTest = async () => {
     if (!formData.title.trim()) {
       alert('Введите название теста');
@@ -322,13 +348,25 @@ export default function TestEditor() {
               {isEditMode ? 'Редактировать тест' : 'Создать новый тест'}
             </h1>
           </div>
-          <Button
-            onClick={handleSaveTest}
-            disabled={!formData.title || formData.questions.length === 0 || loading}
-          >
-            <Icon name="Save" className="mr-2" size={16} />
-            {loading ? 'Сохранение...' : isEditMode ? 'Сохранить изменения' : 'Создать тест'}
-          </Button>
+          <div className="flex gap-3">
+            {isEditMode && (
+              <Button
+                variant="destructive"
+                onClick={handleDeleteTest}
+                disabled={loading}
+              >
+                <Icon name="Trash2" className="mr-2" size={16} />
+                Удалить тест
+              </Button>
+            )}
+            <Button
+              onClick={handleSaveTest}
+              disabled={!formData.title || formData.questions.length === 0 || loading}
+            >
+              <Icon name="Save" className="mr-2" size={16} />
+              {loading ? 'Сохранение...' : isEditMode ? 'Сохранить изменения' : 'Создать тест'}
+            </Button>
+          </div>
         </div>
 
       <div className="space-y-6">

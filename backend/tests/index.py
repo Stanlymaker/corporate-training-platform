@@ -106,6 +106,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     POST - создать тест (админ)
     POST ?action=question - создать вопрос (админ)
     PUT ?id=x - обновить тест (админ)
+    DELETE ?id=x - удалить тест и его вопросы (админ)
     '''
     method: str = event.get('httpMethod', 'GET')
     
@@ -114,7 +115,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'statusCode': 200,
             'headers': {
                 'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
+                'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
                 'Access-Control-Allow-Headers': 'Content-Type, X-Auth-Token',
                 'Access-Control-Max-Age': '86400'
             },
@@ -378,6 +379,32 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'statusCode': 200,
             'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
             'body': json.dumps({'test': test_data}, ensure_ascii=False),
+            'isBase64Encoded': False
+        }
+    
+    if method == 'DELETE' and test_id:
+        admin_error = require_admin(headers)
+        if admin_error:
+            cur.close()
+            conn.close()
+            return {
+                'statusCode': admin_error['statusCode'],
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': admin_error['error']}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
+        
+        cur.execute("DELETE FROM questions WHERE test_id = %s", (test_id,))
+        cur.execute("DELETE FROM tests WHERE id = %s", (test_id,))
+        conn.commit()
+        
+        cur.close()
+        conn.close()
+        
+        return {
+            'statusCode': 200,
+            'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'message': 'Тест успешно удален'}, ensure_ascii=False),
             'isBase64Encoded': False
         }
     
