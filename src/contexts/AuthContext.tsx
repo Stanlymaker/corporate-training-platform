@@ -21,6 +21,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const token = localStorage.getItem('authToken');
       
       if (savedUser && token) {
+        setUser(JSON.parse(savedUser));
+        
         try {
           const response = await fetch(`${API_ENDPOINTS.AUTH}?action=verify`, {
             method: 'POST',
@@ -30,16 +32,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             },
           });
 
-          if (response.ok) {
-            setUser(JSON.parse(savedUser));
-          } else {
+          if (!response.ok) {
+            setUser(null);
             localStorage.removeItem('currentUser');
             localStorage.removeItem('authToken');
           }
         } catch (error) {
-          console.error('Auth verification error:', error);
-          localStorage.removeItem('currentUser');
-          localStorage.removeItem('authToken');
+          console.error('Auth verification error (keeping user logged in):', error);
         }
       }
       setIsLoading(false);

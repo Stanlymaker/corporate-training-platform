@@ -12,6 +12,7 @@ import { API_ENDPOINTS, getAuthHeaders } from '@/config/api';
 
 interface Course {
   id: string;
+  displayId: number;
   title: string;
   description: string;
   category: string;
@@ -200,7 +201,7 @@ export default function StudentCourses() {
 
                   <Button 
                     className="w-full" 
-                    onClick={() => navigate(ROUTES.STUDENT.COURSE_DETAIL(course.id))}
+                    onClick={() => navigate(ROUTES.STUDENT.COURSE_DETAIL(String(course.displayId)))}
                   >
                     {!courseProgress ? (
                       <>
