@@ -96,7 +96,7 @@ export default function CourseDetails() {
 
   const handleLessonClick = async (lessonOrder: number, lessonIndex: number) => {
     const previousLesson = lessonIndex > 0 ? lessons[lessonIndex - 1] : null;
-    const isLocked = previousLesson?.requiresPrevious && !progress?.completedLessonIds.includes(previousLesson.id);
+    const isLocked = previousLesson?.requiresPrevious && !progress?.completedLessonIds.includes(String(previousLesson.id));
     
     if (!isLocked) {
       if (!progress && id) {
@@ -227,9 +227,9 @@ export default function CourseDetails() {
             ) : (
               <div className="space-y-2">
                 {lessons.map((lesson, index) => {
-                  const isCompleted = progress?.completedLessonIds.includes(lesson.id);
+                  const isCompleted = progress?.completedLessonIds.includes(String(lesson.id));
                   const previousLesson = index > 0 ? lessons[index - 1] : null;
-                  const isLocked = lesson.requiresPrevious && previousLesson && !progress?.completedLessonIds.includes(previousLesson.id);
+                  const isLocked = lesson.requiresPrevious && previousLesson && !progress?.completedLessonIds.includes(String(previousLesson.id));
                   const isLastAccessed = progress?.lastAccessedLesson === lesson.id;
 
                   return (

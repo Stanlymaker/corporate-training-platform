@@ -108,7 +108,7 @@ export default function UserCoursesManagement({
     let progressLabel = 'Не начат';
     let progressColor = 'bg-gray-100 text-gray-700';
     
-    if (progress?.completed) {
+    if (progress?.completed || (progress && progress.completedLessons >= progress.totalLessons && progress.totalLessons > 0)) {
       progressStatus = 'completed';
       progressLabel = 'Завершен';
       progressColor = 'bg-green-100 text-green-700';
@@ -219,7 +219,7 @@ export default function UserCoursesManagement({
                         <div className="text-sm text-gray-500 text-center py-4">Загрузка уроков...</div>
                       ) : (
                         lessons.map((lesson) => {
-                          const isCompleted = progress?.completedLessonIds?.includes(lesson.id) || false;
+                          const isCompleted = progress?.completedLessonIds?.includes(String(lesson.id)) || false;
                           const testResult = courseTestResults.find(tr => tr.testId === lesson.testId);
                           
                           return (
@@ -333,7 +333,7 @@ export default function UserCoursesManagement({
                         <div className="text-sm text-gray-500 text-center py-4">Загрузка уроков...</div>
                       ) : (
                         lessons.map((lesson) => {
-                          const isCompleted = progress?.completedLessonIds?.includes(lesson.id) || false;
+                          const isCompleted = progress?.completedLessonIds?.includes(String(lesson.id)) || false;
                           const testResult = courseTestResults.find(tr => tr.testId === lesson.testId);
                           
                           return (
