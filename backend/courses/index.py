@@ -147,18 +147,25 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 "published, pass_score, level, instructor, status, start_date, end_date, access_type "
                 "FROM courses_v2 WHERE published = true AND access_type = 'open'"
             )
-            open_courses = cur.fetchall()
+            open_courses = list(cur.fetchall())
             
             cur.execute(
-                "SELECT c.id, c.title, c.description, c.duration, c.lessons_count, c.category, c.image, "
-                "c.published, c.pass_score, c.level, c.instructor, c.status, c.start_date, c.end_date, c.access_type "
-                "FROM courses_v2 c INNER JOIN course_assignments_v2 ca ON c.id = ca.course_id "
-                "WHERE c.published = true AND c.access_type = 'closed' AND ca.user_id = %s",
+                "SELECT course_id FROM course_assignments_v2 WHERE user_id = %s",
                 (payload['user_id'],)
             )
-            closed_courses = cur.fetchall()
+            assigned_course_ids = [row[0] for row in cur.fetchall()]
             
-            courses = list(open_courses) + list(closed_courses)
+            closed_courses = []
+            if assigned_course_ids:
+                placeholders = ','.join(str(cid) for cid in assigned_course_ids)
+                cur.execute(
+                    f"SELECT id, title, description, duration, lessons_count, category, image, "
+                    f"published, pass_score, level, instructor, status, start_date, end_date, access_type "
+                    f"FROM courses_v2 WHERE published = true AND access_type = 'closed' AND id IN ({placeholders})"
+                )
+                closed_courses = list(cur.fetchall())
+            
+            courses = open_courses + closed_courses
             courses.sort(key=lambda x: x[0], reverse=True)
         
         if payload.get('role') == 'admin':
