@@ -155,7 +155,7 @@ export function useTestEditorActions(
             correctAnswer = question.matchingPairs || [];
           }
 
-          const questionPayload = {
+          const questionPayload: any = {
             testId: savedTestId,
             type: question.type,
             text: question.question,
@@ -163,15 +163,27 @@ export function useTestEditorActions(
             correctAnswer: correctAnswer,
             points: question.points,
             order: i,
-            matchingPairs: question.type === 'matching' ? question.matchingPairs : undefined,
-            textCheckType: question.type === 'text' ? (question.textCheckType || 'manual') : undefined,
           };
+          
+          if (question.type === 'matching' && question.matchingPairs) {
+            questionPayload.matchingPairs = question.matchingPairs;
+          }
+          
+          if (question.type === 'text') {
+            questionPayload.textCheckType = question.textCheckType || 'manual';
+          }
 
-          await fetch(`${API_ENDPOINTS.TESTS}?action=question`, {
+          const response = await fetch(`${API_ENDPOINTS.TESTS}?action=question`, {
             method: 'POST',
             headers: getAuthHeaders(),
             body: JSON.stringify(questionPayload),
           });
+          
+          if (!response.ok) {
+            const errorData = await response.json();
+            console.error('[DEBUG] Question creation failed:', errorData);
+            throw new Error(`Failed to create question: ${errorData.error || response.statusText}`);
+          }
         }
         
         navigate(ROUTES.ADMIN.TESTS);
