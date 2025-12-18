@@ -189,7 +189,7 @@ export default function CourseEditor() {
       }
     }
     
-    if (isEditMode && wasEverPublished && formData.status === 'published' && savedStatus !== 'published') {
+    if (isEditMode && formData.status === 'published' && savedStatus !== 'published') {
       const count = await checkStudentsProgress(actualCourseId);
       console.log('Students with progress:', count);
       if (count > 0) {
