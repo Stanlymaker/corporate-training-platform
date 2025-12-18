@@ -314,7 +314,8 @@ export default function UserCoursesManagement({
                   )}
                 </div>
               );
-            })}
+            })
+            )}
           </div>
         </div>
 
