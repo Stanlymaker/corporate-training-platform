@@ -1,0 +1,15 @@
+{
+  "tests": [
+    {
+      "name": "POST / - инициализация админа",
+      "method": "POST",
+      "path": "/",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "message": "string",
+        "email": "admin@example.com"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}
