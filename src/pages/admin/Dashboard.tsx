@@ -38,9 +38,11 @@ export default function AdminDashboard() {
       if (usersRes.ok && coursesRes.ok) {
         const usersData = await usersRes.json();
         const coursesData = await coursesRes.json();
+        const rewardsData = rewardsRes.ok ? await rewardsRes.json() : { rewards: [] };
 
         const users = usersData.users || [];
         const courses = coursesData.courses || [];
+        const rewards = rewardsData.rewards || [];
 
         setStats({
           totalCourses: courses.length,
@@ -62,8 +64,8 @@ export default function AdminDashboard() {
               const progressData = await progressRes.json();
               const progress = progressData.progress || [];
 
-              // Завершенные курсы
-              progress.forEach((p: any) => {
+              // Завершенные курсы и награды
+              for (const p of progress) {
                 if (p.completedAt) {
                   const course = courses.find((c: any) => c.displayId === p.courseId);
                   if (course) {
@@ -78,23 +80,19 @@ export default function AdminDashboard() {
 
                 // Полученные награды
                 if (p.earnedRewards && p.earnedRewards.length > 0) {
-                  if (rewardsRes.ok) {
-                    const rewardsData = await rewardsRes.json();
-                    const rewards = rewardsData.rewards || [];
-                    p.earnedRewards.forEach((rewardId: number) => {
-                      const reward = rewards.find((r: any) => r.displayId === rewardId);
-                      if (reward) {
-                        activities.push({
-                          type: 'reward_earned',
-                          studentName: student.name,
-                          itemName: reward.name,
-                          timestamp: p.completedAt || new Date().toISOString()
-                        });
-                      }
-                    });
+                  for (const rewardId of p.earnedRewards) {
+                    const reward = rewards.find((r: any) => r.displayId === rewardId);
+                    if (reward) {
+                      activities.push({
+                        type: 'reward_earned',
+                        studentName: student.name,
+                        itemName: reward.name,
+                        timestamp: p.completedAt || new Date().toISOString()
+                      });
+                    }
                   }
                 }
-              });
+              }
             }
           } catch (err) {
             console.error('Error loading progress for student:', err);
