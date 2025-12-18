@@ -183,7 +183,7 @@ export default function CourseEditor() {
   };
 
   const handleSaveWithCheck = async () => {
-    console.log('CourseEditor handleSaveWithCheck:', { isEditMode, wasEverPublished, formDataStatus: formData.status, savedStatus });
+    console.log('CourseEditor handleSaveWithCheck:', { isEditMode, wasEverPublished, formDataStatus: formData.status, savedStatus, hasUnsavedChanges });
     
     if (formData.status === 'published') {
       const testLessons = formData.lessons.filter(l => l.type === 'test' && l.testId);
