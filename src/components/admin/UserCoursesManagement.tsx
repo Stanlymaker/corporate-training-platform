@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
-import { User, CourseAssignment, Course } from '@/types';
+import { User, CourseAssignment, Course, Lesson, CourseProgress, TestResult } from '@/types';
 import { useState, useEffect } from 'react';
 import { API_ENDPOINTS, getAuthHeaders } from '@/config/api';
 
@@ -21,9 +21,13 @@ export default function UserCoursesManagement({
   const [expandedCourseId, setExpandedCourseId] = useState<string | null>(null);
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
+  const [lessonsData, setLessonsData] = useState<Record<string, Lesson[]>>({});
+  const [progressData, setProgressData] = useState<CourseProgress[]>([]);
+  const [testResults, setTestResults] = useState<Record<string, TestResult[]>>({});
 
   useEffect(() => {
     loadCourses();
+    loadProgress();
   }, []);
 
   const loadCourses = async () => {
@@ -38,6 +42,56 @@ export default function UserCoursesManagement({
       console.error('Error loading courses:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadProgress = async () => {
+    try {
+      const response = await fetch(`${API_ENDPOINTS.PROGRESS}?userId=${user.id}`, { headers: getAuthHeaders() });
+      if (response.ok) {
+        const data = await response.json();
+        setProgressData(data.progress || []);
+      }
+    } catch (error) {
+      console.error('Error loading progress:', error);
+    }
+  };
+
+  const loadCourseLessons = async (courseId: string) => {
+    if (lessonsData[courseId]) return;
+    
+    try {
+      const response = await fetch(`${API_ENDPOINTS.LESSONS}?courseId=${courseId}`, { headers: getAuthHeaders() });
+      if (response.ok) {
+        const data = await response.json();
+        setLessonsData(prev => ({ ...prev, [courseId]: data.lessons || [] }));
+      }
+    } catch (error) {
+      console.error('Error loading lessons:', error);
+    }
+  };
+
+  const loadTestResults = async (courseId: string) => {
+    if (testResults[courseId]) return;
+    
+    try {
+      const response = await fetch(`${API_ENDPOINTS.TESTS}?action=results&courseId=${courseId}&userId=${user.id}`, { headers: getAuthHeaders() });
+      if (response.ok) {
+        const data = await response.json();
+        setTestResults(prev => ({ ...prev, [courseId]: data.results || [] }));
+      }
+    } catch (error) {
+      console.error('Error loading test results:', error);
+    }
+  };
+
+  const toggleCourse = async (courseId: string) => {
+    if (expandedCourseId === courseId) {
+      setExpandedCourseId(null);
+    } else {
+      setExpandedCourseId(courseId);
+      await loadCourseLessons(courseId);
+      await loadTestResults(courseId);
     }
   };
 
@@ -102,19 +156,75 @@ export default function UserCoursesManagement({
             {courses.filter(c => c.accessType === 'open').map((course) => {
               const courseStatus = getCourseStatus(course);
               
+              const isExpanded = expandedCourseId === course.id;
+              const lessons = lessonsData[course.id] || [];
+              const progress = progressData.find(p => p.courseId === course.id);
+              const courseTestResults = testResults[course.id] || [];
+              
               return (
-                <div key={course.id} className="bg-gray-50 rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-medium text-gray-900">{course.title}</div>
-                      <div className="text-xs text-gray-500 mt-0.5">
-                        {course.lessonsCount} уроков • {course.duration} мин
+                <div key={course.id} className="bg-gray-50 rounded-lg">
+                  <div 
+                    className="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-100 transition-colors"
+                    onClick={() => toggleCourse(course.id)}
+                  >
+                    <div className="flex items-center gap-3 flex-1">
+                      <Icon name={isExpanded ? "ChevronDown" : "ChevronRight"} size={18} className="text-gray-400" />
+                      <div>
+                        <div className="font-medium text-gray-900">{course.title}</div>
+                        <div className="text-xs text-gray-500 mt-0.5">
+                          {course.lessonsCount} уроков • {course.duration} мин
+                        </div>
                       </div>
                     </div>
                     <Badge className={courseStatus.color}>
                       {courseStatus.label}
                     </Badge>
                   </div>
+                  
+                  {isExpanded && (
+                    <div className="px-4 pb-4 space-y-2">
+                      {lessons.length === 0 ? (
+                        <div className="text-sm text-gray-500 text-center py-4">Загрузка уроков...</div>
+                      ) : (
+                        lessons.map((lesson) => {
+                          const isCompleted = progress?.completedLessonIds?.includes(lesson.id) || false;
+                          const testResult = courseTestResults.find(tr => tr.testId === lesson.testId);
+                          
+                          return (
+                            <div key={lesson.id} className="bg-white rounded-lg p-3 flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                                  isCompleted ? 'bg-green-500' : 'bg-gray-200'
+                                }`}>
+                                  {isCompleted ? (
+                                    <Icon name="Check" size={14} className="text-white" />
+                                  ) : (
+                                    <span className="text-xs text-gray-500">{lesson.order}</span>
+                                  )}
+                                </div>
+                                <div>
+                                  <div className="text-sm font-medium text-gray-900">{lesson.title}</div>
+                                  <div className="text-xs text-gray-500">{lesson.duration} мин</div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {lesson.type === 'test' && testResult && (
+                                  <Badge className={testResult.passed ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}>
+                                    {testResult.score}%
+                                  </Badge>
+                                )}
+                                {isCompleted ? (
+                                  <Badge className="bg-green-100 text-green-700">Пройден</Badge>
+                                ) : (
+                                  <Badge className="bg-gray-100 text-gray-600">Не начат</Badge>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -132,13 +242,24 @@ export default function UserCoursesManagement({
               const assignment = userAssignments.find(a => a.courseId === course.id);
               const isAssigned = assignedCourseIds.includes(course.id);
               
+              const isExpanded = expandedCourseId === course.id;
+              const lessons = lessonsData[course.id] || [];
+              const progress = progressData.find(p => p.courseId === course.id);
+              const courseTestResults = testResults[course.id] || [];
+              
               return (
-                <div key={course.id} className="bg-gray-50 rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-medium text-gray-900">{course.title}</div>
-                      <div className="text-xs text-gray-500 mt-0.5">
-                        {course.lessonsCount} уроков • {course.duration} мин
+                <div key={course.id} className="bg-gray-50 rounded-lg">
+                  <div className="p-4 flex items-center justify-between">
+                    <div 
+                      className="flex items-center gap-3 flex-1 cursor-pointer hover:opacity-75 transition-opacity"
+                      onClick={() => toggleCourse(course.id)}
+                    >
+                      <Icon name={isExpanded ? "ChevronDown" : "ChevronRight"} size={18} className="text-gray-400" />
+                      <div>
+                        <div className="font-medium text-gray-900">{course.title}</div>
+                        <div className="text-xs text-gray-500 mt-0.5">
+                          {course.lessonsCount} уроков • {course.duration} мин
+                        </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -149,7 +270,7 @@ export default function UserCoursesManagement({
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => onAssignCourse(user.id, course.id)}
+                          onClick={(e) => { e.stopPropagation(); onAssignCourse(user.id, course.id); }}
                         >
                           <Icon name="Plus" size={14} className="mr-1" />
                           Назначить
@@ -159,13 +280,58 @@ export default function UserCoursesManagement({
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => onRemoveAssignment(assignment.id)}
+                          onClick={(e) => { e.stopPropagation(); onRemoveAssignment(assignment.id); }}
                         >
                           <Icon name="X" size={14} />
                         </Button>
                       )}
                     </div>
                   </div>
+                  
+                  {isExpanded && (
+                    <div className="px-4 pb-4 space-y-2">
+                      {lessons.length === 0 ? (
+                        <div className="text-sm text-gray-500 text-center py-4">Загрузка уроков...</div>
+                      ) : (
+                        lessons.map((lesson) => {
+                          const isCompleted = progress?.completedLessonIds?.includes(lesson.id) || false;
+                          const testResult = courseTestResults.find(tr => tr.testId === lesson.testId);
+                          
+                          return (
+                            <div key={lesson.id} className="bg-white rounded-lg p-3 flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                                  isCompleted ? 'bg-green-500' : 'bg-gray-200'
+                                }`}>
+                                  {isCompleted ? (
+                                    <Icon name="Check" size={14} className="text-white" />
+                                  ) : (
+                                    <span className="text-xs text-gray-500">{lesson.order}</span>
+                                  )}
+                                </div>
+                                <div>
+                                  <div className="text-sm font-medium text-gray-900">{lesson.title}</div>
+                                  <div className="text-xs text-gray-500">{lesson.duration} мин</div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {lesson.type === 'test' && testResult && (
+                                  <Badge className={testResult.passed ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}>
+                                    {testResult.score}%
+                                  </Badge>
+                                )}
+                                {isCompleted ? (
+                                  <Badge className="bg-green-100 text-green-700">Пройден</Badge>
+                                ) : (
+                                  <Badge className="bg-gray-100 text-gray-600">Не начат</Badge>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })}
