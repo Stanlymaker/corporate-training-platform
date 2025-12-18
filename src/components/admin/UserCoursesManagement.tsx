@@ -61,11 +61,7 @@ export default function UserCoursesManagement({
     if (lessonsData[courseId]) return;
     
     try {
-      // Находим курс по UUID, чтобы получить display_id
-      const course = courses.find(c => c.id === courseId);
-      const displayId = course?.displayId || courseId;
-      
-      const response = await fetch(`${API_ENDPOINTS.LESSONS}?courseId=${displayId}`, { headers: getAuthHeaders() });
+      const response = await fetch(`${API_ENDPOINTS.LESSONS}?courseId=${courseId}`, { headers: getAuthHeaders() });
       if (response.ok) {
         const data = await response.json();
         setLessonsData(prev => ({ ...prev, [courseId]: data.lessons || [] }));

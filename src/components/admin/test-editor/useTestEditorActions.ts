@@ -124,7 +124,7 @@ export function useTestEditorActions(
       }
 
       const testData = await testRes.json();
-      const savedTestId = testData.test.displayId;
+      const savedTestId = testData.test.id;
 
       // Получаем текущие вопросы из БД, если это режим редактирования
       let existingQuestions: any[] = [];
@@ -234,7 +234,6 @@ export function useTestEditorActions(
       if (createRes.ok) {
         const newTestData = await createRes.json();
         const newTestId = newTestData.test.id;
-        const newDisplayId = newTestData.test.displayId;
 
         for (let i = 0; i < formData.questions.length; i++) {
           const question = formData.questions[i];
@@ -274,7 +273,7 @@ export function useTestEditorActions(
           });
         }
 
-        navigate(`/admin/tests/edit/${newDisplayId}`);
+        navigate(`/admin/tests/edit/${newTestId}`);
       }
     } catch (error) {
       console.error('Error copying test:', error);

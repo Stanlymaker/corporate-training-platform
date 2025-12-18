@@ -11,7 +11,6 @@ import { API_ENDPOINTS, getAuthHeaders } from '@/config/api';
 
 interface Course {
   id: string;
-  displayId: number;
   title: string;
   description: string;
   category: string;
@@ -48,7 +47,7 @@ interface CourseProgress {
 }
 
 export default function CourseDetails() {
-  const { courseId: displayId } = useParams();
+  const { courseId: id } = useParams();
   const navigate = useNavigate();
   const [course, setCourse] = useState<Course | null>(null);
   const [lessons, setLessons] = useState<Lesson[]>([]);
@@ -59,15 +58,15 @@ export default function CourseDetails() {
 
   useEffect(() => {
     loadCourseData();
-  }, [displayId]);
+  }, [id]);
 
   const loadCourseData = async () => {
     try {
       setLoading(true);
       const [courseRes, lessonsRes, progressRes] = await Promise.all([
-        fetch(`${API_ENDPOINTS.COURSES}?id=${displayId}`, { headers: getAuthHeaders() }),
-        fetch(`${API_ENDPOINTS.LESSONS}?courseId=${displayId}`, { headers: getAuthHeaders() }),
-        fetch(`${API_ENDPOINTS.PROGRESS}?userId=${userId}&courseId=${displayId}`, { headers: getAuthHeaders() }),
+        fetch(`${API_ENDPOINTS.COURSES}?id=${id}`, { headers: getAuthHeaders() }),
+        fetch(`${API_ENDPOINTS.LESSONS}?courseId=${id}`, { headers: getAuthHeaders() }),
+        fetch(`${API_ENDPOINTS.PROGRESS}?userId=${userId}&courseId=${id}`, { headers: getAuthHeaders() }),
       ]);
 
       let courseUuid = null;
@@ -101,7 +100,7 @@ export default function CourseDetails() {
     
     if (!isLocked) {
       // Используем order+1 для читаемого URL
-      navigate(ROUTES.STUDENT.LESSON(displayId!, String(lessonOrder + 1)));
+      navigate(ROUTES.STUDENT.LESSON(id!, String(lessonOrder + 1)));
     }
   };
 

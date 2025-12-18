@@ -12,7 +12,6 @@ import { API_ENDPOINTS, getAuthHeaders } from '@/config/api';
 
 interface Course {
   id: string;
-  displayId: number;
   title: string;
   description: string;
 }

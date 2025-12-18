@@ -10,7 +10,6 @@ import { API_ENDPOINTS, getAuthHeaders } from '@/config/api';
 
 interface Course {
   id: string;
-  displayId: number;
   title: string;
   description: string;
   category: string;
@@ -37,7 +36,7 @@ interface Lesson {
 }
 
 export default function AdminCourseView() {
-  const { courseId: displayId } = useParams();
+  const { courseId: id } = useParams();
   const navigate = useNavigate();
   const [course, setCourse] = useState<Course | null>(null);
   const [lessons, setLessons] = useState<Lesson[]>([]);
@@ -45,14 +44,14 @@ export default function AdminCourseView() {
 
   useEffect(() => {
     loadCourseData();
-  }, [displayId]);
+  }, [id]);
 
   const loadCourseData = async () => {
     try {
       setLoading(true);
       const [courseRes, lessonsRes] = await Promise.all([
-        fetch(`${API_ENDPOINTS.COURSES}?id=${displayId}`, { headers: getAuthHeaders() }),
-        fetch(`${API_ENDPOINTS.LESSONS}?courseId=${displayId}`, { headers: getAuthHeaders() }),
+        fetch(`${API_ENDPOINTS.COURSES}?id=${id}`, { headers: getAuthHeaders() }),
+        fetch(`${API_ENDPOINTS.LESSONS}?courseId=${id}`, { headers: getAuthHeaders() }),
       ]);
 
       if (courseRes.ok) {
@@ -73,7 +72,7 @@ export default function AdminCourseView() {
   };
 
   const handleLessonClick = (lessonOrder: number) => {
-    navigate(`/admin/lesson/${displayId}/${lessonOrder + 1}`);
+    navigate(`/admin/lesson/${id}/${lessonOrder + 1}`);
   };
 
   if (loading) {
@@ -151,7 +150,7 @@ export default function AdminCourseView() {
           
           <div className="mt-6">
             <Button
-              onClick={() => navigate(`/admin/courses/edit/${course.displayId}`)}
+              onClick={() => navigate(`/admin/courses/edit/${course.id}`)}
               className="bg-primary"
             >
               <Icon name="Edit" className="mr-2" size={16} />

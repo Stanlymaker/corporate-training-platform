@@ -51,7 +51,7 @@ export default function AdminDashboard() {
         let totalLessons = 0;
         for (const course of courses) {
           try {
-            const lessonsRes = await fetch(`${API_ENDPOINTS.LESSONS}?courseId=${course.displayId}`, {
+            const lessonsRes = await fetch(`${API_ENDPOINTS.LESSONS}?courseId=${course.id}`, {
               headers: getAuthHeaders()
             });
             if (lessonsRes.ok) {
@@ -97,7 +97,7 @@ export default function AdminDashboard() {
                 // Полученные награды
                 if (p.earnedRewards && p.earnedRewards.length > 0) {
                   for (const rewardId of p.earnedRewards) {
-                    const reward = rewards.find((r: any) => r.displayId === rewardId);
+                    const reward = rewards.find((r: any) => r.id === rewardId);
                     if (reward) {
                       activities.push({
                         type: 'reward_earned',

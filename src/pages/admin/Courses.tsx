@@ -11,7 +11,6 @@ import AssignStudentsModal from '@/components/admin/AssignStudentsModal';
 
 interface Course {
   id: string;
-  displayId: number;
   title: string;
   description: string;
   category: string;
@@ -184,7 +183,7 @@ export default function AdminCourses() {
                   <Button 
                     variant="outline" 
                     size="sm"
-                    onClick={() => navigate(`/admin/courses/edit/${course.displayId}`)}
+                    onClick={() => navigate(`/admin/courses/edit/${course.id}`)}
                   >
                     <Icon name="Edit" className="mr-1" size={14} />
                     Ред.
@@ -192,7 +191,7 @@ export default function AdminCourses() {
                   <Button
                     variant="outline" 
                     size="sm"
-                    onClick={() => navigate(`/admin/courses/view/${course.displayId}`)}
+                    onClick={() => navigate(`/admin/courses/view/${course.id}`)}
                   >
                     <Icon name="Eye" className="mr-1" size={14} />
                     Вид

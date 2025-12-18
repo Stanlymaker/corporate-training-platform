@@ -55,7 +55,7 @@ export function useCourseEditorActions(
       if (courseRes.ok) {
         const courseData = await courseRes.json();
         
-        const lessonsRes = await fetch(`${API_ENDPOINTS.LESSONS}?courseId=${courseData.course.displayId}`, { headers: getAuthHeaders() });
+        const lessonsRes = await fetch(`${API_ENDPOINTS.LESSONS}?courseId=${courseData.course.id}`, { headers: getAuthHeaders() });
         const lessonsData = lessonsRes.ok ? await lessonsRes.json() : { lessons: [] };
         
         setFormData({
@@ -159,7 +159,7 @@ export function useCourseEditorActions(
       }
 
       const courseData = await courseRes.json();
-      const savedCourseId = courseData.course.displayId;
+      const savedCourseId = courseData.course.id;
 
       if (isEditMode) {
         const existingLessonsRes = await fetch(`${API_ENDPOINTS.LESSONS}?courseId=${savedCourseId}`, {

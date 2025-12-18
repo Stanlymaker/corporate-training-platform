@@ -1,7 +1,7 @@
 export type UserRole = 'admin' | 'student';
 
 export interface User {
-  id: string;
+  id: number;
   email: string;
   name: string;
   role: UserRole;
@@ -15,7 +15,7 @@ export interface User {
 }
 
 export interface Course {
-  id: string;
+  id: number;
   title: string;
   description: string;
   duration: number;
@@ -31,13 +31,13 @@ export interface Course {
   status?: 'draft' | 'published' | 'archived';
   startDate?: string;
   endDate?: string;
-  prerequisiteCourses?: string[];
+  prerequisiteCourses?: number[];
   accessType: 'open' | 'closed';
 }
 
 export interface Lesson {
   id: string;
-  courseId: string;
+  courseId: number;
   title: string;
   content: string;
   type: 'text' | 'video' | 'pdf' | 'quiz' | 'test';
@@ -47,7 +47,7 @@ export interface Lesson {
   description: string;
   materials?: LessonMaterial[];
   requiresPrevious?: boolean;
-  testId?: string;
+  testId?: number;
   isFinalTest?: boolean;
   finalTestRequiresAllLessons?: boolean;
   finalTestRequiresAllTests?: boolean;
@@ -61,8 +61,8 @@ export interface LessonMaterial {
 }
 
 export interface Test {
-  id: string;
-  courseId: string;
+  id: number;
+  courseId: number;
   lessonId?: string;
   title: string;
   description: string;
@@ -77,7 +77,7 @@ export interface Test {
 
 export interface Question {
   id: string;
-  testId: string;
+  testId: number;
   type: 'single' | 'multiple' | 'text' | 'matching';
   text: string;
   options?: string[];
@@ -89,24 +89,24 @@ export interface Question {
 }
 
 export interface Reward {
-  id: string;
+  id: number;
   name: string;
   icon: string;
   color: string;
-  courseId: string;
+  courseId: number;
   description?: string;
   condition?: string;
   bonuses?: string[];
 }
 
 export interface CourseProgress {
-  courseId: string;
-  userId: string;
+  courseId: number;
+  userId: number;
   completedLessons: number;
   totalLessons: number;
   testScore?: number;
   completed: boolean;
-  earnedRewards: string[];
+  earnedRewards: number[];
   completedLessonIds: string[];
   lastAccessedLesson?: string;
   startedAt?: string;
@@ -114,9 +114,9 @@ export interface CourseProgress {
 
 export interface CourseAssignment {
   id: string;
-  courseId: string;
-  userId: string;
-  assignedBy: string;
+  courseId: number;
+  userId: number;
+  assignedBy: number;
   assignedAt: string;
   dueDate?: string;
   status: 'assigned' | 'in_progress' | 'completed' | 'overdue';
@@ -125,9 +125,9 @@ export interface CourseAssignment {
 
 export interface TestResult {
   id: string;
-  userId: string;
-  courseId: string;
-  testId: string;
+  userId: number;
+  courseId: number;
+  testId: number;
   score: number;
   answers: Record<string, string | string[]>;
   completedAt: string;

@@ -23,11 +23,11 @@ export type LogAction =
   | 'api.error';
 
 export interface SystemLog {
-  id: string;
+  id: number;
   timestamp: string;
   level: LogLevel;
   action: LogAction;
-  userId?: string;
+  userId?: number;
   userName?: string;
   message: string;
   details?: string;

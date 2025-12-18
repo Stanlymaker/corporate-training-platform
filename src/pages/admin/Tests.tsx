@@ -23,7 +23,6 @@ import { API_ENDPOINTS, getAuthHeaders } from '@/config/api';
 
 interface Test {
   id: string;
-  displayId: number;
   title: string;
   description: string;
   courseId: string;
@@ -69,7 +68,7 @@ export default function Tests() {
 
     setActionLoading(true);
     try {
-      const response = await fetch(`${API_ENDPOINTS.TESTS}?id=${deletingTest.displayId}`, {
+      const response = await fetch(`${API_ENDPOINTS.TESTS}?id=${deletingTest.id}`, {
         method: 'DELETE',
         headers: getAuthHeaders(),
       });
@@ -92,8 +91,8 @@ export default function Tests() {
     setActionLoading(true);
     try {
       const [testRes, questionsRes] = await Promise.all([
-        fetch(`${API_ENDPOINTS.TESTS}?id=${test.displayId}`, { headers: getAuthHeaders() }),
-        fetch(`${API_ENDPOINTS.TESTS}?testId=${test.displayId}&action=questions`, { headers: getAuthHeaders() }),
+        fetch(`${API_ENDPOINTS.TESTS}?id=${test.id}`, { headers: getAuthHeaders() }),
+        fetch(`${API_ENDPOINTS.TESTS}?testId=${test.id}&action=questions`, { headers: getAuthHeaders() }),
       ]);
 
       if (testRes.ok && questionsRes.ok) {
@@ -118,7 +117,6 @@ export default function Tests() {
         if (createRes.ok) {
           const newTestData = await createRes.json();
           const newTestId = newTestData.test.id;
-          const newDisplayId = newTestData.test.displayId;
 
           for (let i = 0; i < questionsData.questions.length; i++) {
             const question = questionsData.questions[i];
@@ -142,7 +140,7 @@ export default function Tests() {
           }
 
           await loadData();
-          navigate(`/admin/tests/edit/${newDisplayId}`);
+          navigate(`/admin/tests/edit/${newTestId}`);
         }
       }
     } catch (error) {

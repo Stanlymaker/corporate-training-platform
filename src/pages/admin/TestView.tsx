@@ -99,7 +99,7 @@ export default function TestView() {
             Назад к тестам
           </Button>
           <Button
-            onClick={() => navigate(`/admin/tests/edit/${test.displayId}`)}
+            onClick={() => navigate(`/admin/tests/edit/${test.id}`)}
           >
             <Icon name="Edit" className="mr-2" size={16} />
             Редактировать
