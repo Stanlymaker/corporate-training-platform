@@ -99,14 +99,10 @@ export function useTestEditorActions(
       return;
     }
 
-    console.log('[DEBUG] handleSaveTest:', { isEditMode, testId, questionsCount: formData.questions.length });
-
     setLoading(true);
     try {
       const method = isEditMode ? 'PUT' : 'POST';
       const url = isEditMode ? `${API_ENDPOINTS.TESTS}?id=${testId}` : API_ENDPOINTS.TESTS;
-      
-      console.log('[DEBUG] Request:', { method, url });
 
       const testPayload = {
         title: formData.title,
@@ -129,12 +125,9 @@ export function useTestEditorActions(
 
       const testData = await testRes.json();
       const savedTestId = testData.test.id;
-      
-      console.log('[DEBUG] Test saved:', { savedTestId, testData: testData.test });
 
-      // Если это создание нового теста, перенаправляем на редактирование с новым ID
+      // Если это создание нового теста, создаём вопросы и перенаправляем
       if (!isEditMode) {
-        console.log('[DEBUG] Creating questions for new test:', formData.questions.length);
         // Сохраняем вопросы для нового теста
         for (let i = 0; i < formData.questions.length; i++) {
           const question = formData.questions[i];
@@ -203,7 +196,11 @@ export function useTestEditorActions(
       }
 
       // Определяем, какие вопросы нужно удалить (есть в БД, но нет в форме)
-      const formQuestionIds = new Set(formData.questions.map(q => q.id));
+      const formQuestionIds = new Set(
+        formData.questions
+          .filter(q => !q.id.startsWith('new-'))
+          .map(q => q.id)
+      );
       const questionsToDelete = existingQuestions.filter(q => !formQuestionIds.has(q.id));
       
       // Удаляем вопросы, которых больше нет в форме
@@ -234,7 +231,7 @@ export function useTestEditorActions(
           correctAnswer = question.matchingPairs || [];
         }
 
-        const questionPayload = {
+        const questionPayload: any = {
           testId: savedTestId,
           type: question.type,
           text: question.question,
@@ -242,27 +239,45 @@ export function useTestEditorActions(
           correctAnswer: correctAnswer,
           points: question.points,
           order: i,
-          matchingPairs: question.type === 'matching' ? question.matchingPairs : undefined,
-          textCheckType: question.type === 'text' ? (question.textCheckType || 'manual') : undefined,
         };
-
-        // Проверяем, это существующий вопрос (UUID) или новый (timestamp)
-        const isExistingQuestion = existingQuestions.some(eq => eq.id === question.id);
         
-        if (isExistingQuestion) {
-          // Обновляем существующий вопрос
-          await fetch(`${API_ENDPOINTS.TESTS}?action=question&questionId=${question.id}`, {
-            method: 'PUT',
-            headers: getAuthHeaders(),
-            body: JSON.stringify(questionPayload),
-          });
-        } else {
+        if (question.type === 'matching' && question.matchingPairs) {
+          questionPayload.matchingPairs = question.matchingPairs;
+        }
+        
+        if (question.type === 'text') {
+          questionPayload.textCheckType = question.textCheckType || 'manual';
+        }
+
+        // Проверяем, это существующий вопрос (UUID) или новый (начинается с "new-")
+        const isNewQuestion = question.id.startsWith('new-');
+        
+        if (isNewQuestion) {
           // Создаём новый вопрос
-          await fetch(`${API_ENDPOINTS.TESTS}?action=question`, {
+          const response = await fetch(`${API_ENDPOINTS.TESTS}?action=question`, {
             method: 'POST',
             headers: getAuthHeaders(),
             body: JSON.stringify(questionPayload),
           });
+          
+          if (!response.ok) {
+            const errorData = await response.json();
+            console.error('[DEBUG] Question creation failed:', errorData);
+            throw new Error(`Failed to create question: ${errorData.error || response.statusText}`);
+          }
+        } else {
+          // Обновляем существующий вопрос
+          const response = await fetch(`${API_ENDPOINTS.TESTS}?action=question&questionId=${question.id}`, {
+            method: 'PUT',
+            headers: getAuthHeaders(),
+            body: JSON.stringify(questionPayload),
+          });
+          
+          if (!response.ok) {
+            const errorData = await response.json();
+            console.error('[DEBUG] Question update failed:', errorData);
+            throw new Error(`Failed to update question: ${errorData.error || response.statusText}`);
+          }
         }
       }
 

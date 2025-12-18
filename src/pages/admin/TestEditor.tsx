@@ -156,7 +156,7 @@ export default function TestEditor() {
 
   const handleAddQuestion = () => {
     setEditingQuestion({
-      id: Date.now().toString(),
+      id: `new-${Date.now()}`,
       type: 'single',
       question: '',
       answers: [
@@ -209,11 +209,15 @@ export default function TestEditor() {
   const handleAddAnswer = () => {
     if (!editingQuestion || !editingQuestion.answers) return;
     
+    const nextId = editingQuestion.answers.length > 0 
+      ? Math.max(...editingQuestion.answers.map(a => parseInt(a.id) || 0)) + 1 
+      : 1;
+    
     setEditingQuestion({
       ...editingQuestion,
       answers: [
         ...editingQuestion.answers,
-        { id: Date.now().toString(), text: '', isCorrect: false },
+        { id: nextId.toString(), text: '', isCorrect: false },
       ],
     });
   };
