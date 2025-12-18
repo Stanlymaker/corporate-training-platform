@@ -92,7 +92,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         }
     
     # Проверка доступа только для GET запросов с userId
-    if method == 'GET' and user_id and payload.get('role') != 'admin' and user_id != payload['user_id']:
+    if method == 'GET' and user_id and payload.get('role') != 'admin' and int(user_id) != payload['user_id']:
         return {
             'statusCode': 403,
             'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},

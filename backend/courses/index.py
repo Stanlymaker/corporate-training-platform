@@ -143,16 +143,27 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             )
         else:
             cur.execute(
-                "SELECT DISTINCT c.id, c.title, c.description, c.duration, c.lessons_count, c.category, c.image, "
-                "c.published, c.pass_score, c.level, c.instructor, c.status, c.start_date, c.end_date, c.access_type, c.created_at "
-                "FROM courses_v2 c "
-                "LEFT JOIN course_assignments_v2 ca ON c.id = ca.course_id AND ca.user_id = %s "
-                "WHERE c.published = true AND (c.access_type = 'open' OR ca.user_id IS NOT NULL) "
-                "ORDER BY c.created_at DESC",
+                "SELECT id, title, description, duration, lessons_count, category, image, "
+                "published, pass_score, level, instructor, status, start_date, end_date, access_type "
+                "FROM courses_v2 WHERE published = true AND access_type = 'open'"
+            )
+            open_courses = cur.fetchall()
+            
+            cur.execute(
+                "SELECT c.id, c.title, c.description, c.duration, c.lessons_count, c.category, c.image, "
+                "c.published, c.pass_score, c.level, c.instructor, c.status, c.start_date, c.end_date, c.access_type "
+                "FROM courses_v2 c INNER JOIN course_assignments_v2 ca ON c.id = ca.course_id "
+                "WHERE c.published = true AND c.access_type = 'closed' AND ca.user_id = %s",
                 (payload['user_id'],)
             )
+            closed_courses = cur.fetchall()
+            
+            courses = list(open_courses) + list(closed_courses)
+            courses.sort(key=lambda x: x[0], reverse=True)
         
-        courses = cur.fetchall()
+        if payload.get('role') == 'admin':
+            courses = cur.fetchall()
+        
         courses_list = [format_course_response(course) for course in courses]
         
         cur.close()
