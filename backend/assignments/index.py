@@ -11,7 +11,7 @@ JWT_SECRET = os.environ.get('JWT_SECRET', 'your-secret-key-change-in-production'
 JWT_ALGORITHM = 'HS256'
 
 class AssignCourseRequest(BaseModel):
-    courseId: str = Field(..., min_length=1)
+    courseId: int = Field(..., ge=1)
     userId: str = Field(..., min_length=1)
     dueDate: Optional[str] = None
     notes: Optional[str] = None
@@ -95,7 +95,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     conn = get_db_connection()
     cur = conn.cursor()
     
-    # Если course_id_param - это display_id (число), преобразуем в UUID
+    # Конвертируем display_id в UUID
     course_uuid = None
     if course_id_param:
         try:
@@ -104,10 +104,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             course_row = cur.fetchone()
             if course_row:
                 course_uuid = course_row[0]
-            else:
-                course_uuid = course_id_param  # Возможно это уже UUID
         except ValueError:
-            course_uuid = course_id_param  # Это UUID
+            pass  # Игнорируем невалидные ID
     
     if method == 'GET':
         # GET без параметров - все assignments (только для админа)
@@ -173,17 +171,19 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         body_data = json.loads(event.get('body', '{}'))
         assign_req = AssignCourseRequest(**body_data)
         
-        # Преобразуем courseId в UUID если это display_id
-        try:
-            display_id = int(assign_req.courseId)
-            cur.execute("SELECT id FROM courses WHERE display_id = %s", (display_id,))
-            course_row = cur.fetchone()
-            if course_row:
-                course_uuid_for_assign = course_row[0]
-            else:
-                course_uuid_for_assign = assign_req.courseId
-        except ValueError:
-            course_uuid_for_assign = assign_req.courseId
+        # Конвертируем display_id в UUID
+        cur.execute("SELECT id FROM courses WHERE display_id = %s", (assign_req.courseId,))
+        course_row = cur.fetchone()
+        if not course_row:
+            cur.close()
+            conn.close()
+            return {
+                'statusCode': 404,
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'Курс не найден'}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
+        course_uuid_for_assign = course_row[0]
         
         cur.execute(
             "SELECT id FROM course_assignments WHERE course_id = %s AND user_id = %s",

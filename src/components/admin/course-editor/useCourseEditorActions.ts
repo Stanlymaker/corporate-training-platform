@@ -41,8 +41,7 @@ export function useCourseEditorActions(
   setFormData: (data: CourseFormData) => void,
   savedStatus: 'draft' | 'published' | 'archived',
   setSavedStatus: (status: 'draft' | 'published' | 'archived') => void,
-  setWasEverPublished: (value: boolean) => void,
-  setActualCourseId: (id: string) => void
+  setWasEverPublished: (value: boolean) => void
 ) {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -55,7 +54,6 @@ export function useCourseEditorActions(
 
       if (courseRes.ok) {
         const courseData = await courseRes.json();
-        setActualCourseId(courseData.course.displayId);
         
         const lessonsRes = await fetch(`${API_ENDPOINTS.LESSONS}?courseId=${courseData.course.displayId}`, { headers: getAuthHeaders() });
         const lessonsData = lessonsRes.ok ? await lessonsRes.json() : { lessons: [] };

@@ -43,7 +43,7 @@ export function useTestEditorActions(
   const loadTest = async (id: string): Promise<'draft' | 'published' | null> => {
     setLoadingTest(true);
     try {
-      // Сначала загружаем тест по display_id, чтобы получить UUID
+      // Загружаем тест по display_id
       const testRes = await fetch(`${API_ENDPOINTS.TESTS}?id=${id}`, { headers: getAuthHeaders() });
       
       if (!testRes.ok) {
@@ -51,11 +51,10 @@ export function useTestEditorActions(
       }
       
       const testData = await testRes.json();
-      const testUuid = testData.test.id; // Получаем UUID теста
       const testStatus = testData.test.status || 'draft';
       
-      // Теперь загружаем вопросы по UUID
-      const questionsRes = await fetch(`${API_ENDPOINTS.TESTS}?testId=${testUuid}&action=questions`, { 
+      // Загружаем вопросы по display_id (бэкенд конвертирует в UUID)
+      const questionsRes = await fetch(`${API_ENDPOINTS.TESTS}?testId=${id}&action=questions`, { 
         headers: getAuthHeaders() 
       });
       
@@ -125,7 +124,7 @@ export function useTestEditorActions(
       }
 
       const testData = await testRes.json();
-      const savedTestId = testData.test.id;
+      const savedTestId = testData.test.displayId;
 
       // Получаем текущие вопросы из БД, если это режим редактирования
       let existingQuestions: any[] = [];

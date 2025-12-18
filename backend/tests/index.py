@@ -26,7 +26,7 @@ class UpdateTestRequest(BaseModel):
     status: Optional[str] = Field(None, pattern='^(draft|published)$')
 
 class CreateQuestionRequest(BaseModel):
-    testId: str = Field(..., min_length=1)
+    testId: int = Field(..., ge=1)
     type: str = Field(..., pattern='^(single|multiple|text|matching)$')
     text: str = Field(..., min_length=1)
     options: Optional[list] = None
@@ -156,10 +156,36 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     cur = conn.cursor()
     
     if method == 'GET' and action == 'questions' and test_id_param:
+        # Конвертируем display_id в UUID
+        try:
+            display_id = int(test_id_param)
+        except ValueError:
+            cur.close()
+            conn.close()
+            return {
+                'statusCode': 400,
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'Неверный ID теста'}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
+        
+        cur.execute("SELECT id FROM tests WHERE display_id = %s", (display_id,))
+        test_row = cur.fetchone()
+        if not test_row:
+            cur.close()
+            conn.close()
+            return {
+                'statusCode': 404,
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'Тест не найден'}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
+        test_uuid = test_row[0]
+        
         cur.execute(
             "SELECT id, test_id, type, text, options, correct_answer, points, \"order\", "
             "matching_pairs, text_check_type FROM questions WHERE test_id = %s ORDER BY \"order\"",
-            (test_id_param,)
+            (test_uuid,)
         )
         questions = cur.fetchall()
         questions_list = [format_question_response(q) for q in questions]
@@ -238,6 +264,20 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         body_data = json.loads(event.get('body', '{}'))
         question_req = CreateQuestionRequest(**body_data)
         
+        # Конвертируем display_id в UUID
+        cur.execute("SELECT id FROM tests WHERE display_id = %s", (question_req.testId,))
+        test_row = cur.fetchone()
+        if not test_row:
+            cur.close()
+            conn.close()
+            return {
+                'statusCode': 404,
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'Тест не найден'}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
+        test_uuid = test_row[0]
+        
         new_question_id = str(uuid.uuid4())
         now = datetime.utcnow()
         
@@ -246,7 +286,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             "matching_pairs, text_check_type, created_at) "
             "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) "
             "RETURNING id, test_id, type, text, options, correct_answer, points, \"order\", matching_pairs, text_check_type",
-            (new_question_id, question_req.testId, question_req.type, question_req.text,
+            (new_question_id, test_uuid, question_req.type, question_req.text,
              json.dumps(question_req.options) if question_req.options else None,
              json.dumps(question_req.correctAnswer),
              question_req.points, question_req.order,
@@ -257,7 +297,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         cur.execute(
             "UPDATE tests SET questions_count = questions_count + 1, updated_at = %s WHERE id = %s",
-            (now, question_req.testId)
+            (now, test_uuid)
         )
         conn.commit()
         

@@ -65,7 +65,6 @@ export default function CourseEditor() {
   const [wasEverPublished, setWasEverPublished] = useState(false);
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
   const [showLessonDialog, setShowLessonDialog] = useState(false);
-  const [actualCourseId, setActualCourseId] = useState<string>('');
   const [showProgressResetDialog, setShowProgressResetDialog] = useState(false);
   const [progressResetOption, setProgressResetOption] = useState<'keep' | 'reset_tests' | 'reset_all'>('reset_tests');
   const [studentsCount, setStudentsCount] = useState(0);
@@ -85,8 +84,7 @@ export default function CourseEditor() {
     setFormData,
     savedStatus,
     setSavedStatus,
-    setWasEverPublished,
-    setActualCourseId
+    setWasEverPublished
   );
 
   useEffect(() => {
