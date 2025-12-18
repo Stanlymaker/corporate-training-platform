@@ -9,7 +9,7 @@ class RewardCreate(BaseModel):
     name: str = Field(..., min_length=1)
     icon: str = Field(..., min_length=1)
     color: str = Field(..., min_length=1)
-    course_id: str
+    course_id: int
     description: Optional[str] = None
     condition: Optional[str] = None
     bonuses: Optional[List[str]] = None
@@ -59,7 +59,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         if reward_id:
             cur.execute(
                 "SELECT id, name, icon, color, course_id, description, condition, bonuses, created_at "
-                "FROM rewards WHERE id = %s",
+                "FROM rewards_v2 WHERE id = %s",
                 (reward_id,)
             )
             row = cur.fetchone()
@@ -75,7 +75,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 }
             
             cur.execute(
-                "SELECT COUNT(*) FROM user_rewards WHERE reward_id = %s",
+                "SELECT COUNT(*) FROM user_rewards_v2 WHERE reward_id = %s",
                 (reward_id,)
             )
             earned_count = cur.fetchone()[0]
@@ -106,13 +106,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         if course_id:
             cur.execute(
                 "SELECT id, name, icon, color, course_id, description, condition, bonuses, created_at "
-                "FROM rewards WHERE course_id = %s ORDER BY created_at DESC",
+                "FROM rewards_v2 WHERE course_id = %s ORDER BY created_at DESC",
                 (course_id,)
             )
         else:
             cur.execute(
                 "SELECT id, name, icon, color, course_id, description, condition, bonuses, created_at "
-                "FROM rewards ORDER BY created_at DESC"
+                "FROM rewards_v2 ORDER BY created_at DESC"
             )
         
         rows = cur.fetchall()
@@ -120,7 +120,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         rewards = []
         for row in rows:
             cur.execute(
-                "SELECT COUNT(*) FROM user_rewards WHERE reward_id = %s",
+                "SELECT COUNT(*) FROM user_rewards_v2 WHERE reward_id = %s",
                 (row[0],)
             )
             earned_count = cur.fetchone()[0]
@@ -164,14 +164,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         conn = get_db_connection()
         cur = conn.cursor()
         
-        reward_id = str(uuid.uuid4())
         bonuses_json = json.dumps(reward_data.bonuses) if reward_data.bonuses else None
         
         cur.execute(
-            "INSERT INTO rewards (id, name, icon, color, course_id, description, condition, bonuses) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
+            "INSERT INTO rewards_v2 (name, icon, color, course_id, description, condition, bonuses) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id",
             (
-                reward_id,
                 reward_data.name,
                 reward_data.icon,
                 reward_data.color,
@@ -181,6 +179,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 bonuses_json
             )
         )
+        reward_id = cur.fetchone()[0]
         conn.commit()
         
         cur.close()
@@ -252,7 +251,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             }
         
         values.append(reward_id)
-        query = f"UPDATE rewards SET {', '.join(updates)} WHERE id = %s"
+        query = f"UPDATE rewards_v2 SET {', '.join(updates)} WHERE id = %s"
         
         cur.execute(query, values)
         conn.commit()
@@ -282,7 +281,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         cur = conn.cursor()
         
         cur.execute("DELETE FROM user_rewards WHERE reward_id = %s", (reward_id,))
-        cur.execute("DELETE FROM rewards WHERE id = %s", (reward_id,))
+        cur.execute("DELETE FROM rewards_v2 WHERE id = %s", (reward_id,))
         conn.commit()
         
         cur.close()

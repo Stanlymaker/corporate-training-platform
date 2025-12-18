@@ -144,7 +144,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     if method == 'GET' and not user_id:
         cur.execute(
             "SELECT id, email, name, role, position, department, phone, avatar, is_active, "
-            "registration_date, last_active FROM users ORDER BY registration_date DESC"
+            "registration_date, last_active FROM users_v2 ORDER BY registration_date DESC"
         )
         users = cur.fetchall()
         users_list = [format_user_response(user) for user in users]
@@ -162,7 +162,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     if method == 'GET' and user_id:
         cur.execute(
             "SELECT id, email, name, role, position, department, phone, avatar, is_active, "
-            "registration_date, last_active FROM users WHERE id = %s",
+            "registration_date, last_active FROM users_v2 WHERE id = %s",
             (user_id,)
         )
         user = cur.fetchone()
@@ -191,7 +191,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         body_data = json.loads(event.get('body', '{}'))
         create_req = CreateUserRequest(**body_data)
         
-        cur.execute("SELECT id FROM users WHERE email = %s", (create_req.email,))
+        cur.execute("SELECT id FROM users_v2 WHERE email = %s", (create_req.email,))
         if cur.fetchone():
             cur.close()
             conn.close()
@@ -202,17 +202,16 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'isBase64Encoded': False
             }
         
-        new_user_id = str(uuid.uuid4())
         password_hash = bcrypt.hashpw(create_req.password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
         now = datetime.utcnow()
         
         cur.execute(
-            "INSERT INTO users (id, email, name, password_hash, role, position, department, phone, "
+            "INSERT INTO users_v2 (email, name, password_hash, role, position, department, phone, "
             "is_active, registration_date, last_active, created_at, updated_at) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) "
             "RETURNING id, email, name, role, position, department, phone, avatar, is_active, "
             "registration_date, last_active",
-            (new_user_id, create_req.email, create_req.name, password_hash, create_req.role,
+            (create_req.email, create_req.name, password_hash, create_req.role,
              create_req.position, create_req.department, create_req.phone, True, now, now, now, now)
         )
         new_user = cur.fetchone()
@@ -237,7 +236,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         password_hash = bcrypt.hashpw(pwd_req.password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
         
         cur.execute(
-            "UPDATE users SET password_hash = %s, updated_at = %s WHERE id = %s",
+            "UPDATE users_v2 SET password_hash = %s, updated_at = %s WHERE id = %s",
             (password_hash, datetime.utcnow(), user_id)
         )
         conn.commit()
@@ -257,7 +256,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         role_req = UpdateRoleRequest(**body_data)
         
         cur.execute(
-            "UPDATE users SET role = %s, updated_at = %s WHERE id = %s",
+            "UPDATE users_v2 SET role = %s, updated_at = %s WHERE id = %s",
             (role_req.role, datetime.utcnow(), user_id)
         )
         conn.commit()
@@ -277,7 +276,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         is_active = body_data.get('isActive', True)
         
         cur.execute(
-            "UPDATE users SET is_active = %s, updated_at = %s WHERE id = %s",
+            "UPDATE users_v2 SET is_active = %s, updated_at = %s WHERE id = %s",
             (is_active, datetime.utcnow(), user_id)
         )
         conn.commit()
@@ -329,7 +328,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         update_values.append(datetime.utcnow())
         update_values.append(user_id)
         
-        query = f"UPDATE users SET {', '.join(update_fields)} WHERE id = %s RETURNING id, email, name, role, position, department, phone, avatar, is_active, registration_date, last_active"
+        query = f"UPDATE users_v2 SET {', '.join(update_fields)} WHERE id = %s RETURNING id, email, name, role, position, department, phone, avatar, is_active, registration_date, last_active"
         
         cur.execute(query, update_values)
         updated_user = cur.fetchone()

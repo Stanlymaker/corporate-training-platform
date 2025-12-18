@@ -16,7 +16,7 @@ class LoginRequest(BaseModel):
     password: str = Field(..., min_length=1)
 
 class UserResponse(BaseModel):
-    id: str
+    id: int
     email: str
     name: str
     role: str
@@ -32,7 +32,7 @@ def get_db_connection():
     dsn = os.environ['DATABASE_URL']
     return psycopg2.connect(dsn)
 
-def create_jwt_token(user_id: str, email: str, role: str) -> str:
+def create_jwt_token(user_id: int, email: str, role: str) -> str:
     payload = {
         'user_id': user_id,
         'email': email,
@@ -99,7 +99,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         cur.execute(
             "SELECT id, email, name, role, position, department, phone, avatar, is_active, "
             "registration_date, last_active, password_hash "
-            "FROM users WHERE email = %s",
+            "FROM users_v2 WHERE email = %s",
             (login_req.email,)
         )
         user = cur.fetchone()
@@ -138,7 +138,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         print(f"[DEBUG] Login successful for user: {user[1]}")
         
         cur.execute(
-            "UPDATE users SET last_active = %s WHERE id = %s",
+            "UPDATE users_v2 SET last_active = %s WHERE id = %s",
             (datetime.utcnow(), user[0])
         )
         conn.commit()
@@ -216,7 +216,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         cur.execute(
             "SELECT id, email, name, role, position, department, phone, avatar, is_active, "
-            "registration_date, last_active FROM users WHERE id = %s",
+            "registration_date, last_active FROM users_v2 WHERE id = %s",
             (payload['user_id'],)
         )
         user = cur.fetchone()
