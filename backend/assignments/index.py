@@ -3,17 +3,22 @@ import os
 import psycopg2
 import jwt
 from datetime import datetime
-from typing import Dict, Any, Optional
-from pydantic import BaseModel, Field
+from typing import Dict, Any, Optional, Union
+from pydantic import BaseModel, Field, field_validator
 
 JWT_SECRET = os.environ.get('JWT_SECRET', 'your-secret-key-change-in-production')
 JWT_ALGORITHM = 'HS256'
 
 class AssignCourseRequest(BaseModel):
     courseId: int = Field(..., ge=1)
-    userId: str = Field(..., min_length=1)
+    userId: Union[str, int] = Field(...)
     dueDate: Optional[str] = None
     notes: Optional[str] = None
+    
+    @field_validator('userId')
+    @classmethod
+    def convert_user_id_to_str(cls, v):
+        return str(v)
 
 def get_db_connection():
     dsn = os.environ['DATABASE_URL']
