@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 
@@ -40,9 +41,65 @@ export default function QuestionDialog({
   onRemoveAnswer,
   onUpdateAnswer,
 }: QuestionDialogProps) {
+  const [isDragging, setIsDragging] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
   if (!show || !question) return null;
 
   const hasCorrectAnswer = question.answers?.some(a => a.isCorrect) || false;
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    
+    const files = Array.from(e.dataTransfer.files).filter(file => 
+      file.type.startsWith('image/')
+    );
+    
+    if (files.length > 0) {
+      await uploadImage(files[0]);
+    }
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      await uploadImage(files[0]);
+    }
+  };
+
+  const uploadImage = async (file: File) => {
+    try {
+      setUploading(true);
+      
+      // Конвертируем в base64 для отображения
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        onQuestionChange('imageUrl', base64String);
+        setUploading(false);
+      };
+      reader.onerror = () => {
+        alert('Ошибка при загрузке изображения');
+        setUploading(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('Upload error:', error);
+      alert('Ошибка при загрузке изображения');
+      setUploading(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -71,34 +128,60 @@ export default function QuestionDialog({
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Изображение к вопросу (опционально)
             </label>
-            <div className="space-y-3">
-              <input
-                type="text"
-                value={question.imageUrl || ''}
-                onChange={(e) => onQuestionChange('imageUrl', e.target.value)}
-                placeholder="https://example.com/image.jpg"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-              />
-              {question.imageUrl && (
-                <div className="relative">
-                  <img
-                    src={question.imageUrl}
-                    alt="Превью вопроса"
-                    className="w-full max-h-64 object-contain rounded-lg border border-gray-200"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none';
-                    }}
-                  />
-                  <button
-                    onClick={() => onQuestionChange('imageUrl', '')}
-                    className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-lg hover:bg-red-600 transition-colors"
-                  >
-                    <Icon name="X" size={16} />
-                  </button>
-                </div>
-              )}
-            </div>
-            <p className="text-xs text-gray-500 mt-1">
+            
+            {!question.imageUrl ? (
+              <div
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                  isDragging 
+                    ? 'border-orange-500 bg-orange-50' 
+                    : 'border-gray-300 hover:border-gray-400'
+                }`}
+              >
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileSelect}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  disabled={uploading}
+                />
+                {uploading ? (
+                  <div className="flex flex-col items-center">
+                    <Icon name="Loader2" size={48} className="text-orange-500 animate-spin mb-3" />
+                    <p className="text-gray-600">Загрузка изображения...</p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center">
+                    <Icon name="Upload" size={48} className="text-gray-400 mb-3" />
+                    <p className="text-gray-700 font-medium mb-1">
+                      Перетащите изображение сюда
+                    </p>
+                    <p className="text-gray-500 text-sm">
+                      или нажмите для выбора файла
+                    </p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="relative">
+                <img
+                  src={question.imageUrl}
+                  alt="Превью вопроса"
+                  className="w-full max-h-64 object-contain rounded-lg border border-gray-200"
+                />
+                <button
+                  type="button"
+                  onClick={() => onQuestionChange('imageUrl', '')}
+                  className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-lg hover:bg-red-600 transition-colors shadow-lg"
+                >
+                  <Icon name="X" size={16} />
+                </button>
+              </div>
+            )}
+            
+            <p className="text-xs text-gray-500 mt-2">
               Можно использовать для визуальных заданий: определить объект, описать ситуацию и т.д.
             </p>
           </div>
