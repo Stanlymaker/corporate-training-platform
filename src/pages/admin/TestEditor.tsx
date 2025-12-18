@@ -28,8 +28,6 @@ interface Question {
 }
 
 interface TestFormData {
-  courseId: string;
-  lessonId?: string;
   title: string;
   description: string;
   passScore: number;
@@ -40,8 +38,6 @@ interface TestFormData {
 }
 
 const initialFormData: TestFormData = {
-  courseId: '',
-  lessonId: '',
   title: '',
   description: '',
   passScore: 70,
@@ -81,8 +77,6 @@ export default function TestEditor() {
         const questionsData = await questionsRes.json();
         
         setFormData({
-          courseId: testData.test.courseId || '',
-          lessonId: testData.test.lessonId || '',
           title: testData.test.title || '',
           description: testData.test.description || '',
           passScore: testData.test.passScore || 70,
@@ -209,10 +203,6 @@ export default function TestEditor() {
   };
 
   const handleSaveTest = async () => {
-    if (!formData.courseId.trim()) {
-      alert('Выберите курс');
-      return;
-    }
     if (!formData.title.trim()) {
       alert('Введите название теста');
       return;
@@ -224,8 +214,6 @@ export default function TestEditor() {
       const url = isEditMode ? `${API_ENDPOINTS.TESTS}?id=${testId}` : API_ENDPOINTS.TESTS;
 
       const testPayload = {
-        courseId: formData.courseId,
-        lessonId: formData.lessonId || null,
         title: formData.title,
         description: formData.description,
         passScore: formData.passScore,
