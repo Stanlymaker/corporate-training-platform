@@ -124,6 +124,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     current_user_id = payload.get('user_id')
     current_user_role = payload.get('role')
     
+    print(f"[DEBUG] method={method}, user_id={user_id}, current_user_id={current_user_id}, current_user_role={current_user_role}")
+    print(f"[DEBUG] Payload: {payload}")
+    
     # Проверка прав: админы могут все, студенты только свой профиль
     if method == 'PUT' and user_id and int(user_id) == current_user_id:
         # Студент редактирует свой профиль - разрешено
