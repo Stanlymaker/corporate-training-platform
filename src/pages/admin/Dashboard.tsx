@@ -47,10 +47,21 @@ export default function AdminDashboard() {
         const courses = coursesData.courses || [];
         const rewards = rewardsData.rewards || [];
 
-        // Считаем уроки
-        const lessonsRes = await fetch(API_ENDPOINTS.LESSONS, { headers: getAuthHeaders() });
-        const lessonsData = lessonsRes.ok ? await lessonsRes.json() : { lessons: [] };
-        const allLessons = lessonsData.lessons || [];
+        // Считаем уроки во всех курсах
+        let totalLessons = 0;
+        for (const course of courses) {
+          try {
+            const lessonsRes = await fetch(`${API_ENDPOINTS.LESSONS}?courseId=${course.displayId}`, {
+              headers: getAuthHeaders()
+            });
+            if (lessonsRes.ok) {
+              const lessonsData = await lessonsRes.json();
+              totalLessons += (lessonsData.lessons || []).length;
+            }
+          } catch (err) {
+            console.error('Error loading lessons for course:', err);
+          }
+        }
 
         // Загружаем прогресс студентов и создаем активности
         const activities: RecentActivity[] = [];
@@ -112,7 +123,7 @@ export default function AdminDashboard() {
           publishedCourses: courses.filter((c: any) => c.published).length,
           totalStudents: users.filter((u: any) => u.role === 'student').length,
           activeUsers: users.filter((u: any) => u.isActive).length,
-          totalLessons: allLessons.length,
+          totalLessons: totalLessons,
           completedCourses: completedCoursesCount,
           totalRewards: rewards.length,
         });
