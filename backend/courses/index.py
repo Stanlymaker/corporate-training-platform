@@ -380,8 +380,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         }
     
     if method == 'DELETE' and (course_id or course_uuid):
+        print(f'DELETE method detected: course_id={course_id}, course_uuid={course_uuid}')
+        
         admin_error = require_admin(headers)
         if admin_error:
+            print(f'Admin check failed: {admin_error}')
             cur.close()
             conn.close()
             return {
@@ -390,6 +393,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'body': json.dumps({'error': admin_error['error']}, ensure_ascii=False),
                 'isBase64Encoded': False
             }
+        
+        print('Admin check passed, starting deletion...')
         
         try:
             print(f'DELETE request: course_id={course_id}, course_uuid={course_uuid}')
