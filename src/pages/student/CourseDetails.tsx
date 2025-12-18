@@ -65,7 +65,7 @@ export default function CourseDetails() {
     try {
       setLoading(true);
       const [courseRes, lessonsRes, progressRes] = await Promise.all([
-        fetch(`${API_ENDPOINTS.COURSES}/${displayId}`, { headers: getAuthHeaders() }),
+        fetch(`${API_ENDPOINTS.COURSES}?id=${displayId}`, { headers: getAuthHeaders() }),
         fetch(`${API_ENDPOINTS.LESSONS}?courseId=${displayId}`, { headers: getAuthHeaders() }),
         fetch(`${API_ENDPOINTS.PROGRESS}?userId=${userId}&courseId=${displayId}`, { headers: getAuthHeaders() }),
       ]);
