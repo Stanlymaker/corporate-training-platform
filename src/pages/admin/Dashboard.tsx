@@ -81,17 +81,15 @@ export default function AdminDashboard() {
 
               // Завершенные курсы и награды
               for (const p of progress) {
-                console.log(`Checking progress item:`, p);
-                if (p.completedAt) {
+                if (p.completed) {
                   completedCoursesCount++;
-                  console.log(`Found completed course! Total now: ${completedCoursesCount}`);
-                  const course = courses.find((c: any) => c.displayId === p.courseId);
+                  const course = courses.find((c: any) => c.id === p.courseId);
                   if (course) {
                     activities.push({
                       type: 'course_completed',
                       studentName: student.name,
                       itemName: course.title,
-                      timestamp: p.completedAt
+                      timestamp: p.startedAt || new Date().toISOString()
                     });
                   }
                 }
@@ -105,7 +103,7 @@ export default function AdminDashboard() {
                         type: 'reward_earned',
                         studentName: student.name,
                         itemName: reward.name,
-                        timestamp: p.completedAt || new Date().toISOString()
+                        timestamp: p.startedAt || new Date().toISOString()
                       });
                     }
                   }
