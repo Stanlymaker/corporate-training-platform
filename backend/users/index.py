@@ -125,17 +125,19 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     current_user_role = payload.get('role')
     
     # Проверка прав: админы могут все, студенты только свой профиль
-    if method == 'PUT' and user_id and int(user_id) == current_user_id:
-        # Студент редактирует свой профиль - разрешено
-        pass
-    elif current_user_role != 'admin':
-        # Не админ пытается делать что-то кроме редактирования своего профиля
-        return {
-            'statusCode': 403,
-            'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
-            'body': json.dumps({'error': 'Доступ запрещен'}, ensure_ascii=False),
-            'isBase64Encoded': False
-        }
+    if current_user_role != 'admin':
+        # Для не-админов: разрешён доступ только к своему профилю (GET/PUT с ?id=своего_id)
+        if user_id and int(user_id) == current_user_id and method in ['GET', 'PUT']:
+            # Студент читает или редактирует свой профиль - разрешено
+            pass
+        else:
+            # Не админ пытается делать что-то запрещённое
+            return {
+                'statusCode': 403,
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'Доступ запрещен'}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
     
     conn = get_db_connection()
     cur = conn.cursor()
