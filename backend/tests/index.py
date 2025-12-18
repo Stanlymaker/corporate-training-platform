@@ -36,6 +36,16 @@ class CreateQuestionRequest(BaseModel):
     matchingPairs: Optional[list] = None
     textCheckType: Optional[str] = Field(None, pattern='^(manual|automatic)$')
 
+class UpdateQuestionRequest(BaseModel):
+    type: Optional[str] = Field(None, pattern='^(single|multiple|text|matching)$')
+    text: Optional[str] = Field(None, min_length=1)
+    options: Optional[list] = None
+    correctAnswer: Optional[Any] = None
+    points: Optional[int] = Field(None, ge=1)
+    order: Optional[int] = Field(None, ge=0)
+    matchingPairs: Optional[list] = None
+    textCheckType: Optional[str] = Field(None, pattern='^(manual|automatic)$')
+
 def get_db_connection():
     dsn = os.environ['DATABASE_URL']
     return psycopg2.connect(dsn)
@@ -107,7 +117,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     POST - создать тест (админ)
     POST ?action=question - создать вопрос (админ)
     PUT ?id=x - обновить тест (админ)
+    PUT ?action=question&questionId=x - обновить вопрос (админ)
     DELETE ?id=x - удалить тест и его вопросы (админ)
+    DELETE ?action=question&questionId=x - удалить вопрос (админ)
     '''
     method: str = event.get('httpMethod', 'GET')
     
@@ -383,7 +395,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'isBase64Encoded': False
         }
     
-    if method == 'DELETE' and action == 'deleteQuestions' and test_id_param:
+    if method == 'PUT' and action == 'question':
         admin_error = require_admin(headers)
         if admin_error:
             cur.close()
@@ -395,7 +407,121 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'isBase64Encoded': False
             }
         
-        cur.execute("DELETE FROM questions WHERE test_id = %s", (test_id_param,))
+        question_id = query_params.get('questionId')
+        if not question_id:
+            cur.close()
+            conn.close()
+            return {
+                'statusCode': 400,
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'Не указан ID вопроса'}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
+        
+        body_data = json.loads(event.get('body', '{}'))
+        update_req = UpdateQuestionRequest(**body_data)
+        
+        update_fields = []
+        update_values = []
+        
+        if update_req.type is not None:
+            update_fields.append('type = %s')
+            update_values.append(update_req.type)
+        if update_req.text is not None:
+            update_fields.append('text = %s')
+            update_values.append(update_req.text)
+        if update_req.options is not None:
+            update_fields.append('options = %s')
+            update_values.append(json.dumps(update_req.options))
+        if update_req.correctAnswer is not None:
+            update_fields.append('correct_answer = %s')
+            update_values.append(json.dumps(update_req.correctAnswer))
+        if update_req.points is not None:
+            update_fields.append('points = %s')
+            update_values.append(update_req.points)
+        if update_req.order is not None:
+            update_fields.append('"order" = %s')
+            update_values.append(update_req.order)
+        if update_req.matchingPairs is not None:
+            update_fields.append('matching_pairs = %s')
+            update_values.append(json.dumps(update_req.matchingPairs))
+        if update_req.textCheckType is not None:
+            update_fields.append('text_check_type = %s')
+            update_values.append(update_req.textCheckType)
+        
+        if not update_fields:
+            cur.close()
+            conn.close()
+            return {
+                'statusCode': 400,
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'Нет полей для обновления'}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
+        
+        update_values.append(question_id)
+        query = f"UPDATE questions SET {', '.join(update_fields)} WHERE id = %s RETURNING id, test_id, type, text, options, correct_answer, points, \"order\", matching_pairs, text_check_type"
+        
+        cur.execute(query, update_values)
+        updated_question = cur.fetchone()
+        conn.commit()
+        
+        if not updated_question:
+            cur.close()
+            conn.close()
+            return {
+                'statusCode': 404,
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'Вопрос не найден'}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
+        
+        question_data = format_question_response(updated_question)
+        
+        cur.close()
+        conn.close()
+        
+        return {
+            'statusCode': 200,
+            'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'question': question_data}, ensure_ascii=False),
+            'isBase64Encoded': False
+        }
+    
+    if method == 'DELETE' and action == 'question':
+        admin_error = require_admin(headers)
+        if admin_error:
+            cur.close()
+            conn.close()
+            return {
+                'statusCode': admin_error['statusCode'],
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': admin_error['error']}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
+        
+        question_id = query_params.get('questionId')
+        if not question_id:
+            cur.close()
+            conn.close()
+            return {
+                'statusCode': 400,
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'Не указан ID вопроса'}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
+        
+        cur.execute("SELECT test_id FROM questions WHERE id = %s", (question_id,))
+        question_row = cur.fetchone()
+        
+        if question_row:
+            test_id_for_update = question_row[0]
+            cur.execute("DELETE FROM questions WHERE id = %s", (question_id,))
+            cur.execute(
+                "UPDATE tests SET questions_count = GREATEST(questions_count - 1, 0), updated_at = %s WHERE id = %s",
+                (datetime.utcnow(), test_id_for_update)
+            )
+        
         conn.commit()
         
         cur.close()
@@ -404,7 +530,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         return {
             'statusCode': 200,
             'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
-            'body': json.dumps({'message': 'Вопросы теста удалены'}, ensure_ascii=False),
+            'body': json.dumps({'message': 'Вопрос удален'}, ensure_ascii=False),
             'isBase64Encoded': False
         }
     

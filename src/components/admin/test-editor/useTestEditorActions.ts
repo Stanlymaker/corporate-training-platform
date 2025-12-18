@@ -60,7 +60,7 @@ export function useTestEditorActions(
           attempts: testData.test.attempts || 3,
           status: testData.test.status || 'draft',
           questions: (questionsData.questions || []).map((q: any) => ({
-            id: q.id,
+            id: q.id, // Сохраняем UUID из БД для существующих вопросов
             type: q.type,
             question: q.text,
             answers: q.options ? q.options.map((opt: string, idx: number) => ({
@@ -115,14 +115,31 @@ export function useTestEditorActions(
       const testData = await testRes.json();
       const savedTestId = testData.test.id;
 
-      // В режиме редактирования удаляем все старые вопросы
+      // Получаем текущие вопросы из БД, если это режим редактирования
+      let existingQuestions: any[] = [];
       if (isEditMode) {
-        await fetch(`${API_ENDPOINTS.TESTS}?action=deleteQuestions&testId=${savedTestId}`, {
+        const questionsRes = await fetch(`${API_ENDPOINTS.TESTS}?testId=${savedTestId}&action=questions`, { 
+          headers: getAuthHeaders() 
+        });
+        if (questionsRes.ok) {
+          const questionsData = await questionsRes.json();
+          existingQuestions = questionsData.questions || [];
+        }
+      }
+
+      // Определяем, какие вопросы нужно удалить (есть в БД, но нет в форме)
+      const formQuestionIds = new Set(formData.questions.map(q => q.id));
+      const questionsToDelete = existingQuestions.filter(q => !formQuestionIds.has(q.id));
+      
+      // Удаляем вопросы, которых больше нет в форме
+      for (const question of questionsToDelete) {
+        await fetch(`${API_ENDPOINTS.TESTS}?action=question&questionId=${question.id}`, {
           method: 'DELETE',
           headers: getAuthHeaders(),
         });
       }
 
+      // Создаём или обновляем вопросы
       for (let i = 0; i < formData.questions.length; i++) {
         const question = formData.questions[i];
         
@@ -154,11 +171,24 @@ export function useTestEditorActions(
           textCheckType: question.type === 'text' ? (question.textCheckType || 'manual') : undefined,
         };
 
-        await fetch(`${API_ENDPOINTS.TESTS}?action=question`, {
-          method: 'POST',
-          headers: getAuthHeaders(),
-          body: JSON.stringify(questionPayload),
-        });
+        // Проверяем, это существующий вопрос (UUID) или новый (timestamp)
+        const isExistingQuestion = existingQuestions.some(eq => eq.id === question.id);
+        
+        if (isExistingQuestion) {
+          // Обновляем существующий вопрос
+          await fetch(`${API_ENDPOINTS.TESTS}?action=question&questionId=${question.id}`, {
+            method: 'PUT',
+            headers: getAuthHeaders(),
+            body: JSON.stringify(questionPayload),
+          });
+        } else {
+          // Создаём новый вопрос
+          await fetch(`${API_ENDPOINTS.TESTS}?action=question`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify(questionPayload),
+          });
+        }
       }
 
       navigate(ROUTES.ADMIN.TESTS);
