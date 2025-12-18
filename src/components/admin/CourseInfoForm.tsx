@@ -20,11 +20,13 @@ interface CourseInfoFormProps {
   formData: CourseFormData;
   onInputChange: (field: keyof CourseFormData, value: any) => void;
   isEditMode?: boolean;
+  savedStatus?: 'draft' | 'published' | 'archived';
 }
 
-export default function CourseInfoForm({ formData, onInputChange, isEditMode = false }: CourseInfoFormProps) {
+export default function CourseInfoForm({ formData, onInputChange, isEditMode = false, savedStatus }: CourseInfoFormProps) {
   const [uploadingImage, setUploadingImage] = useState(false);
-  const isPublished = formData.status === 'published';
+  const actualStatus = savedStatus || formData.status;
+  const isPublished = actualStatus === 'published';
   const isDisabled = isEditMode && isPublished;
 
   const handleImageUpload = async (file: File) => {

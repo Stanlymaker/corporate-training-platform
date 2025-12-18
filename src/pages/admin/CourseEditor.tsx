@@ -60,11 +60,15 @@ export default function CourseEditor() {
   const isEditMode = !!courseId;
 
   const [formData, setFormData] = useState<CourseFormData>(initialFormData);
+  const [savedStatus, setSavedStatus] = useState<'draft' | 'published' | 'archived'>('draft');
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
   const [showLessonDialog, setShowLessonDialog] = useState(false);
   const [loading, setLoading] = useState(false);
   const [loadingCourse, setLoadingCourse] = useState(isEditMode);
   const [actualCourseId, setActualCourseId] = useState<string>('');
+  const [showProgressResetDialog, setShowProgressResetDialog] = useState(false);
+  const [progressResetOption, setProgressResetOption] = useState<'keep' | 'reset_tests' | 'reset_all'>('reset_tests');
+  const [studentsCount, setStudentsCount] = useState(0);
 
   useEffect(() => {
     if (isEditMode && courseId) {
@@ -111,6 +115,7 @@ export default function CourseEditor() {
           accessType: courseData.course.accessType || 'open',
           sequenceType: 'linear',
         });
+        setSavedStatus(courseData.course.status || 'draft');
       }
     } catch (error) {
       console.error('Error loading course:', error);
@@ -192,7 +197,56 @@ export default function CourseEditor() {
     setFormData({ ...formData, lessons: newLessons });
   };
 
-  const handleSaveCourse = async () => {
+  const checkStudentsProgress = async () => {
+    try {
+      const progressRes = await fetch(`${API_ENDPOINTS.PROGRESS}?courseId=${actualCourseId || courseId}`, {
+        headers: getAuthHeaders(),
+      });
+      if (progressRes.ok) {
+        const progressData = await progressRes.json();
+        const uniqueStudents = new Set((progressData.progress || []).map((p: any) => p.userId));
+        return uniqueStudents.size;
+      }
+      return 0;
+    } catch (error) {
+      console.error('Error checking students progress:', error);
+      return 0;
+    }
+  };
+
+  const handleSaveWithCheck = async () => {
+    if (isEditMode && savedStatus === 'published' && formData.status === 'published') {
+      const count = await checkStudentsProgress();
+      if (count > 0) {
+        setStudentsCount(count);
+        setShowProgressResetDialog(true);
+        return;
+      }
+    }
+    await handleSaveCourse();
+  };
+
+  const applyProgressReset = async (option: 'keep' | 'reset_tests' | 'reset_all') => {
+    try {
+      await fetch(`${API_ENDPOINTS.PROGRESS}/reset`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          courseId: actualCourseId || courseId,
+          resetType: option,
+        }),
+      });
+    } catch (error) {
+      console.error('Error resetting progress:', error);
+    }
+  };
+
+  const confirmProgressReset = async () => {
+    setShowProgressResetDialog(false);
+    await handleSaveCourse(progressResetOption);
+  };
+
+  const handleSaveCourse = async (resetOption?: 'keep' | 'reset_tests' | 'reset_all') => {
     setLoading(true);
     try {
       const method = isEditMode ? 'PUT' : 'POST';
@@ -289,6 +343,10 @@ export default function CourseEditor() {
         }
       }
 
+      setSavedStatus(formData.status);
+      if (resetOption) {
+        await applyProgressReset(resetOption);
+      }
       navigate(ROUTES.ADMIN.COURSES);
     } catch (error) {
       console.error('Error saving course:', error);
@@ -339,7 +397,7 @@ export default function CourseEditor() {
             </h1>
           </div>
           <Button
-            onClick={handleSaveCourse}
+            onClick={handleSaveWithCheck}
             disabled={!formData.title || formData.lessons.length === 0 || loading}
           >
             <Icon name="Save" className="mr-2" size={16} />
@@ -354,6 +412,7 @@ export default function CourseEditor() {
               formData={formData}
               onInputChange={handleInputChange}
               isEditMode={isEditMode}
+              savedStatus={savedStatus}
             />
           </div>
 
@@ -372,7 +431,7 @@ export default function CourseEditor() {
             onDeleteLesson={handleDeleteLesson}
             onReorderLesson={handleReorderLesson}
             getTypeIcon={getTypeIcon}
-            isDisabled={isEditMode && formData.status === 'published'}
+            isDisabled={isEditMode && savedStatus === 'published'}
           />
         </div>
       </div>
@@ -384,6 +443,91 @@ export default function CourseEditor() {
         onCancel={handleCancelLesson}
         onLessonChange={handleLessonChange}
       />
+
+      {showProgressResetDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-lg w-full p-6">
+            <div className="flex items-start gap-4 mb-4">
+              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <Icon name="Users" size={24} className="text-blue-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">
+                  Курс проходят {studentsCount} {studentsCount === 1 ? 'студент' : studentsCount < 5 ? 'студента' : 'студентов'}
+                </h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Вы редактируете опубликованный курс. Выберите, что делать с прогрессом студентов:
+                </p>
+                
+                <div className="space-y-3">
+                  <label className="flex items-start gap-3 p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                    style={{ borderColor: progressResetOption === 'keep' ? '#f97316' : '#e5e7eb' }}>
+                    <input
+                      type="radio"
+                      name="resetOption"
+                      value="keep"
+                      checked={progressResetOption === 'keep'}
+                      onChange={(e) => setProgressResetOption(e.target.value as any)}
+                      className="mt-1"
+                    />
+                    <div>
+                      <div className="font-medium text-gray-900">Сохранить весь прогресс</div>
+                      <div className="text-xs text-gray-600 mt-1">
+                        Подходит если вы исправляли опечатки и мелкие правки
+                      </div>
+                    </div>
+                  </label>
+
+                  <label className="flex items-start gap-3 p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                    style={{ borderColor: progressResetOption === 'reset_tests' ? '#f97316' : '#e5e7eb' }}>
+                    <input
+                      type="radio"
+                      name="resetOption"
+                      value="reset_tests"
+                      checked={progressResetOption === 'reset_tests'}
+                      onChange={(e) => setProgressResetOption(e.target.value as any)}
+                      className="mt-1"
+                    />
+                    <div>
+                      <div className="font-medium text-gray-900">Сбросить только результаты тестов</div>
+                      <div className="text-xs text-gray-600 mt-1">
+                        Если вы меняли вопросы или правильные ответы в тестах
+                      </div>
+                    </div>
+                  </label>
+
+                  <label className="flex items-start gap-3 p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                    style={{ borderColor: progressResetOption === 'reset_all' ? '#f97316' : '#e5e7eb' }}>
+                    <input
+                      type="radio"
+                      name="resetOption"
+                      value="reset_all"
+                      checked={progressResetOption === 'reset_all'}
+                      onChange={(e) => setProgressResetOption(e.target.value as any)}
+                      className="mt-1"
+                    />
+                    <div>
+                      <div className="font-medium text-gray-900">Полностью сбросить прогресс</div>
+                      <div className="text-xs text-gray-600 mt-1">
+                        Если курс сильно изменился по структуре или содержанию
+                      </div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex justify-end gap-3 mt-6">
+              <Button variant="outline" onClick={() => setShowProgressResetDialog(false)}>
+                Отмена
+              </Button>
+              <Button onClick={confirmProgressReset} disabled={loading}>
+                {loading ? 'Сохранение...' : 'Сохранить курс'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </AdminLayout>
   );
 }
