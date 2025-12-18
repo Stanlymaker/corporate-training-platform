@@ -1,7 +1,6 @@
 import json
 import os
 import psycopg2
-import uuid
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel, Field, ValidationError
 

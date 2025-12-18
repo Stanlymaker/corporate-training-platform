@@ -2,7 +2,6 @@ import json
 import os
 import psycopg2
 import jwt
-import uuid
 from datetime import datetime
 from typing import Dict, Any, Optional
 from pydantic import BaseModel, Field
@@ -95,7 +94,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     conn = get_db_connection()
     cur = conn.cursor()
     
-    # course_id is now INTEGER - use directly
     course_id_int = None
     if course_id_param:
         try:
@@ -167,7 +165,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         body_data = json.loads(event.get('body', '{}'))
         assign_req = AssignCourseRequest(**body_data)
         
-        # courseId is INTEGER, use directly
         course_id = assign_req.courseId
         
         cur.execute(
@@ -184,23 +181,22 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'isBase64Encoded': False
             }
         
-        new_assignment_id = str(uuid.uuid4())
         now = datetime.utcnow()
         
         cur.execute(
-            "INSERT INTO course_assignments_v2 (id, course_id, user_id, assigned_by, assigned_at, due_date, status, notes, created_at) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) "
+            "INSERT INTO course_assignments_v2 (course_id, user_id, assigned_by, assigned_at, due_date, status, notes, created_at) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s) "
             "RETURNING id, course_id, user_id, assigned_by, assigned_at, due_date, status, notes",
-            (new_assignment_id, course_id, assign_req.userId, payload['user_id'],
+            (course_id, assign_req.userId, payload['user_id'],
              now, assign_req.dueDate, 'assigned', assign_req.notes, now)
         )
         new_assignment = cur.fetchone()
         
         cur.execute(
-            "INSERT INTO course_progress_v2 (id, course_id, user_id, completed_lessons, total_lessons, completed, started_at, created_at, updated_at) "
-            "SELECT %s, %s, %s, 0, lessons_count, false, %s, %s, %s FROM courses_v2 WHERE id = %s "
+            "INSERT INTO course_progress_v2 (course_id, user_id, completed_lessons, total_lessons, completed, started_at, created_at, updated_at) "
+            "SELECT %s, %s, 0, lessons_count, false, %s, %s, %s FROM courses_v2 WHERE id = %s "
             "ON CONFLICT (course_id, user_id) DO NOTHING",
-            (str(uuid.uuid4()), course_id, assign_req.userId, now, now, now, course_id)
+            (course_id, assign_req.userId, now, now, now, course_id)
         )
         conn.commit()
         

@@ -3,7 +3,6 @@ import os
 import psycopg2
 import bcrypt
 import jwt
-import uuid
 from datetime import datetime
 from typing import Dict, Any, Optional
 from pydantic import BaseModel, EmailStr, Field, ValidationError

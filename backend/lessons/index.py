@@ -2,7 +2,6 @@ import json
 import os
 import psycopg2
 import jwt
-import uuid
 from datetime import datetime
 from typing import Dict, Any, Optional
 from pydantic import BaseModel, Field
@@ -142,7 +141,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     cur = conn.cursor()
     
     if method == 'GET' and course_id:
-        # course_id is now INTEGER
         course_id_int = int(course_id)
         
         if payload.get('role') != 'admin':
@@ -291,13 +289,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'isBase64Encoded': False
             }
         
-        # Generate UUID for material
-        material_id = str(uuid.uuid4())
-        
         cur.execute(
-            "INSERT INTO lesson_materials_v2 (id, lesson_id, title, type, url) VALUES (%s, %s, %s, %s, %s) RETURNING id",
-            (material_id, lesson_id_param, material_req.title, material_req.type, material_req.url)
+            "INSERT INTO lesson_materials_v2 (lesson_id, title, type, url) VALUES (%s, %s, %s, %s) RETURNING id",
+            (lesson_id_param, material_req.title, material_req.type, material_req.url)
         )
+        material_id = cur.fetchone()[0]
         
         conn.commit()
         
@@ -343,7 +339,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'isBase64Encoded': False
             }
         
-        # courseId is INTEGER, use directly
         course_id = create_req.courseId
         
         # Verify course exists
@@ -358,16 +353,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'isBase64Encoded': False
             }
         
-        # Generate UUID for lesson
-        lesson_id = str(uuid.uuid4())
-        
         cur.execute(
-            "INSERT INTO lessons_v2 (id, course_id, title, content, type, \"order\", duration, video_url, "
+            "INSERT INTO lessons_v2 (course_id, title, content, type, \"order\", duration, video_url, "
             "description, requires_previous, test_id, is_final_test, final_test_requires_all_lessons, "
             "final_test_requires_all_tests) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
             (
-                lesson_id,
                 course_id,
                 create_req.title,
                 create_req.content,

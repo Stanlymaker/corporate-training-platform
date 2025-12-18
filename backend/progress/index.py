@@ -2,7 +2,6 @@ import json
 import os
 import psycopg2
 import jwt
-import uuid
 from datetime import datetime
 from typing import Dict, Any, Optional
 from pydantic import BaseModel, Field
@@ -104,7 +103,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     conn = get_db_connection()
     cur = conn.cursor()
     
-    # course_id is now INTEGER - use directly
     course_id_int = int(course_id) if course_id else None
     
     if method == 'GET':
@@ -183,7 +181,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         body_data = json.loads(event.get('body', '{}'))
         start_req = CompleteLessonRequest(**body_data)
         
-        # courseId is INTEGER, use directly
         course_id = start_req.courseId
         
         # Проверяем, есть ли уже прогресс
@@ -231,13 +228,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             # Создаем прогресс
             now = datetime.utcnow()
-            progress_id = str(uuid.uuid4())
             
             cur.execute(
-                "INSERT INTO course_progress_v2 (id, course_id, user_id, completed_lessons, total_lessons, "
+                "INSERT INTO course_progress_v2 (course_id, user_id, completed_lessons, total_lessons, "
                 "completed, started_at, created_at, updated_at) "
-                "SELECT %s, %s, %s, 0, lessons_count, false, %s, %s, %s FROM courses_v2 WHERE id = %s",
-                (progress_id, course_id, payload['user_id'], now, now, now, course_id)
+                "SELECT %s, %s, 0, lessons_count, false, %s, %s, %s FROM courses_v2 WHERE id = %s",
+                (course_id, payload['user_id'], now, now, now, course_id)
             )
             conn.commit()
         
@@ -264,7 +260,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         body_data = json.loads(event.get('body', '{}'))
         complete_req = CompleteLessonRequest(**body_data)
         
-        # courseId is INTEGER, use directly
         course_id = complete_req.courseId
         
         # Проверка доступа к курсу
@@ -326,15 +321,16 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         if not progress:
             # Создаем прогресс если его нет
             now = datetime.utcnow()
-            progress_id = str(uuid.uuid4())
             
             cur.execute(
-                "INSERT INTO course_progress_v2 (id, course_id, user_id, completed_lessons, total_lessons, "
+                "INSERT INTO course_progress_v2 (course_id, user_id, completed_lessons, total_lessons, "
                 "completed, started_at, completed_lesson_ids, last_accessed_lesson, created_at, updated_at) "
-                "SELECT %s, %s, %s, 1, lessons_count, false, %s, %s, %s, %s, %s FROM courses_v2 WHERE id = %s",
-                (progress_id, course_id, payload['user_id'], now, 
+                "SELECT %s, %s, 1, lessons_count, false, %s, %s, %s, %s, %s FROM courses_v2 WHERE id = %s "
+                "RETURNING id",
+                (course_id, payload['user_id'], now, 
                  json.dumps([complete_req.lessonId]), complete_req.lessonId, now, now, course_id)
             )
+            progress_id = cur.fetchone()[0]
         else:
             progress_id = progress[0]
             completed_lesson_ids = progress[1] if progress[1] else []
@@ -376,7 +372,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         body_data = json.loads(event.get('body', '{}'))
         test_req = SubmitTestRequest(**body_data)
         
-        # courseId is INTEGER, use directly
         course_id = test_req.courseId
         
         # Проверка доступа к курсу
@@ -414,13 +409,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 }
         
         # Сохраняем результат теста
-        result_id = str(uuid.uuid4())
         now = datetime.utcnow()
         
         cur.execute(
-            "INSERT INTO test_results_v2 (id, test_id, user_id, answers, score, passed, submitted_at, created_at) "
-            "VALUES (%s, %s, %s, %s, 0, false, %s, %s)",
-            (result_id, test_req.testId, payload['user_id'], json.dumps(test_req.answers), now, now)
+            "INSERT INTO test_results_v2 (test_id, user_id, answers, score, passed, submitted_at, created_at) "
+            "VALUES (%s, %s, %s, 0, false, %s, %s)",
+            (test_req.testId, payload['user_id'], json.dumps(test_req.answers), now, now
         )
         
         conn.commit()

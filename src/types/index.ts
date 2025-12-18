@@ -36,7 +36,7 @@ export interface Course {
 }
 
 export interface Lesson {
-  id: string;
+  id: number;
   courseId: number;
   title: string;
   content: string;
@@ -54,7 +54,7 @@ export interface Lesson {
 }
 
 export interface LessonMaterial {
-  id: string;
+  id: number;
   title: string;
   type: 'pdf' | 'doc' | 'link' | 'video';
   url: string;
@@ -63,7 +63,7 @@ export interface LessonMaterial {
 export interface Test {
   id: number;
   courseId: number;
-  lessonId?: string;
+  lessonId?: number;
   title: string;
   description: string;
   passScore: number;
@@ -76,7 +76,7 @@ export interface Test {
 }
 
 export interface Question {
-  id: string;
+  id: number;
   testId: number;
   type: 'single' | 'multiple' | 'text' | 'matching';
   text: string;
@@ -107,13 +107,13 @@ export interface CourseProgress {
   testScore?: number;
   completed: boolean;
   earnedRewards: number[];
-  completedLessonIds: string[];
-  lastAccessedLesson?: string;
+  completedLessonIds: number[];
+  lastAccessedLesson?: number;
   startedAt?: string;
 }
 
 export interface CourseAssignment {
-  id: string;
+  id: number;
   courseId: number;
   userId: number;
   assignedBy: number;
@@ -124,7 +124,7 @@ export interface CourseAssignment {
 }
 
 export interface TestResult {
-  id: string;
+  id: number;
   userId: number;
   courseId: number;
   testId: number;

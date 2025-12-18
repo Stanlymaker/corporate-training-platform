@@ -43,7 +43,6 @@ export function useTestEditorActions(
   const loadTest = async (id: string): Promise<'draft' | 'published' | null> => {
     setLoadingTest(true);
     try {
-      // Загружаем тест по display_id
       const testRes = await fetch(`${API_ENDPOINTS.TESTS}?id=${id}`, { headers: getAuthHeaders() });
       
       if (!testRes.ok) {
@@ -53,7 +52,6 @@ export function useTestEditorActions(
       const testData = await testRes.json();
       const testStatus = testData.test.status || 'draft';
       
-      // Загружаем вопросы по display_id (бэкенд конвертирует в UUID)
       const questionsRes = await fetch(`${API_ENDPOINTS.TESTS}?testId=${id}&action=questions`, { 
         headers: getAuthHeaders() 
       });

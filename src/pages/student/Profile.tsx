@@ -196,7 +196,7 @@ export default function StudentProfile() {
                       const progressPercent = (progress.completedLessons / progress.totalLessons) * 100;
 
                       return (
-                        <div key={course.id} className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer" onClick={() => navigate(`/student/courses/${course.displayId}`)}>
+                        <div key={course.id} className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer" onClick={() => navigate(`/student/courses/${course.id}`)}>
                           <div className="flex items-start gap-3 mb-3">
                             <div className={`w-16 h-16 rounded-lg bg-gradient-to-br ${getCategoryGradient(course.category)} flex items-center justify-center shadow-md flex-shrink-0`}>
                               <Icon name={getCategoryIcon(course.category) as any} size={32} className="text-white" />

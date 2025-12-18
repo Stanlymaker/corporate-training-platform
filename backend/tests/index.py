@@ -154,7 +154,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     cur = conn.cursor()
     
     if method == 'GET' and action == 'questions' and test_id_param:
-        # test_id is now INTEGER
         test_id_int = int(test_id_param)
         
         cur.execute(
@@ -249,7 +248,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'isBase64Encoded': False
             }
         
-        # Verify test exists - testId is now INTEGER
         cur.execute("SELECT id FROM tests_v2 WHERE id = %s", (request.testId,))
         test = cur.fetchone()
         if not test:
@@ -330,7 +328,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'isBase64Encoded': False
             }
         
-        # Use SERIAL autoincrement for id - no UUID generation needed
         cur.execute(
             "INSERT INTO tests_v2 (title, description, pass_score, time_limit, attempts, status) "
             "VALUES (%s, %s, %s, %s, %s, 'draft') "
