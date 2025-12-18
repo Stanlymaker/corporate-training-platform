@@ -113,10 +113,6 @@ export default function Login() {
                   </>
                 )}
               </Button>
-              
-              <p className="text-xs text-gray-500 text-center">
-                Тестовый доступ: admin@example.com / 123456
-              </p>
             </form>
           </CardContent>
         </Card>
