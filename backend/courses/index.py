@@ -422,21 +422,20 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             print(f'Deleting course with UUID: {actual_course_id}')
             
-            # Преобразуем UUID строку в UUID объект
-            if isinstance(actual_course_id, str):
-                actual_course_id = uuid.UUID(actual_course_id)
+            # Преобразуем в строку для psycopg2
+            actual_course_id_str = str(actual_course_id)
             
-            print(f'UUID object: {actual_course_id}, type: {type(actual_course_id)}')
+            print(f'UUID string: {actual_course_id_str}')
             
-            # Каскадное удаление записей по UUID
+            # Каскадное удаление записей по UUID (передаем строку)
             print('Deleting progress...')
-            cur.execute("DELETE FROM progress WHERE course_id = %s", (actual_course_id,))
+            cur.execute("DELETE FROM progress WHERE course_id::text = %s", (actual_course_id_str,))
             print('Deleting course_assignments...')
-            cur.execute("DELETE FROM course_assignments WHERE course_id = %s", (actual_course_id,))
+            cur.execute("DELETE FROM course_assignments WHERE course_id::text = %s", (actual_course_id_str,))
             print('Deleting lessons...')
-            cur.execute("DELETE FROM lessons WHERE course_id = %s", (actual_course_id,))
+            cur.execute("DELETE FROM lessons WHERE course_id::text = %s", (actual_course_id_str,))
             print('Deleting course...')
-            cur.execute("DELETE FROM courses WHERE id = %s", (actual_course_id,))
+            cur.execute("DELETE FROM courses WHERE id::text = %s", (actual_course_id_str,))
             
             conn.commit()
             
