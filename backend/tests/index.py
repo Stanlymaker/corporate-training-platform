@@ -163,18 +163,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         }
     
     if method == 'GET' and test_id:
-        if test_id.isdigit():
-            cur.execute(
-                "SELECT id, display_id, course_id, lesson_id, title, description, pass_score, time_limit, "
-                "attempts, questions_count, status, created_at, updated_at FROM tests WHERE display_id = %s",
-                (int(test_id),)
-            )
-        else:
-            cur.execute(
-                "SELECT id, display_id, course_id, lesson_id, title, description, pass_score, time_limit, "
-                "attempts, questions_count, status, created_at, updated_at FROM tests WHERE id = %s",
-                (test_id,)
-            )
+        cur.execute(
+            "SELECT id, display_id, course_id, lesson_id, title, description, pass_score, time_limit, "
+            "attempts, questions_count, status, created_at, updated_at FROM tests WHERE display_id = %s",
+            (int(test_id),)
+        )
         test = cur.fetchone()
         
         if not test:
@@ -360,13 +353,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         update_fields.append('updated_at = %s')
         update_values.append(datetime.utcnow())
-        update_values.append(test_id)
+        update_values.append(int(test_id))
         
-        where_clause = "display_id = %s" if test_id.isdigit() else "id = %s"
-        query = f"UPDATE tests SET {', '.join(update_fields)} WHERE {where_clause} RETURNING id, display_id, course_id, lesson_id, title, description, pass_score, time_limit, attempts, questions_count, status, created_at, updated_at"
+        query = f"UPDATE tests SET {', '.join(update_fields)} WHERE display_id = %s RETURNING id, display_id, course_id, lesson_id, title, description, pass_score, time_limit, attempts, questions_count, status, created_at, updated_at"
         
-        final_values = update_values[:-1] + [int(test_id) if test_id.isdigit() else test_id]
-        cur.execute(query, final_values)
+        cur.execute(query, update_values)
         updated_test = cur.fetchone()
         conn.commit()
         
@@ -404,16 +395,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'isBase64Encoded': False
             }
         
-        if test_id.isdigit():
-            cur.execute("SELECT id FROM tests WHERE display_id = %s", (int(test_id),))
-            test_row = cur.fetchone()
-            if test_row:
-                actual_test_id = test_row[0]
-                cur.execute("DELETE FROM questions WHERE test_id = %s", (actual_test_id,))
-                cur.execute("DELETE FROM tests WHERE display_id = %s", (int(test_id),))
-        else:
-            cur.execute("DELETE FROM questions WHERE test_id = %s", (test_id,))
-            cur.execute("DELETE FROM tests WHERE id = %s", (test_id,))
+        cur.execute("SELECT id FROM tests WHERE display_id = %s", (int(test_id),))
+        test_row = cur.fetchone()
+        if test_row:
+            actual_test_id = test_row[0]
+            cur.execute("DELETE FROM questions WHERE test_id = %s", (actual_test_id,))
+            cur.execute("DELETE FROM tests WHERE display_id = %s", (int(test_id),))
         conn.commit()
         
         cur.close()

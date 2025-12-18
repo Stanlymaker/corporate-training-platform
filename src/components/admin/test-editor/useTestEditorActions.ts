@@ -185,6 +185,7 @@ export function useTestEditorActions(
       if (createRes.ok) {
         const newTestData = await createRes.json();
         const newTestId = newTestData.test.id;
+        const newDisplayId = newTestData.test.displayId;
 
         for (let i = 0; i < formData.questions.length; i++) {
           const question = formData.questions[i];
@@ -224,7 +225,7 @@ export function useTestEditorActions(
           });
         }
 
-        navigate(`/admin/tests/edit/${newTestId}`);
+        navigate(`/admin/tests/edit/${newDisplayId}`);
       }
     } catch (error) {
       console.error('Error copying test:', error);
