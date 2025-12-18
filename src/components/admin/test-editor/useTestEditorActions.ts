@@ -115,6 +115,14 @@ export function useTestEditorActions(
       const testData = await testRes.json();
       const savedTestId = testData.test.id;
 
+      // В режиме редактирования удаляем все старые вопросы
+      if (isEditMode) {
+        await fetch(`${API_ENDPOINTS.TESTS}?action=deleteQuestions&testId=${savedTestId}`, {
+          method: 'DELETE',
+          headers: getAuthHeaders(),
+        });
+      }
+
       for (let i = 0; i < formData.questions.length; i++) {
         const question = formData.questions[i];
         
