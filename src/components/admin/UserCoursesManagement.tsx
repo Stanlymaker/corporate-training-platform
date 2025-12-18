@@ -104,31 +104,105 @@ export default function UserCoursesManagement({
   const completedCourseIds = userAssignments.filter(a => a.status === 'completed').map(a => a.courseId);
 
   const getCourseStatus = (course: Course) => {
-    const isCompleted = completedCourseIds.includes(course.id);
+    const progress = progressData.find(p => p.courseId === course.id);
     const assignment = userAssignments.find(a => a.courseId === course.id);
     
-    if (isCompleted) {
-      return { status: 'completed', label: 'Пройден', color: 'bg-green-500 text-white' };
+    // Статус курса (архив/черновик)
+    const courseStateLabel = course.published === false ? ' (Черновик)' : 
+                            course.archived === true ? ' (Архив)' : '';
+    
+    // Статус прогресса пользователя
+    if (progress?.completed) {
+      return { 
+        status: 'completed', 
+        label: `Завершен${courseStateLabel}`, 
+        color: 'bg-green-500 text-white',
+        userStatus: 'completed',
+        courseState: course.published === false ? 'draft' : course.archived === true ? 'archived' : 'active'
+      };
     }
     
-    if (assignment) {
-      switch (assignment.status) {
-        case 'assigned':
-          return { status: 'assigned', label: 'Назначен', color: 'bg-blue-50 text-blue-700 border border-blue-200' };
-        case 'in_progress':
-          return { status: 'in_progress', label: 'В процессе', color: 'bg-yellow-50 text-yellow-700 border border-yellow-200' };
-        case 'overdue':
-          return { status: 'overdue', label: 'Просрочен', color: 'bg-red-50 text-red-700 border border-red-200' };
-        default:
-          return { status: 'assigned', label: 'Назначен', color: 'bg-blue-50 text-blue-700 border border-blue-200' };
-      }
-    }
-    
+    // Открытые курсы - доступны всем по умолчанию
     if (course.accessType === 'open') {
-      return { status: 'available', label: 'Доступен', color: 'bg-gray-100 text-gray-700 border border-gray-200' };
+      // Если начал изучать
+      if (progress && progress.completedLessons > 0) {
+        return { 
+          status: 'in_progress', 
+          label: `Изучает${courseStateLabel}`, 
+          color: 'bg-yellow-50 text-yellow-700 border border-yellow-200',
+          userStatus: 'in_progress',
+          courseState: course.published === false ? 'draft' : course.archived === true ? 'archived' : 'active'
+        };
+      }
+      // Если есть прогресс (начал, но не завершил уроков)
+      if (progress) {
+        return { 
+          status: 'started', 
+          label: `Начат${courseStateLabel}`, 
+          color: 'bg-blue-50 text-blue-700 border border-blue-200',
+          userStatus: 'started',
+          courseState: course.published === false ? 'draft' : course.archived === true ? 'archived' : 'active'
+        };
+      }
+      // Доступен, но не начат
+      return { 
+        status: 'available', 
+        label: `Доступен${courseStateLabel}`, 
+        color: 'bg-gray-100 text-gray-700 border border-gray-200',
+        userStatus: 'not_started',
+        courseState: course.published === false ? 'draft' : course.archived === true ? 'archived' : 'active'
+      };
     }
     
-    return { status: 'not_assigned', label: 'Не назначен', color: 'bg-gray-50 text-gray-500 border border-gray-200' };
+    // Закрытые курсы - только по назначению
+    if (assignment) {
+      // Если начал изучать
+      if (progress && progress.completedLessons > 0) {
+        return { 
+          status: 'in_progress', 
+          label: `Изучает${courseStateLabel}`, 
+          color: 'bg-yellow-50 text-yellow-700 border border-yellow-200',
+          userStatus: 'in_progress',
+          courseState: course.published === false ? 'draft' : course.archived === true ? 'archived' : 'active'
+        };
+      }
+      // Если есть прогресс (начал, но не завершил уроков)
+      if (progress) {
+        return { 
+          status: 'started', 
+          label: `Начат${courseStateLabel}`, 
+          color: 'bg-blue-50 text-blue-700 border border-blue-200',
+          userStatus: 'started',
+          courseState: course.published === false ? 'draft' : course.archived === true ? 'archived' : 'active'
+        };
+      }
+      // Назначен, но не начат
+      if (assignment.status === 'overdue') {
+        return { 
+          status: 'overdue', 
+          label: `Просрочен${courseStateLabel}`, 
+          color: 'bg-red-50 text-red-700 border border-red-200',
+          userStatus: 'overdue',
+          courseState: course.published === false ? 'draft' : course.archived === true ? 'archived' : 'active'
+        };
+      }
+      return { 
+        status: 'assigned', 
+        label: `Назначен${courseStateLabel}`, 
+        color: 'bg-blue-50 text-blue-700 border border-blue-200',
+        userStatus: 'assigned',
+        courseState: course.published === false ? 'draft' : course.archived === true ? 'archived' : 'active'
+      };
+    }
+    
+    // Закрытый курс без назначения
+    return { 
+      status: 'not_assigned', 
+      label: `Не назначен${courseStateLabel}`, 
+      color: 'bg-gray-50 text-gray-500 border border-gray-200',
+      userStatus: 'not_assigned',
+      courseState: course.published === false ? 'draft' : course.archived === true ? 'archived' : 'active'
+    };
   };
 
   if (user.role !== 'student') return null;
@@ -143,6 +217,11 @@ export default function UserCoursesManagement({
     );
   }
 
+  // Фильтруем курсы: только опубликованные или архивные (без черновиков)
+  const visibleCourses = courses.filter(c => c.published !== false);
+  const openCourses = visibleCourses.filter(c => c.accessType === 'open');
+  const closedCourses = visibleCourses.filter(c => c.accessType === 'closed');
+
   return (
     <div className="border-t pt-6">
       <h5 className="font-bold mb-4 flex items-center gap-2">
@@ -155,9 +234,13 @@ export default function UserCoursesManagement({
           <div className="flex items-center gap-2 mb-3">
             <Icon name="Unlock" size={16} className="text-green-500" />
             <h6 className="font-semibold text-gray-700">Открытые курсы</h6>
+            <span className="text-xs text-gray-500">({openCourses.length})</span>
           </div>
           <div className="space-y-2">
-            {courses.filter(c => c.accessType === 'open').map((course) => {
+            {openCourses.length === 0 ? (
+              <div className="text-sm text-gray-500 text-center py-4">Нет открытых курсов</div>
+            ) : (
+              openCourses.map((course) => {
               const courseStatus = getCourseStatus(course);
               
               const isExpanded = expandedCourseId === course.id;
@@ -239,9 +322,13 @@ export default function UserCoursesManagement({
           <div className="flex items-center gap-2 mb-3">
             <Icon name="Lock" size={16} className="text-orange-500" />
             <h6 className="font-semibold text-gray-700">Закрытые курсы</h6>
+            <span className="text-xs text-gray-500">({closedCourses.length})</span>
           </div>
           <div className="space-y-2">
-            {courses.filter(c => c.accessType === 'closed').map((course) => {
+            {closedCourses.length === 0 ? (
+              <div className="text-sm text-gray-500 text-center py-4">Нет закрытых курсов</div>
+            ) : (
+              closedCourses.map((course) => {
               const courseStatus = getCourseStatus(course);
               const assignment = userAssignments.find(a => a.courseId === course.id);
               const isAssigned = assignedCourseIds.includes(course.id);
@@ -338,7 +425,8 @@ export default function UserCoursesManagement({
                   )}
                 </div>
               );
-            })}
+              })
+            )}
           </div>
         </div>
       </div>
