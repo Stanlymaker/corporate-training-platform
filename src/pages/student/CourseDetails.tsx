@@ -70,9 +70,11 @@ export default function CourseDetails() {
         fetch(`${API_ENDPOINTS.PROGRESS}?userId=${userId}&courseId=${displayId}`, { headers: getAuthHeaders() }),
       ]);
 
+      let courseUuid = null;
       if (courseRes.ok) {
         const courseData = await courseRes.json();
         setCourse(courseData);
+        courseUuid = courseData.id;
       }
 
       if (lessonsRes.ok) {
@@ -80,9 +82,9 @@ export default function CourseDetails() {
         setLessons(lessonsData.lessons || []);
       }
 
-      if (progressRes.ok) {
+      if (progressRes.ok && courseUuid) {
         const progressData = await progressRes.json();
-        const courseProgress = progressData.progress?.find((p: CourseProgress) => p.courseId === displayId);
+        const courseProgress = progressData.progress?.find((p: CourseProgress) => p.courseId === courseUuid);
         setProgress(courseProgress || null);
       }
     } catch (error) {

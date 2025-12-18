@@ -142,10 +142,29 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     cur = conn.cursor()
     
     if method == 'GET' and course_id:
+        # Сначала найдем UUID курса по display_id (или это уже UUID)
+        try:
+            display_id = int(course_id)
+            cur.execute("SELECT id FROM courses WHERE display_id = %s", (display_id,))
+            course_row = cur.fetchone()
+            if not course_row:
+                cur.close()
+                conn.close()
+                return {
+                    'statusCode': 404,
+                    'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'error': 'Курс не найден'}, ensure_ascii=False),
+                    'isBase64Encoded': False
+                }
+            course_uuid = course_row[0]
+        except ValueError:
+            # Это UUID
+            course_uuid = course_id
+        
         if payload.get('role') != 'admin':
             cur.execute(
                 "SELECT id FROM course_assignments WHERE course_id = %s AND user_id = %s",
-                (course_id, payload['user_id'])
+                (course_uuid, payload['user_id'])
             )
             if not cur.fetchone():
                 cur.close()
@@ -162,7 +181,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             "description, requires_previous, test_id, is_final_test, "
             "final_test_requires_all_lessons, final_test_requires_all_tests "
             "FROM lessons WHERE course_id = %s ORDER BY \"order\"",
-            (course_id,)
+            (course_uuid,)
         )
         lessons = cur.fetchall()
         

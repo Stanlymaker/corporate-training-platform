@@ -103,12 +103,26 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     conn = get_db_connection()
     cur = conn.cursor()
     
-    if method == 'GET' and user_id and course_id:
+    # Если course_id - это display_id (число), преобразуем в UUID
+    course_uuid = None
+    if course_id:
+        try:
+            display_id = int(course_id)
+            cur.execute("SELECT id FROM courses WHERE display_id = %s", (display_id,))
+            course_row = cur.fetchone()
+            if course_row:
+                course_uuid = course_row[0]
+            else:
+                course_uuid = course_id  # Возможно это уже UUID
+        except ValueError:
+            course_uuid = course_id  # Это UUID
+    
+    if method == 'GET' and user_id and course_uuid:
         cur.execute(
             "SELECT course_id, user_id, completed_lessons, total_lessons, test_score, completed, "
             "completed_lesson_ids, last_accessed_lesson, started_at "
             "FROM course_progress WHERE user_id = %s AND course_id = %s",
-            (user_id, course_id)
+            (user_id, course_uuid)
         )
         progress = cur.fetchone()
         

@@ -95,6 +95,20 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     conn = get_db_connection()
     cur = conn.cursor()
     
+    # Если course_id_param - это display_id (число), преобразуем в UUID
+    course_uuid = None
+    if course_id_param:
+        try:
+            display_id = int(course_id_param)
+            cur.execute("SELECT id FROM courses WHERE display_id = %s", (display_id,))
+            course_row = cur.fetchone()
+            if course_row:
+                course_uuid = course_row[0]
+            else:
+                course_uuid = course_id_param  # Возможно это уже UUID
+        except ValueError:
+            course_uuid = course_id_param  # Это UUID
+    
     if method == 'GET' and user_id_param:
         cur.execute(
             "SELECT id, course_id, user_id, assigned_by, assigned_at, due_date, status, notes "
@@ -114,11 +128,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'isBase64Encoded': False
         }
     
-    if method == 'GET' and course_id_param:
+    if method == 'GET' and course_uuid:
         cur.execute(
             "SELECT id, course_id, user_id, assigned_by, assigned_at, due_date, status, notes "
             "FROM course_assignments WHERE course_id = %s ORDER BY assigned_at DESC",
-            (course_id_param,)
+            (course_uuid,)
         )
         assignments = cur.fetchall()
         assignments_list = [format_assignment_response(a) for a in assignments]
@@ -137,9 +151,21 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         body_data = json.loads(event.get('body', '{}'))
         assign_req = AssignCourseRequest(**body_data)
         
+        # Преобразуем courseId в UUID если это display_id
+        try:
+            display_id = int(assign_req.courseId)
+            cur.execute("SELECT id FROM courses WHERE display_id = %s", (display_id,))
+            course_row = cur.fetchone()
+            if course_row:
+                course_uuid_for_assign = course_row[0]
+            else:
+                course_uuid_for_assign = assign_req.courseId
+        except ValueError:
+            course_uuid_for_assign = assign_req.courseId
+        
         cur.execute(
             "SELECT id FROM course_assignments WHERE course_id = %s AND user_id = %s",
-            (assign_req.courseId, assign_req.userId)
+            (course_uuid_for_assign, assign_req.userId)
         )
         if cur.fetchone():
             cur.close()
@@ -158,7 +184,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             "INSERT INTO course_assignments (id, course_id, user_id, assigned_by, assigned_at, due_date, status, notes, created_at) "
             "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) "
             "RETURNING id, course_id, user_id, assigned_by, assigned_at, due_date, status, notes",
-            (new_assignment_id, assign_req.courseId, assign_req.userId, payload['user_id'],
+            (new_assignment_id, course_uuid_for_assign, assign_req.userId, payload['user_id'],
              now, assign_req.dueDate, 'assigned', assign_req.notes, now)
         )
         new_assignment = cur.fetchone()
@@ -167,7 +193,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             "INSERT INTO course_progress (id, course_id, user_id, completed_lessons, total_lessons, completed, started_at, created_at, updated_at) "
             "SELECT %s, %s, %s, 0, lessons_count, false, %s, %s, %s FROM courses WHERE id = %s "
             "ON CONFLICT (course_id, user_id) DO NOTHING",
-            (str(uuid.uuid4()), assign_req.courseId, assign_req.userId, now, now, now, assign_req.courseId)
+            (str(uuid.uuid4()), course_uuid_for_assign, assign_req.userId, now, now, now, course_uuid_for_assign)
         )
         conn.commit()
         
