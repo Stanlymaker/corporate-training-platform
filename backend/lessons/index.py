@@ -142,31 +142,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     cur = conn.cursor()
     
     if method == 'GET' and course_id:
-        # Получаем UUID курса по display_id
-        try:
-            display_id = int(course_id)
-        except ValueError:
-            cur.close()
-            conn.close()
-            return {
-                'statusCode': 400,
-                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'error': 'Неверный ID курса'}, ensure_ascii=False),
-                'isBase64Encoded': False
-            }
-        
-        cur.execute("SELECT id FROM courses WHERE display_id = %s", (display_id,))
-        course_row = cur.fetchone()
-        if not course_row:
-            cur.close()
-            conn.close()
-            return {
-                'statusCode': 404,
-                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'error': 'Курс не найден'}, ensure_ascii=False),
-                'isBase64Encoded': False
-            }
-        course_uuid = course_row[0]
+        # Используем display_id напрямую
+        course_uuid = str(course_id)
         
         if payload.get('role') != 'admin':
             cur.execute(
@@ -330,19 +307,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         body_data = json.loads(event.get('body', '{}'))
         create_req = CreateLessonRequest(**body_data)
         
-        # Конвертируем display_id в UUID
-        cur.execute("SELECT id FROM courses WHERE display_id = %s", (create_req.courseId,))
-        course_row = cur.fetchone()
-        if not course_row:
-            cur.close()
-            conn.close()
-            return {
-                'statusCode': 404,
-                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'error': 'Курс не найден'}, ensure_ascii=False),
-                'isBase64Encoded': False
-            }
-        course_uuid = course_row[0]
+        # Используем display_id напрямую (как integer в VARCHAR поле)
+        course_id_for_insert = str(create_req.courseId)
         
         new_lesson_id = str(uuid.uuid4())
         now = datetime.utcnow()
@@ -354,7 +320,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) "
             "RETURNING id, course_id, title, content, type, \"order\", duration, video_url, description, "
             "requires_previous, test_id, is_final_test, final_test_requires_all_lessons, final_test_requires_all_tests",
-            (new_lesson_id, course_uuid, create_req.title, create_req.content, create_req.type,
+            (new_lesson_id, course_id_for_insert, create_req.title, create_req.content, create_req.type,
              create_req.order, create_req.duration, create_req.videoUrl, create_req.description,
              create_req.requiresPrevious, create_req.testId, create_req.isFinalTest,
              create_req.finalTestRequiresAllLessons, create_req.finalTestRequiresAllTests, now, now)

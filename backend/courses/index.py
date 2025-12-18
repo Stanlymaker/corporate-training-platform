@@ -188,14 +188,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             }
         
         if payload.get('role') != 'admin':
-            actual_course_id = course[0]
+            course_id_str = str(course_id)  # Используем display_id который мы получили из параметра
             course_access_type = course[15]  # access_type в 15-й позиции
             
             # Если курс закрытый, проверяем назначение
             if course_access_type == 'closed':
                 cur.execute(
                     "SELECT id FROM course_assignments WHERE course_id = %s AND user_id = %s",
-                    (actual_course_id, payload['user_id'])
+                    (course_id_str, payload['user_id'])
                 )
                 if not cur.fetchone():
                     cur.close()
@@ -235,8 +235,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         body_data = json.loads(event.get('body', '{}'))
         create_req = CreateCourseRequest(**body_data)
         
-        new_course_id = str(uuid.uuid4())
         now = datetime.utcnow()
+        
+        cur.execute("SELECT nextval('courses_display_id_seq')")
+        next_id = cur.fetchone()[0]
+        next_id_str = str(next_id)
         
         cur.execute(
             "INSERT INTO courses (id, title, description, duration, lessons_count, category, image, "
@@ -244,7 +247,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) "
             "RETURNING id, display_id, title, description, duration, lessons_count, category, image, published, "
             "pass_score, level, instructor, status, start_date, end_date, access_type",
-            (new_course_id, create_req.title, create_req.description, create_req.duration, 0,
+            (next_id_str, create_req.title, create_req.description, create_req.duration, 0,
              create_req.category, create_req.image, False, create_req.passScore, create_req.level,
              create_req.instructor, 'draft', create_req.accessType, now, now)
         )
@@ -376,26 +379,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             }
         
         try:
-            # Получаем UUID курса по display_id
-            cur.execute("SELECT id FROM courses WHERE display_id = %s", (course_id,))
-            course_row = cur.fetchone()
-            if not course_row:
-                cur.close()
-                conn.close()
-                return {
-                    'statusCode': 404,
-                    'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
-                    'body': json.dumps({'error': 'Курс не найден'}, ensure_ascii=False),
-                    'isBase64Encoded': False
-                }
+            # Используем display_id напрямую (теперь id = display_id)
+            course_id_str = str(course_id)
             
-            actual_course_uuid = course_row[0]
-            
-            # Каскадное удаление записей (psycopg2 сам преобразует UUID)
-            cur.execute("DELETE FROM progress WHERE course_id = %s", (actual_course_uuid,))
-            cur.execute("DELETE FROM course_assignments WHERE course_id = %s", (actual_course_uuid,))
-            cur.execute("DELETE FROM lessons WHERE course_id = %s", (actual_course_uuid,))
-            cur.execute("DELETE FROM courses WHERE id = %s", (actual_course_uuid,))
+            # Каскадное удаление записей
+            cur.execute("DELETE FROM course_progress WHERE course_id = %s", (course_id_str,))
+            cur.execute("DELETE FROM course_assignments WHERE course_id = %s", (course_id_str,))
+            cur.execute("DELETE FROM lessons WHERE course_id = %s", (course_id_str,))
+            cur.execute("DELETE FROM courses WHERE id = %s", (course_id_str,))
             
             conn.commit()
             

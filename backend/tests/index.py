@@ -156,31 +156,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     cur = conn.cursor()
     
     if method == 'GET' and action == 'questions' and test_id_param:
-        # Конвертируем display_id в UUID
-        try:
-            display_id = int(test_id_param)
-        except ValueError:
-            cur.close()
-            conn.close()
-            return {
-                'statusCode': 400,
-                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'error': 'Неверный ID теста'}, ensure_ascii=False),
-                'isBase64Encoded': False
-            }
-        
-        cur.execute("SELECT id FROM tests WHERE display_id = %s", (display_id,))
-        test_row = cur.fetchone()
-        if not test_row:
-            cur.close()
-            conn.close()
-            return {
-                'statusCode': 404,
-                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'error': 'Тест не найден'}, ensure_ascii=False),
-                'isBase64Encoded': False
-            }
-        test_uuid = test_row[0]
+        # Используем display_id напрямую
+        test_uuid = str(test_id_param)
         
         cur.execute(
             "SELECT id, test_id, type, text, options, correct_answer, points, \"order\", "
@@ -328,8 +305,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         body_data = json.loads(event.get('body', '{}'))
         create_req = CreateTestRequest(**body_data)
         
-        new_test_id = str(uuid.uuid4())
         now = datetime.utcnow()
+        
+        cur.execute("SELECT nextval('tests_display_id_seq')")
+        next_id = cur.fetchone()[0]
+        next_id_str = str(next_id)
         
         cur.execute(
             "INSERT INTO tests (id, course_id, lesson_id, title, description, pass_score, time_limit, "
@@ -337,7 +317,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) "
             "RETURNING id, display_id, course_id, lesson_id, title, description, pass_score, time_limit, attempts, "
             "questions_count, status, created_at, updated_at",
-            (new_test_id, 'temp', None, create_req.title,
+            (next_id_str, 'temp', None, create_req.title,
              create_req.description, create_req.passScore, create_req.timeLimit, create_req.attempts,
              0, 'draft', now, now)
         )

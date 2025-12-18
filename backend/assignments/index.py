@@ -171,23 +171,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         body_data = json.loads(event.get('body', '{}'))
         assign_req = AssignCourseRequest(**body_data)
         
-        # Конвертируем display_id в UUID
-        cur.execute("SELECT id FROM courses WHERE display_id = %s", (assign_req.courseId,))
-        course_row = cur.fetchone()
-        if not course_row:
-            cur.close()
-            conn.close()
-            return {
-                'statusCode': 404,
-                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'error': 'Курс не найден'}, ensure_ascii=False),
-                'isBase64Encoded': False
-            }
-        course_uuid_for_assign = course_row[0]
+        # Используем display_id напрямую
+        course_id_for_insert = str(assign_req.courseId)
         
         cur.execute(
             "SELECT id FROM course_assignments WHERE course_id = %s AND user_id = %s",
-            (course_uuid_for_assign, assign_req.userId)
+            (course_id_for_insert, assign_req.userId)
         )
         if cur.fetchone():
             cur.close()
@@ -206,7 +195,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             "INSERT INTO course_assignments (id, course_id, user_id, assigned_by, assigned_at, due_date, status, notes, created_at) "
             "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) "
             "RETURNING id, course_id, user_id, assigned_by, assigned_at, due_date, status, notes",
-            (new_assignment_id, course_uuid_for_assign, assign_req.userId, payload['user_id'],
+            (new_assignment_id, course_id_for_insert, assign_req.userId, payload['user_id'],
              now, assign_req.dueDate, 'assigned', assign_req.notes, now)
         )
         new_assignment = cur.fetchone()
@@ -215,7 +204,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             "INSERT INTO course_progress (id, course_id, user_id, completed_lessons, total_lessons, completed, started_at, created_at, updated_at) "
             "SELECT %s, %s, %s, 0, lessons_count, false, %s, %s, %s FROM courses WHERE id = %s "
             "ON CONFLICT (course_id, user_id) DO NOTHING",
-            (str(uuid.uuid4()), course_uuid_for_assign, assign_req.userId, now, now, now, course_uuid_for_assign)
+            (str(uuid.uuid4()), course_id_for_insert, assign_req.userId, now, now, now, course_id_for_insert)
         )
         conn.commit()
         
