@@ -278,7 +278,7 @@ export default function AdminUsers() {
     }
   };
 
-  const handleAssignCourse = async (userId: string, courseId: string) => {
+  const handleAssignCourse = async (userId: number, courseId: number) => {
     try {
       const response = await fetch(API_ENDPOINTS.ASSIGNMENTS, {
         method: 'POST',
@@ -294,7 +294,7 @@ export default function AdminUsers() {
     }
   };
 
-  const handleRemoveAssignment = async (assignmentId: string) => {
+  const handleRemoveAssignment = async (assignmentId: number) => {
     try {
       const response = await fetch(`${API_ENDPOINTS.ASSIGNMENTS}?id=${assignmentId}`, {
         method: 'DELETE',

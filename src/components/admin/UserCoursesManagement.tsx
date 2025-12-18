@@ -9,7 +9,7 @@ interface UserCoursesManagementProps {
   user: User;
   assignments: CourseAssignment[];
   onAssignCourse?: (userId: number, courseId: number) => void;
-  onRemoveAssignment?: (assignmentId: string) => void;
+  onRemoveAssignment?: (assignmentId: number) => void;
 }
 
 export default function UserCoursesManagement({ 
