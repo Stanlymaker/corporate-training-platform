@@ -67,7 +67,8 @@ export default function LessonPage() {
 
       let courseData = null;
       if (courseRes.ok) {
-        courseData = await courseRes.json();
+        const data = await courseRes.json();
+        courseData = data.course || data;
         setCourse(courseData);
       }
 

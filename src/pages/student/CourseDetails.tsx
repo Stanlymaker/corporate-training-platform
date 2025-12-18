@@ -72,7 +72,8 @@ export default function CourseDetails() {
 
       let courseUuid = null;
       if (courseRes.ok) {
-        const courseData = await courseRes.json();
+        const data = await courseRes.json();
+        const courseData = data.course || data;
         setCourse(courseData);
         courseUuid = courseData.id;
       }
