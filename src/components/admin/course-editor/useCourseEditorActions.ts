@@ -243,10 +243,11 @@ export function useCourseEditorActions(
     }
   };
 
-  const handleDeleteCourse = async (actualCourseId: string) => {
+  const handleDeleteCourse = async () => {
     setLoading(true);
     try {
-      const deleteRes = await fetch(`${API_ENDPOINTS.COURSES}?id=${actualCourseId || courseId}`, {
+      // Используем courseId (display_id) напрямую
+      const deleteRes = await fetch(`${API_ENDPOINTS.COURSES}?id=${courseId}`, {
         method: 'DELETE',
         headers: getAuthHeaders(),
       });

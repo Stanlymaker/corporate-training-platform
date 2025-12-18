@@ -210,7 +210,7 @@ export default function CourseEditor() {
   };
 
   const onDeleteConfirm = async () => {
-    await handleDeleteCourse(actualCourseId);
+    await handleDeleteCourse();
     setShowDeleteDialog(false);
   };
 

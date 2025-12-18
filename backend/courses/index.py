@@ -380,12 +380,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'isBase64Encoded': False
         }
     
-    if method == 'DELETE' and (course_id or course_uuid):
-        print(f'DELETE method detected: course_id={course_id}, course_uuid={course_uuid}')
-        
+    if method == 'DELETE' and course_id:
         admin_error = require_admin(headers)
         if admin_error:
-            print(f'Admin check failed: {admin_error}')
             cur.close()
             conn.close()
             return {
@@ -395,47 +392,27 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'isBase64Encoded': False
             }
         
-        print('Admin check passed, starting deletion...')
-        
         try:
-            print(f'DELETE request: course_id={course_id}, course_uuid={course_uuid}')
+            # Получаем UUID курса по display_id
+            cur.execute("SELECT id FROM courses WHERE display_id = %s", (course_id,))
+            course_row = cur.fetchone()
+            if not course_row:
+                cur.close()
+                conn.close()
+                return {
+                    'statusCode': 404,
+                    'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'error': 'Курс не найден'}, ensure_ascii=False),
+                    'isBase64Encoded': False
+                }
             
-            # Получаем actual_course_id (UUID)
-            if course_id:
-                cur.execute("SELECT id FROM courses WHERE display_id = %s", (course_id,))
-                course_row = cur.fetchone()
-                print(f'Found course by display_id: {course_row}')
-                if not course_row:
-                    cur.close()
-                    conn.close()
-                    return {
-                        'statusCode': 404,
-                        'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
-                        'body': json.dumps({'error': 'Курс не найден'}, ensure_ascii=False),
-                        'isBase64Encoded': False
-                    }
-                actual_course_id = course_row[0]
-            else:
-                # Используем переданный UUID напрямую
-                actual_course_id = course_uuid
-                print(f'Using UUID directly: {actual_course_id}')
+            actual_course_uuid = course_row[0]
             
-            print(f'Deleting course with UUID: {actual_course_id}')
-            
-            # Преобразуем в строку для psycopg2
-            actual_course_id_str = str(actual_course_id)
-            
-            print(f'UUID string: {actual_course_id_str}')
-            
-            # Каскадное удаление записей по UUID (передаем строку)
-            print('Deleting progress...')
-            cur.execute("DELETE FROM progress WHERE course_id::text = %s", (actual_course_id_str,))
-            print('Deleting course_assignments...')
-            cur.execute("DELETE FROM course_assignments WHERE course_id::text = %s", (actual_course_id_str,))
-            print('Deleting lessons...')
-            cur.execute("DELETE FROM lessons WHERE course_id::text = %s", (actual_course_id_str,))
-            print('Deleting course...')
-            cur.execute("DELETE FROM courses WHERE id::text = %s", (actual_course_id_str,))
+            # Каскадное удаление записей (psycopg2 сам преобразует UUID)
+            cur.execute("DELETE FROM progress WHERE course_id = %s", (actual_course_uuid,))
+            cur.execute("DELETE FROM course_assignments WHERE course_id = %s", (actual_course_uuid,))
+            cur.execute("DELETE FROM lessons WHERE course_id = %s", (actual_course_uuid,))
+            cur.execute("DELETE FROM courses WHERE id = %s", (actual_course_uuid,))
             
             conn.commit()
             
