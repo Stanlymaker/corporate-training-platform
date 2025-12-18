@@ -9,7 +9,7 @@ import { ROUTES } from '@/constants/routes';
 import { useState, useEffect } from 'react';
 import { API_ENDPOINTS, getAuthHeaders } from '@/config/api';
 import { Course, CourseProgress } from '@/types';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function StudentProfile() {
@@ -18,6 +18,7 @@ export default function StudentProfile() {
   const [selectedReward, setSelectedReward] = useState<string | null>(null);
   const [courses, setCourses] = useState<Course[]>([]);
   const [userProgress, setUserProgress] = useState<CourseProgress[]>([]);
+  const [rewards, setRewards] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
   const userId = currentUser?.id || '';
@@ -30,9 +31,10 @@ export default function StudentProfile() {
     try {
       setLoading(true);
       
-      const [coursesRes, progressRes] = await Promise.all([
+      const [coursesRes, progressRes, rewardsRes] = await Promise.all([
         fetch(API_ENDPOINTS.COURSES, { headers: getAuthHeaders() }),
-        fetch(`${API_ENDPOINTS.PROGRESS}?userId=${userId}`, { headers: getAuthHeaders() })
+        fetch(`${API_ENDPOINTS.PROGRESS}?userId=${userId}`, { headers: getAuthHeaders() }),
+        fetch(API_ENDPOINTS.REWARDS, { headers: getAuthHeaders() })
       ]);
       
       if (coursesRes.ok) {
@@ -44,6 +46,11 @@ export default function StudentProfile() {
         const progressData = await progressRes.json();
         setUserProgress(progressData.progress || []);
       }
+      
+      if (rewardsRes.ok) {
+        const rewardsData = await rewardsRes.json();
+        setRewards(rewardsData.rewards || []);
+      }
     } catch (error) {
       console.error('Error loading profile data:', error);
     } finally {
@@ -54,21 +61,9 @@ export default function StudentProfile() {
   const completedCount = userProgress.filter(p => p.completed).length;
   const inProgressCount = userProgress.filter(p => !p.completed && p.completedLessons > 0).length;
   
-  const rewards = [
-    { id: '1', name: 'Первый шаг', icon: '🎯', description: 'Завершите свой первый курс', condition: 'Завершить 1 курс', count: 1 },
-    { id: '2', name: 'Опытный', icon: '⭐', description: 'Завершите 5 курсов', condition: 'Завершить 5 курсов', count: 5 },
-    { id: '3', name: 'Мастер', icon: '🏆', description: 'Завершите 10 курсов', condition: 'Завершить 10 курсов', count: 10 },
-    { id: '4', name: 'Отличник', icon: '💯', description: 'Сдайте тест на 100%', condition: 'Получить 100% на тесте', count: 0 },
-    { id: '5', name: 'Стажер', icon: '📚', description: 'Начните изучение 3 курсов', condition: 'Начать 3 курса', count: 3 },
-    { id: '6', name: 'Профессионал', icon: '🎓', description: 'Завершите все доступные курсы', condition: 'Завершить все курсы', count: courses.length },
-  ];
-  
-  const earnedRewards = rewards.filter(r => {
-    if (r.id === '4') return userProgress.some(p => p.testScore === 100);
-    if (r.id === '5') return userProgress.length >= 3;
-    if (r.id === '6') return completedCount === courses.length && courses.length > 0;
-    return completedCount >= r.count;
-  }).map(r => r.id);
+  const earnedRewardIds = userProgress
+    .flatMap(p => p.earnedRewards || [])
+    .filter((id, index, self) => self.indexOf(id) === index);
   
   const selectedRewardData = selectedReward ? rewards.find(r => r.id === selectedReward) : null;
 
@@ -163,7 +158,7 @@ export default function StudentProfile() {
             <CardContent className="p-5">
               <div className="flex items-center justify-between mb-4">
                 <Icon name="Award" size={32} />
-                <div className="text-4xl font-bold">{earnedRewards.length}</div>
+                <div className="text-4xl font-bold">{earnedRewardIds.length}</div>
               </div>
               <div className="text-sm opacity-90">Наград получено</div>
             </CardContent>
@@ -239,14 +234,14 @@ export default function StudentProfile() {
                     Мои награды
                   </div>
                   <span className="text-sm font-normal text-gray-500">
-                    {earnedRewards.length} из {rewards.length}
+                    {earnedRewardIds.length} из {rewards.length}
                   </span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-2">
                   {rewards.map((reward) => {
-                    const earned = earnedRewards.includes(reward.id);
+                    const earned = earnedRewardIds.includes(reward.id);
                     return (
                       <div
                         key={reward.id}
@@ -278,12 +273,14 @@ export default function StudentProfile() {
               <span className="text-5xl">{selectedRewardData?.icon}</span>
               <span>{selectedRewardData?.name}</span>
             </DialogTitle>
+            <DialogDescription>
+              {selectedRewardData?.description || 'Информация о награде'}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <p className="text-gray-700">{selectedRewardData?.description}</p>
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <p className="text-sm font-medium text-blue-900 mb-2">Как получить эту награду:</p>
-              <p className="text-sm text-blue-700">{selectedRewardData?.condition}</p>
+              <p className="text-sm font-medium text-blue-900 mb-2">Условие получения:</p>
+              <p className="text-sm text-blue-700">{selectedRewardData?.condition || 'Условие не указано'}</p>
             </div>
           </div>
         </DialogContent>
