@@ -95,24 +95,20 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     conn = get_db_connection()
     cur = conn.cursor()
     
-    # Конвертируем display_id в UUID
-    course_uuid = None
+    # course_id is now INTEGER - use directly
+    course_id_int = None
     if course_id_param:
         try:
-            display_id = int(course_id_param)
-            cur.execute("SELECT id FROM courses WHERE display_id = %s", (display_id,))
-            course_row = cur.fetchone()
-            if course_row:
-                course_uuid = course_row[0]
+            course_id_int = int(course_id_param)
         except ValueError:
-            pass  # Игнорируем невалидные ID
+            pass
     
     if method == 'GET':
         # GET без параметров - все assignments (только для админа)
-        if not user_id_param and not course_uuid:
+        if not user_id_param and not course_id_int:
             cur.execute(
                 "SELECT id, course_id, user_id, assigned_by, assigned_at, due_date, status, notes "
-                "FROM course_assignments ORDER BY assigned_at DESC"
+                "FROM course_assignments_v2 ORDER BY assigned_at DESC"
             )
             assignments = cur.fetchall()
             assignments_list = [format_assignment_response(a) for a in assignments]
@@ -131,7 +127,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         if user_id_param:
             cur.execute(
                 "SELECT id, course_id, user_id, assigned_by, assigned_at, due_date, status, notes "
-                "FROM course_assignments WHERE user_id = %s ORDER BY assigned_at DESC",
+                "FROM course_assignments_v2 WHERE user_id = %s ORDER BY assigned_at DESC",
                 (user_id_param,)
             )
             assignments = cur.fetchall()
@@ -148,11 +144,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             }
         
         # GET с courseId - assignments конкретного курса
-        if course_uuid:
+        if course_id_int:
             cur.execute(
                 "SELECT id, course_id, user_id, assigned_by, assigned_at, due_date, status, notes "
-                "FROM course_assignments WHERE course_id = %s ORDER BY assigned_at DESC",
-                (course_uuid,)
+                "FROM course_assignments_v2 WHERE course_id = %s ORDER BY assigned_at DESC",
+                (course_id_int,)
             )
             assignments = cur.fetchall()
             assignments_list = [format_assignment_response(a) for a in assignments]
@@ -171,12 +167,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         body_data = json.loads(event.get('body', '{}'))
         assign_req = AssignCourseRequest(**body_data)
         
-        # Используем display_id напрямую
-        course_id_for_insert = str(assign_req.courseId)
+        # courseId is INTEGER, use directly
+        course_id = assign_req.courseId
         
         cur.execute(
-            "SELECT id FROM course_assignments WHERE course_id = %s AND user_id = %s",
-            (course_id_for_insert, assign_req.userId)
+            "SELECT id FROM course_assignments_v2 WHERE course_id = %s AND user_id = %s",
+            (course_id, assign_req.userId)
         )
         if cur.fetchone():
             cur.close()
@@ -192,19 +188,19 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         now = datetime.utcnow()
         
         cur.execute(
-            "INSERT INTO course_assignments (id, course_id, user_id, assigned_by, assigned_at, due_date, status, notes, created_at) "
+            "INSERT INTO course_assignments_v2 (id, course_id, user_id, assigned_by, assigned_at, due_date, status, notes, created_at) "
             "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) "
             "RETURNING id, course_id, user_id, assigned_by, assigned_at, due_date, status, notes",
-            (new_assignment_id, course_id_for_insert, assign_req.userId, payload['user_id'],
+            (new_assignment_id, course_id, assign_req.userId, payload['user_id'],
              now, assign_req.dueDate, 'assigned', assign_req.notes, now)
         )
         new_assignment = cur.fetchone()
         
         cur.execute(
-            "INSERT INTO course_progress (id, course_id, user_id, completed_lessons, total_lessons, completed, started_at, created_at, updated_at) "
-            "SELECT %s, %s, %s, 0, lessons_count, false, %s, %s, %s FROM courses WHERE id = %s "
+            "INSERT INTO course_progress_v2 (id, course_id, user_id, completed_lessons, total_lessons, completed, started_at, created_at, updated_at) "
+            "SELECT %s, %s, %s, 0, lessons_count, false, %s, %s, %s FROM courses_v2 WHERE id = %s "
             "ON CONFLICT (course_id, user_id) DO NOTHING",
-            (str(uuid.uuid4()), course_id_for_insert, assign_req.userId, now, now, now, course_id_for_insert)
+            (str(uuid.uuid4()), course_id, assign_req.userId, now, now, now, course_id)
         )
         conn.commit()
         
@@ -220,72 +216,44 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'isBase64Encoded': False
         }
     
-    if method == 'DELETE' and course_id_param and user_id_param:
-        cur.execute(
-            "DELETE FROM course_progress WHERE course_id = %s AND user_id = %s",
-            (course_id_param, user_id_param)
-        )
-        
-        cur.execute(
-            "DELETE FROM course_assignments WHERE course_id = %s AND user_id = %s",
-            (course_id_param, user_id_param)
-        )
-        conn.commit()
-        
-        cur.close()
-        conn.close()
-        
-        return {
-            'statusCode': 200,
-            'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
-            'body': json.dumps({'message': 'Назначение отменено'}, ensure_ascii=False),
-            'isBase64Encoded': False
-        }
-    
-    if method == 'DELETE' and assignment_id:
-        cur.execute(
-            "SELECT course_id, user_id FROM course_assignments WHERE id = %s",
-            (assignment_id,)
-        )
-        assignment = cur.fetchone()
-        
-        if not assignment:
+    if method == 'DELETE':
+        if assignment_id:
+            cur.execute("DELETE FROM course_assignments_v2 WHERE id = %s", (assignment_id,))
+            conn.commit()
+            
             cur.close()
             conn.close()
+            
             return {
-                'statusCode': 404,
+                'statusCode': 200,
                 'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'error': 'Назначение не найдено'}, ensure_ascii=False),
+                'body': json.dumps({'message': 'Назначение удалено'}, ensure_ascii=False),
                 'isBase64Encoded': False
             }
         
-        cur.execute(
-            "DELETE FROM course_progress WHERE course_id = %s AND user_id = %s",
-            (assignment[0], assignment[1])
-        )
-        
-        cur.execute(
-            "DELETE FROM course_assignments WHERE id = %s",
-            (assignment_id,)
-        )
-        conn.commit()
-        
-        cur.close()
-        conn.close()
-        
-        return {
-            'statusCode': 200,
-            'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
-            'body': json.dumps({'message': 'Назначение удалено'}, ensure_ascii=False),
-            'isBase64Encoded': False
-        }
+        if course_id_int and user_id_param:
+            cur.execute(
+                "DELETE FROM course_assignments_v2 WHERE course_id = %s AND user_id = %s",
+                (course_id_int, user_id_param)
+            )
+            conn.commit()
+            
+            cur.close()
+            conn.close()
+            
+            return {
+                'statusCode': 200,
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'message': 'Назначение удалено'}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
     
     cur.close()
     conn.close()
     
     return {
-        'statusCode': 404,
+        'statusCode': 400,
         'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
-        'body': json.dumps({'error': 'Маршрут не найден'}, ensure_ascii=False),
+        'body': json.dumps({'error': 'Неверный запрос'}, ensure_ascii=False),
         'isBase64Encoded': False
     }

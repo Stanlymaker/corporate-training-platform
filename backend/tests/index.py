@@ -81,18 +81,17 @@ def require_admin(headers: Dict[str, Any]) -> Optional[Dict[str, Any]]:
 def format_test_response(test_row: tuple) -> Dict[str, Any]:
     return {
         'id': test_row[0],
-        'displayId': test_row[1],
-        'courseId': test_row[2],
-        'lessonId': test_row[3],
-        'title': test_row[4],
-        'description': test_row[5],
-        'passScore': test_row[6],
-        'timeLimit': test_row[7],
-        'attempts': test_row[8],
-        'questionsCount': test_row[9],
-        'status': test_row[10],
-        'createdAt': test_row[11].isoformat() if test_row[11] else None,
-        'updatedAt': test_row[12].isoformat() if test_row[12] else None,
+        'courseId': test_row[1],
+        'lessonId': test_row[2],
+        'title': test_row[3],
+        'description': test_row[4],
+        'passScore': test_row[5],
+        'timeLimit': test_row[6],
+        'attempts': test_row[7],
+        'questionsCount': test_row[8],
+        'status': test_row[9],
+        'createdAt': test_row[10].isoformat() if test_row[10] else None,
+        'updatedAt': test_row[11].isoformat() if test_row[11] else None,
     }
 
 def format_question_response(question_row: tuple) -> Dict[str, Any]:
@@ -156,13 +155,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     cur = conn.cursor()
     
     if method == 'GET' and action == 'questions' and test_id_param:
-        # Используем display_id напрямую
-        test_uuid = str(test_id_param)
+        # test_id is now INTEGER
+        test_id_int = int(test_id_param)
         
         cur.execute(
             "SELECT id, test_id, type, text, options, correct_answer, points, \"order\", "
-            "matching_pairs, text_check_type FROM questions WHERE test_id = %s ORDER BY \"order\"",
-            (test_uuid,)
+            "matching_pairs, text_check_type FROM questions_v2 WHERE test_id = %s ORDER BY \"order\"",
+            (test_id_int,)
         )
         questions = cur.fetchall()
         questions_list = [format_question_response(q) for q in questions]
@@ -179,8 +178,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     
     if method == 'GET' and test_id:
         cur.execute(
-            "SELECT id, display_id, course_id, lesson_id, title, description, pass_score, time_limit, "
-            "attempts, questions_count, status, created_at, updated_at FROM tests WHERE display_id = %s",
+            "SELECT id, course_id, lesson_id, title, description, pass_score, time_limit, "
+            "attempts, questions_count, status, created_at, updated_at FROM tests_v2 WHERE id = %s",
             (int(test_id),)
         )
         test = cur.fetchone()
@@ -209,9 +208,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     
     if method == 'GET':
         cur.execute(
-            "SELECT id, display_id, course_id, lesson_id, title, description, pass_score, time_limit, "
+            "SELECT id, course_id, lesson_id, title, description, pass_score, time_limit, "
             "attempts, questions_count, status, created_at, updated_at "
-            "FROM tests ORDER BY display_id DESC"
+            "FROM tests_v2 ORDER BY id DESC"
         )
         tests = cur.fetchall()
         tests_list = [format_test_response(test) for test in tests]
@@ -238,13 +237,23 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'isBase64Encoded': False
             }
         
-        body_data = json.loads(event.get('body', '{}'))
-        question_req = CreateQuestionRequest(**body_data)
+        try:
+            body = json.loads(event.get('body', '{}'))
+            request = CreateQuestionRequest(**body)
+        except Exception as e:
+            cur.close()
+            conn.close()
+            return {
+                'statusCode': 400,
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': f'Некорректные данные: {str(e)}'}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
         
-        # Конвертируем display_id в UUID
-        cur.execute("SELECT id FROM tests WHERE display_id = %s", (question_req.testId,))
-        test_row = cur.fetchone()
-        if not test_row:
+        # Verify test exists - testId is now INTEGER
+        cur.execute("SELECT id FROM tests_v2 WHERE id = %s", (request.testId,))
+        test = cur.fetchone()
+        if not test:
             cur.close()
             conn.close()
             return {
@@ -253,32 +262,42 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'body': json.dumps({'error': 'Тест не найден'}, ensure_ascii=False),
                 'isBase64Encoded': False
             }
-        test_uuid = test_row[0]
         
-        new_question_id = str(uuid.uuid4())
-        now = datetime.utcnow()
-        
-        cur.execute(
-            "INSERT INTO questions (id, test_id, type, text, options, correct_answer, points, \"order\", "
-            "matching_pairs, text_check_type, created_at) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) "
-            "RETURNING id, test_id, type, text, options, correct_answer, points, \"order\", matching_pairs, text_check_type",
-            (new_question_id, test_uuid, question_req.type, question_req.text,
-             json.dumps(question_req.options) if question_req.options else None,
-             json.dumps(question_req.correctAnswer),
-             question_req.points, question_req.order,
-             json.dumps(question_req.matchingPairs) if question_req.matchingPairs else None,
-             question_req.textCheckType, now)
-        )
-        new_question = cur.fetchone()
+        # Generate UUID for question
+        question_id = str(uuid.uuid4())
         
         cur.execute(
-            "UPDATE tests SET questions_count = questions_count + 1, updated_at = %s WHERE id = %s",
-            (now, test_uuid)
+            "INSERT INTO questions_v2 (id, test_id, type, text, options, correct_answer, points, \"order\", "
+            "matching_pairs, text_check_type) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
+            (
+                question_id,
+                request.testId,
+                request.type,
+                request.text,
+                json.dumps(request.options) if request.options else None,
+                json.dumps(request.correctAnswer),
+                request.points,
+                request.order,
+                json.dumps(request.matchingPairs) if request.matchingPairs else None,
+                request.textCheckType
+            )
         )
+        
+        # Update questions_count in tests_v2
+        cur.execute(
+            "UPDATE tests_v2 SET questions_count = questions_count + 1, updated_at = NOW() WHERE id = %s",
+            (request.testId,)
+        )
+        
         conn.commit()
         
-        question_data = format_question_response(new_question)
+        cur.execute(
+            "SELECT id, test_id, type, text, options, correct_answer, points, \"order\", "
+            "matching_pairs, text_check_type FROM questions_v2 WHERE id = %s",
+            (question_id,)
+        )
+        question = cur.fetchone()
+        question_data = format_question_response(question)
         
         cur.close()
         conn.close()
@@ -302,135 +321,43 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'isBase64Encoded': False
             }
         
-        body_data = json.loads(event.get('body', '{}'))
-        create_req = CreateTestRequest(**body_data)
-        
-        now = datetime.utcnow()
-        
-        cur.execute("SELECT nextval('tests_display_id_seq')")
-        next_id = cur.fetchone()[0]
-        next_id_str = str(next_id)
-        
-        cur.execute(
-            "INSERT INTO tests (id, course_id, lesson_id, title, description, pass_score, time_limit, "
-            "attempts, questions_count, status, created_at, updated_at) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) "
-            "RETURNING id, display_id, course_id, lesson_id, title, description, pass_score, time_limit, attempts, "
-            "questions_count, status, created_at, updated_at",
-            (next_id_str, 'temp', None, create_req.title,
-             create_req.description, create_req.passScore, create_req.timeLimit, create_req.attempts,
-             0, 'draft', now, now)
-        )
-        new_test = cur.fetchone()
-        conn.commit()
-        
-        test_data = format_test_response(new_test)
-        
-        cur.close()
-        conn.close()
-        
-        return {
-            'statusCode': 201,
-            'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
-            'body': json.dumps({'test': test_data}, ensure_ascii=False),
-            'isBase64Encoded': False
-        }
-    
-    if method == 'PUT' and test_id:
-        admin_error = require_admin(headers)
-        if admin_error:
-            cur.close()
-            conn.close()
-            return {
-                'statusCode': admin_error['statusCode'],
-                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'error': admin_error['error']}, ensure_ascii=False),
-                'isBase64Encoded': False
-            }
-        
-        body_data = json.loads(event.get('body', '{}'))
-        update_req = UpdateTestRequest(**body_data)
-        
-        update_fields = []
-        update_values = []
-        
-        if update_req.title is not None:
-            update_fields.append('title = %s')
-            update_values.append(update_req.title)
-        if update_req.description is not None:
-            update_fields.append('description = %s')
-            update_values.append(update_req.description)
-        if update_req.passScore is not None:
-            update_fields.append('pass_score = %s')
-            update_values.append(update_req.passScore)
-        if update_req.timeLimit is not None:
-            update_fields.append('time_limit = %s')
-            update_values.append(update_req.timeLimit)
-        if update_req.attempts is not None:
-            update_fields.append('attempts = %s')
-            update_values.append(update_req.attempts)
-        if update_req.status is not None:
-            update_fields.append('status = %s')
-            update_values.append(update_req.status)
-            
-            if update_req.status == 'draft':
-                cur.execute(
-                    "SELECT id FROM tests WHERE display_id = %s",
-                    (int(test_id),)
-                )
-                test_uuid_row = cur.fetchone()
-                if test_uuid_row:
-                    test_uuid = test_uuid_row[0]
-                    cur.execute(
-                        "SELECT DISTINCT course_id FROM lessons WHERE test_id = %s AND course_id IS NOT NULL",
-                        (test_uuid,)
-                    )
-                    linked_courses = cur.fetchall()
-                    
-                    for course_row in linked_courses:
-                        course_id = course_row[0]
-                        cur.execute(
-                            "UPDATE courses SET status = 'draft', updated_at = %s WHERE id = %s",
-                            (datetime.utcnow(), course_id)
-                        )
-        
-        if not update_fields:
+        try:
+            body = json.loads(event.get('body', '{}'))
+            request = CreateTestRequest(**body)
+        except Exception as e:
             cur.close()
             conn.close()
             return {
                 'statusCode': 400,
                 'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'error': 'Нет полей для обновления'}, ensure_ascii=False),
+                'body': json.dumps({'error': f'Некорректные данные: {str(e)}'}, ensure_ascii=False),
                 'isBase64Encoded': False
             }
         
-        update_fields.append('updated_at = %s')
-        update_values.append(datetime.utcnow())
-        update_values.append(int(test_id))
+        # Use SERIAL autoincrement for id - no UUID generation needed
+        cur.execute(
+            "INSERT INTO tests_v2 (title, description, pass_score, time_limit, attempts, status) "
+            "VALUES (%s, %s, %s, %s, %s, 'draft') "
+            "RETURNING id, course_id, lesson_id, title, description, pass_score, time_limit, attempts, "
+            "questions_count, status, created_at, updated_at",
+            (
+                request.title,
+                request.description,
+                request.passScore,
+                request.timeLimit,
+                request.attempts
+            )
+        )
         
-        query = f"UPDATE tests SET {', '.join(update_fields)} WHERE display_id = %s RETURNING id, display_id, course_id, lesson_id, title, description, pass_score, time_limit, attempts, questions_count, status, created_at, updated_at"
+        test = cur.fetchone()
+        test_data = format_test_response(test)
         
-        cur.execute(query, update_values)
-        updated_test = cur.fetchone()
         conn.commit()
-        
-        if not updated_test:
-            cur.close()
-            conn.close()
-            return {
-                'statusCode': 404,
-                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'error': 'Тест не найден'}, ensure_ascii=False),
-                'isBase64Encoded': False
-            }
-        
-        test_data = format_test_response(updated_test)
-        
         cur.close()
         conn.close()
         
         return {
-            'statusCode': 200,
+            'statusCode': 201,
             'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
             'body': json.dumps({'test': test_data}, ensure_ascii=False),
             'isBase64Encoded': False
@@ -455,59 +382,26 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             return {
                 'statusCode': 400,
                 'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'error': 'Не указан ID вопроса'}, ensure_ascii=False),
+                'body': json.dumps({'error': 'questionId обязателен'}, ensure_ascii=False),
                 'isBase64Encoded': False
             }
         
-        body_data = json.loads(event.get('body', '{}'))
-        update_req = UpdateQuestionRequest(**body_data)
-        
-        update_fields = []
-        update_values = []
-        
-        if update_req.type is not None:
-            update_fields.append('type = %s')
-            update_values.append(update_req.type)
-        if update_req.text is not None:
-            update_fields.append('text = %s')
-            update_values.append(update_req.text)
-        if update_req.options is not None:
-            update_fields.append('options = %s')
-            update_values.append(json.dumps(update_req.options))
-        if update_req.correctAnswer is not None:
-            update_fields.append('correct_answer = %s')
-            update_values.append(json.dumps(update_req.correctAnswer))
-        if update_req.points is not None:
-            update_fields.append('points = %s')
-            update_values.append(update_req.points)
-        if update_req.order is not None:
-            update_fields.append('"order" = %s')
-            update_values.append(update_req.order)
-        if update_req.matchingPairs is not None:
-            update_fields.append('matching_pairs = %s')
-            update_values.append(json.dumps(update_req.matchingPairs))
-        if update_req.textCheckType is not None:
-            update_fields.append('text_check_type = %s')
-            update_values.append(update_req.textCheckType)
-        
-        if not update_fields:
+        try:
+            body = json.loads(event.get('body', '{}'))
+            request = UpdateQuestionRequest(**body)
+        except Exception as e:
             cur.close()
             conn.close()
             return {
                 'statusCode': 400,
                 'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'error': 'Нет полей для обновления'}, ensure_ascii=False),
+                'body': json.dumps({'error': f'Некорректные данные: {str(e)}'}, ensure_ascii=False),
                 'isBase64Encoded': False
             }
         
-        update_values.append(question_id)
-        query = f"UPDATE questions SET {', '.join(update_fields)} WHERE id = %s RETURNING id, test_id, type, text, options, correct_answer, points, \"order\", matching_pairs, text_check_type"
-        
-        cur.execute(query, update_values)
-        updated_question = cur.fetchone()
-        conn.commit()
-        
-        if not updated_question:
+        # Check if question exists
+        cur.execute("SELECT id FROM questions_v2 WHERE id = %s", (question_id,))
+        if not cur.fetchone():
             cur.close()
             conn.close()
             return {
@@ -517,7 +411,64 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'isBase64Encoded': False
             }
         
-        question_data = format_question_response(updated_question)
+        # Build update query
+        updates = []
+        params = []
+        
+        if request.type is not None:
+            updates.append("type = %s")
+            params.append(request.type)
+        if request.text is not None:
+            updates.append("text = %s")
+            params.append(request.text)
+        if request.options is not None:
+            updates.append("options = %s")
+            params.append(json.dumps(request.options))
+        if request.correctAnswer is not None:
+            updates.append("correct_answer = %s")
+            params.append(json.dumps(request.correctAnswer))
+        if request.points is not None:
+            updates.append("points = %s")
+            params.append(request.points)
+        if request.order is not None:
+            updates.append('"order" = %s')
+            params.append(request.order)
+        if request.matchingPairs is not None:
+            updates.append("matching_pairs = %s")
+            params.append(json.dumps(request.matchingPairs))
+        if request.textCheckType is not None:
+            updates.append("text_check_type = %s")
+            params.append(request.textCheckType)
+        
+        if not updates:
+            cur.close()
+            conn.close()
+            return {
+                'statusCode': 400,
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'Нет данных для обновления'}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
+        
+        params.append(question_id)
+        query = f"UPDATE questions_v2 SET {', '.join(updates)} WHERE id = %s"
+        cur.execute(query, params)
+        
+        # Update test updated_at
+        cur.execute(
+            "UPDATE tests_v2 SET updated_at = NOW() WHERE id = (SELECT test_id FROM questions_v2 WHERE id = %s)",
+            (question_id,)
+        )
+        
+        conn.commit()
+        
+        cur.execute(
+            "SELECT id, test_id, type, text, options, correct_answer, points, \"order\", "
+            "matching_pairs, text_check_type FROM questions_v2 WHERE id = %s",
+            (question_id,)
+        )
+        question = cur.fetchone()
+        question_data = format_question_response(question)
         
         cur.close()
         conn.close()
@@ -526,6 +477,98 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'statusCode': 200,
             'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
             'body': json.dumps({'question': question_data}, ensure_ascii=False),
+            'isBase64Encoded': False
+        }
+    
+    if method == 'PUT' and test_id:
+        admin_error = require_admin(headers)
+        if admin_error:
+            cur.close()
+            conn.close()
+            return {
+                'statusCode': admin_error['statusCode'],
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': admin_error['error']}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
+        
+        try:
+            body = json.loads(event.get('body', '{}'))
+            request = UpdateTestRequest(**body)
+        except Exception as e:
+            cur.close()
+            conn.close()
+            return {
+                'statusCode': 400,
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': f'Некорректные данные: {str(e)}'}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
+        
+        # Check if test exists - use INTEGER id
+        cur.execute("SELECT id FROM tests_v2 WHERE id = %s", (int(test_id),))
+        if not cur.fetchone():
+            cur.close()
+            conn.close()
+            return {
+                'statusCode': 404,
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'Тест не найден'}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
+        
+        # Build update query
+        updates = []
+        params = []
+        
+        if request.title is not None:
+            updates.append("title = %s")
+            params.append(request.title)
+        if request.description is not None:
+            updates.append("description = %s")
+            params.append(request.description)
+        if request.passScore is not None:
+            updates.append("pass_score = %s")
+            params.append(request.passScore)
+        if request.timeLimit is not None:
+            updates.append("time_limit = %s")
+            params.append(request.timeLimit)
+        if request.attempts is not None:
+            updates.append("attempts = %s")
+            params.append(request.attempts)
+        if request.status is not None:
+            updates.append("status = %s")
+            params.append(request.status)
+        
+        if not updates:
+            cur.close()
+            conn.close()
+            return {
+                'statusCode': 400,
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'Нет данных для обновления'}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
+        
+        updates.append("updated_at = NOW()")
+        params.append(int(test_id))
+        
+        query = f"UPDATE tests_v2 SET {', '.join(updates)} WHERE id = %s " \
+                f"RETURNING id, course_id, lesson_id, title, description, pass_score, time_limit, attempts, " \
+                f"questions_count, status, created_at, updated_at"
+        
+        cur.execute(query, params)
+        test = cur.fetchone()
+        test_data = format_test_response(test)
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return {
+            'statusCode': 200,
+            'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'test': test_data}, ensure_ascii=False),
             'isBase64Encoded': False
         }
     
@@ -548,23 +591,34 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             return {
                 'statusCode': 400,
                 'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'error': 'Не указан ID вопроса'}, ensure_ascii=False),
+                'body': json.dumps({'error': 'questionId обязателен'}, ensure_ascii=False),
                 'isBase64Encoded': False
             }
         
-        cur.execute("SELECT test_id FROM questions WHERE id = %s", (question_id,))
-        question_row = cur.fetchone()
+        # Get test_id before deleting
+        cur.execute("SELECT test_id FROM questions_v2 WHERE id = %s", (question_id,))
+        result = cur.fetchone()
+        if not result:
+            cur.close()
+            conn.close()
+            return {
+                'statusCode': 404,
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'Вопрос не найден'}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
         
-        if question_row:
-            test_id_for_update = question_row[0]
-            cur.execute("DELETE FROM questions WHERE id = %s", (question_id,))
-            cur.execute(
-                "UPDATE tests SET questions_count = GREATEST(questions_count - 1, 0), updated_at = %s WHERE id = %s",
-                (datetime.utcnow(), test_id_for_update)
-            )
+        test_id_for_update = result[0]
+        
+        cur.execute("DELETE FROM questions_v2 WHERE id = %s", (question_id,))
+        
+        # Update questions_count
+        cur.execute(
+            "UPDATE tests_v2 SET questions_count = questions_count - 1, updated_at = NOW() WHERE id = %s",
+            (test_id_for_update,)
+        )
         
         conn.commit()
-        
         cur.close()
         conn.close()
         
@@ -587,21 +641,32 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'isBase64Encoded': False
             }
         
-        cur.execute("SELECT id FROM tests WHERE display_id = %s", (int(test_id),))
-        test_row = cur.fetchone()
-        if test_row:
-            actual_test_id = test_row[0]
-            cur.execute("DELETE FROM questions WHERE test_id = %s", (actual_test_id,))
-            cur.execute("DELETE FROM tests WHERE display_id = %s", (int(test_id),))
-        conn.commit()
+        # Check if test exists - use INTEGER id
+        cur.execute("SELECT id FROM tests_v2 WHERE id = %s", (int(test_id),))
+        if not cur.fetchone():
+            cur.close()
+            conn.close()
+            return {
+                'statusCode': 404,
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'Тест не найден'}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
         
+        # Delete questions first
+        cur.execute("DELETE FROM questions_v2 WHERE test_id = %s", (int(test_id),))
+        
+        # Delete test
+        cur.execute("DELETE FROM tests_v2 WHERE id = %s", (int(test_id),))
+        
+        conn.commit()
         cur.close()
         conn.close()
         
         return {
             'statusCode': 200,
             'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
-            'body': json.dumps({'message': 'Тест успешно удален'}, ensure_ascii=False),
+            'body': json.dumps({'message': 'Тест и его вопросы удалены'}, ensure_ascii=False),
             'isBase64Encoded': False
         }
     
@@ -609,8 +674,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     conn.close()
     
     return {
-        'statusCode': 404,
+        'statusCode': 400,
         'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
-        'body': json.dumps({'error': 'Маршрут не найден'}, ensure_ascii=False),
+        'body': json.dumps({'error': 'Неверный запрос'}, ensure_ascii=False),
         'isBase64Encoded': False
     }

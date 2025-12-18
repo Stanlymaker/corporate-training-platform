@@ -142,13 +142,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     cur = conn.cursor()
     
     if method == 'GET' and course_id:
-        # Используем display_id напрямую
-        course_uuid = str(course_id)
+        # course_id is now INTEGER
+        course_id_int = int(course_id)
         
         if payload.get('role') != 'admin':
             cur.execute(
-                "SELECT id FROM course_assignments WHERE course_id = %s AND user_id = %s",
-                (course_uuid, payload['user_id'])
+                "SELECT id FROM course_assignments_v2 WHERE course_id = %s AND user_id = %s",
+                (course_id_int, payload['user_id'])
             )
             if not cur.fetchone():
                 cur.close()
@@ -164,15 +164,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             "SELECT id, course_id, title, content, type, \"order\", duration, video_url, "
             "description, requires_previous, test_id, is_final_test, "
             "final_test_requires_all_lessons, final_test_requires_all_tests "
-            "FROM lessons WHERE course_id = %s ORDER BY \"order\"",
-            (course_uuid,)
+            "FROM lessons_v2 WHERE course_id = %s ORDER BY \"order\"",
+            (course_id_int,)
         )
         lessons = cur.fetchall()
         
         lessons_list = []
         for lesson in lessons:
             cur.execute(
-                "SELECT id, title, type, url FROM lesson_materials WHERE lesson_id = %s",
+                "SELECT id, title, type, url FROM lesson_materials_v2 WHERE lesson_id = %s",
                 (lesson[0],)
             )
             materials_rows = cur.fetchall()
@@ -194,7 +194,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             "SELECT id, course_id, title, content, type, \"order\", duration, video_url, "
             "description, requires_previous, test_id, is_final_test, "
             "final_test_requires_all_lessons, final_test_requires_all_tests "
-            "FROM lessons WHERE id = %s",
+            "FROM lessons_v2 WHERE id = %s",
             (lesson_id,)
         )
         lesson = cur.fetchone()
@@ -211,7 +211,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         if payload.get('role') != 'admin':
             cur.execute(
-                "SELECT id FROM course_assignments WHERE course_id = %s AND user_id = %s",
+                "SELECT id FROM course_assignments_v2 WHERE course_id = %s AND user_id = %s",
                 (lesson[1], payload['user_id'])
             )
             if not cur.fetchone():
@@ -225,7 +225,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 }
         
         cur.execute(
-            "SELECT id, title, type, url FROM lesson_materials WHERE lesson_id = %s",
+            "SELECT id, title, type, url FROM lesson_materials_v2 WHERE lesson_id = %s",
             (lesson_id,)
         )
         materials_rows = cur.fetchall()
@@ -266,21 +266,47 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'isBase64Encoded': False
             }
         
-        body_data = json.loads(event.get('body', '{}'))
-        material_req = LessonMaterialRequest(**body_data)
+        try:
+            body = json.loads(event.get('body', '{}'))
+            material_req = LessonMaterialRequest(**body)
+        except Exception as e:
+            cur.close()
+            conn.close()
+            return {
+                'statusCode': 400,
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': f'Некорректные данные: {str(e)}'}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
         
-        new_material_id = str(uuid.uuid4())
-        now = datetime.utcnow()
+        # Verify lesson exists
+        cur.execute("SELECT id FROM lessons_v2 WHERE id = %s", (lesson_id_param,))
+        if not cur.fetchone():
+            cur.close()
+            conn.close()
+            return {
+                'statusCode': 404,
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'Урок не найден'}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
+        
+        # Generate UUID for material
+        material_id = str(uuid.uuid4())
         
         cur.execute(
-            "INSERT INTO lesson_materials (id, lesson_id, title, type, url, created_at) "
-            "VALUES (%s, %s, %s, %s, %s, %s) RETURNING id, title, type, url",
-            (new_material_id, lesson_id_param, material_req.title, material_req.type, material_req.url, now)
+            "INSERT INTO lesson_materials_v2 (id, lesson_id, title, type, url) VALUES (%s, %s, %s, %s, %s) RETURNING id",
+            (material_id, lesson_id_param, material_req.title, material_req.type, material_req.url)
         )
-        new_material = cur.fetchone()
+        
         conn.commit()
         
-        material_data = {'id': new_material[0], 'title': new_material[1], 'type': new_material[2], 'url': new_material[3]}
+        cur.execute(
+            "SELECT id, title, type, url FROM lesson_materials_v2 WHERE id = %s",
+            (material_id,)
+        )
+        material = cur.fetchone()
+        material_data = {'id': material[0], 'title': material[1], 'type': material[2], 'url': material[3]}
         
         cur.close()
         conn.close()
@@ -304,36 +330,71 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'isBase64Encoded': False
             }
         
-        body_data = json.loads(event.get('body', '{}'))
-        create_req = CreateLessonRequest(**body_data)
+        try:
+            body = json.loads(event.get('body', '{}'))
+            create_req = CreateLessonRequest(**body)
+        except Exception as e:
+            cur.close()
+            conn.close()
+            return {
+                'statusCode': 400,
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': f'Некорректные данные: {str(e)}'}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
         
-        # Используем display_id напрямую (как integer в VARCHAR поле)
-        course_id_for_insert = str(create_req.courseId)
+        # courseId is INTEGER, use directly
+        course_id = create_req.courseId
         
-        new_lesson_id = str(uuid.uuid4())
-        now = datetime.utcnow()
+        # Verify course exists
+        cur.execute("SELECT id FROM courses_v2 WHERE id = %s", (course_id,))
+        if not cur.fetchone():
+            cur.close()
+            conn.close()
+            return {
+                'statusCode': 404,
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'Курс не найден'}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
+        
+        # Generate UUID for lesson
+        lesson_id = str(uuid.uuid4())
         
         cur.execute(
-            "INSERT INTO lessons (id, course_id, title, content, type, \"order\", duration, video_url, "
+            "INSERT INTO lessons_v2 (id, course_id, title, content, type, \"order\", duration, video_url, "
             "description, requires_previous, test_id, is_final_test, final_test_requires_all_lessons, "
-            "final_test_requires_all_tests, created_at, updated_at) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) "
-            "RETURNING id, course_id, title, content, type, \"order\", duration, video_url, description, "
-            "requires_previous, test_id, is_final_test, final_test_requires_all_lessons, final_test_requires_all_tests",
-            (new_lesson_id, course_id_for_insert, create_req.title, create_req.content, create_req.type,
-             create_req.order, create_req.duration, create_req.videoUrl, create_req.description,
-             create_req.requiresPrevious, create_req.testId, create_req.isFinalTest,
-             create_req.finalTestRequiresAllLessons, create_req.finalTestRequiresAllTests, now, now)
+            "final_test_requires_all_tests) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
+            (
+                lesson_id,
+                course_id,
+                create_req.title,
+                create_req.content,
+                create_req.type,
+                create_req.order,
+                create_req.duration,
+                create_req.videoUrl,
+                create_req.description,
+                create_req.requiresPrevious,
+                create_req.testId,
+                create_req.isFinalTest,
+                create_req.finalTestRequiresAllLessons,
+                create_req.finalTestRequiresAllTests
+            )
         )
-        new_lesson = cur.fetchone()
         
-        cur.execute(
-            "UPDATE courses SET lessons_count = lessons_count + 1, updated_at = %s WHERE id = %s",
-            (now, course_uuid)
-        )
         conn.commit()
         
-        lesson_data = format_lesson_response(new_lesson, [])
+        cur.execute(
+            "SELECT id, course_id, title, content, type, \"order\", duration, video_url, "
+            "description, requires_previous, test_id, is_final_test, "
+            "final_test_requires_all_lessons, final_test_requires_all_tests "
+            "FROM lessons_v2 WHERE id = %s",
+            (lesson_id,)
+        )
+        lesson = cur.fetchone()
+        lesson_data = format_lesson_response(lesson, [])
         
         cur.close()
         conn.close()
@@ -357,70 +418,22 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'isBase64Encoded': False
             }
         
-        body_data = json.loads(event.get('body', '{}'))
-        update_req = UpdateLessonRequest(**body_data)
-        
-        update_fields = []
-        update_values = []
-        
-        if update_req.title is not None:
-            update_fields.append('title = %s')
-            update_values.append(update_req.title)
-        if update_req.content is not None:
-            update_fields.append('content = %s')
-            update_values.append(update_req.content)
-        if update_req.type is not None:
-            update_fields.append('type = %s')
-            update_values.append(update_req.type)
-        if update_req.order is not None:
-            update_fields.append('"order" = %s')
-            update_values.append(update_req.order)
-        if update_req.duration is not None:
-            update_fields.append('duration = %s')
-            update_values.append(update_req.duration)
-        if update_req.videoUrl is not None:
-            update_fields.append('video_url = %s')
-            update_values.append(update_req.videoUrl)
-        if update_req.description is not None:
-            update_fields.append('description = %s')
-            update_values.append(update_req.description)
-        if update_req.requiresPrevious is not None:
-            update_fields.append('requires_previous = %s')
-            update_values.append(update_req.requiresPrevious)
-        if update_req.testId is not None:
-            update_fields.append('test_id = %s')
-            update_values.append(update_req.testId)
-        if update_req.isFinalTest is not None:
-            update_fields.append('is_final_test = %s')
-            update_values.append(update_req.isFinalTest)
-        if update_req.finalTestRequiresAllLessons is not None:
-            update_fields.append('final_test_requires_all_lessons = %s')
-            update_values.append(update_req.finalTestRequiresAllLessons)
-        if update_req.finalTestRequiresAllTests is not None:
-            update_fields.append('final_test_requires_all_tests = %s')
-            update_values.append(update_req.finalTestRequiresAllTests)
-        
-        if not update_fields:
+        try:
+            body = json.loads(event.get('body', '{}'))
+            update_req = UpdateLessonRequest(**body)
+        except Exception as e:
             cur.close()
             conn.close()
             return {
                 'statusCode': 400,
                 'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'error': 'Нет полей для обновления'}, ensure_ascii=False),
+                'body': json.dumps({'error': f'Некорректные данные: {str(e)}'}, ensure_ascii=False),
                 'isBase64Encoded': False
             }
         
-        update_fields.append('updated_at = %s')
-        update_values.append(datetime.utcnow())
-        update_values.append(lesson_id)
-        
-        query = f"UPDATE lessons SET {', '.join(update_fields)} WHERE id = %s RETURNING id, course_id, title, content, type, \"order\", duration, video_url, description, requires_previous, test_id, is_final_test, final_test_requires_all_lessons, final_test_requires_all_tests"
-        
-        cur.execute(query, update_values)
-        updated_lesson = cur.fetchone()
-        conn.commit()
-        
-        if not updated_lesson:
+        # Check if lesson exists
+        cur.execute("SELECT id FROM lessons_v2 WHERE id = %s", (lesson_id,))
+        if not cur.fetchone():
             cur.close()
             conn.close()
             return {
@@ -430,14 +443,80 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'isBase64Encoded': False
             }
         
+        # Build update query
+        updates = []
+        params = []
+        
+        if update_req.title is not None:
+            updates.append("title = %s")
+            params.append(update_req.title)
+        if update_req.content is not None:
+            updates.append("content = %s")
+            params.append(update_req.content)
+        if update_req.type is not None:
+            updates.append("type = %s")
+            params.append(update_req.type)
+        if update_req.order is not None:
+            updates.append('"order" = %s')
+            params.append(update_req.order)
+        if update_req.duration is not None:
+            updates.append("duration = %s")
+            params.append(update_req.duration)
+        if update_req.videoUrl is not None:
+            updates.append("video_url = %s")
+            params.append(update_req.videoUrl)
+        if update_req.description is not None:
+            updates.append("description = %s")
+            params.append(update_req.description)
+        if update_req.requiresPrevious is not None:
+            updates.append("requires_previous = %s")
+            params.append(update_req.requiresPrevious)
+        if update_req.testId is not None:
+            updates.append("test_id = %s")
+            params.append(update_req.testId)
+        if update_req.isFinalTest is not None:
+            updates.append("is_final_test = %s")
+            params.append(update_req.isFinalTest)
+        if update_req.finalTestRequiresAllLessons is not None:
+            updates.append("final_test_requires_all_lessons = %s")
+            params.append(update_req.finalTestRequiresAllLessons)
+        if update_req.finalTestRequiresAllTests is not None:
+            updates.append("final_test_requires_all_tests = %s")
+            params.append(update_req.finalTestRequiresAllTests)
+        
+        if not updates:
+            cur.close()
+            conn.close()
+            return {
+                'statusCode': 400,
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'Нет данных для обновления'}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
+        
+        params.append(lesson_id)
+        query = f"UPDATE lessons_v2 SET {', '.join(updates)} WHERE id = %s"
+        cur.execute(query, params)
+        
+        conn.commit()
+        
         cur.execute(
-            "SELECT id, title, type, url FROM lesson_materials WHERE lesson_id = %s",
+            "SELECT id, course_id, title, content, type, \"order\", duration, video_url, "
+            "description, requires_previous, test_id, is_final_test, "
+            "final_test_requires_all_lessons, final_test_requires_all_tests "
+            "FROM lessons_v2 WHERE id = %s",
+            (lesson_id,)
+        )
+        lesson = cur.fetchone()
+        
+        cur.execute(
+            "SELECT id, title, type, url FROM lesson_materials_v2 WHERE lesson_id = %s",
             (lesson_id,)
         )
         materials_rows = cur.fetchall()
         materials = [{'id': m[0], 'title': m[1], 'type': m[2], 'url': m[3]} for m in materials_rows]
         
-        lesson_data = format_lesson_response(updated_lesson, materials)
+        lesson_data = format_lesson_response(lesson, materials)
         
         cur.close()
         conn.close()
@@ -453,8 +532,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     conn.close()
     
     return {
-        'statusCode': 404,
+        'statusCode': 400,
         'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
-        'body': json.dumps({'error': 'Маршрут не найден'}, ensure_ascii=False),
+        'body': json.dumps({'error': 'Неверный запрос'}, ensure_ascii=False),
         'isBase64Encoded': False
     }

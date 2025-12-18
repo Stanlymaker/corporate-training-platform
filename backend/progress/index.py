@@ -104,17 +104,17 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     conn = get_db_connection()
     cur = conn.cursor()
     
-    # Используем display_id напрямую
-    course_id_for_query = str(course_id) if course_id else None
+    # course_id is now INTEGER - use directly
+    course_id_int = int(course_id) if course_id else None
     
     if method == 'GET':
         # GET с userId и courseId - прогресс по конкретному курсу
-        if user_id and course_id_for_query:
+        if user_id and course_id_int:
             cur.execute(
                 "SELECT course_id, user_id, completed_lessons, total_lessons, test_score, completed, "
                 "completed_lesson_ids, last_accessed_lesson, started_at "
-                "FROM course_progress WHERE user_id = %s AND course_id = %s",
-                (user_id, course_id_for_query)
+                "FROM course_progress_v2 WHERE user_id = %s AND course_id = %s",
+                (user_id, course_id_int)
             )
             progress = cur.fetchone()
             
@@ -144,7 +144,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             cur.execute(
                 "SELECT course_id, user_id, completed_lessons, total_lessons, test_score, completed, "
                 "completed_lesson_ids, last_accessed_lesson, started_at "
-                "FROM course_progress WHERE user_id = %s ORDER BY started_at DESC",
+                "FROM course_progress_v2 WHERE user_id = %s ORDER BY started_at DESC",
                 (user_id,)
             )
             progress_rows = cur.fetchall()
@@ -164,7 +164,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         cur.execute(
             "SELECT course_id, user_id, completed_lessons, total_lessons, test_score, completed, "
             "completed_lesson_ids, last_accessed_lesson, started_at "
-            "FROM course_progress ORDER BY started_at DESC"
+            "FROM course_progress_v2 ORDER BY started_at DESC"
         )
         progress_rows = cur.fetchall()
         progress_list = [format_progress_response(p) for p in progress_rows]
@@ -183,21 +183,21 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         body_data = json.loads(event.get('body', '{}'))
         start_req = CompleteLessonRequest(**body_data)
         
-        # Используем display_id напрямую
-        course_id_for_query = str(start_req.courseId)
+        # courseId is INTEGER, use directly
+        course_id = start_req.courseId
         
         # Проверяем, есть ли уже прогресс
         cur.execute(
-            "SELECT course_id FROM course_progress WHERE user_id = %s AND course_id = %s",
-            (payload['user_id'], course_id_for_query)
+            "SELECT course_id FROM course_progress_v2 WHERE user_id = %s AND course_id = %s",
+            (payload['user_id'], course_id)
         )
         existing = cur.fetchone()
         
         if not existing:
             # Проверяем тип доступа курса
             cur.execute(
-                "SELECT access_type FROM courses WHERE id = %s",
-                (course_id_for_query,)
+                "SELECT access_type FROM courses_v2 WHERE id = %s",
+                (course_id,)
             )
             course_data = cur.fetchone()
             
@@ -216,8 +216,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             # Для закрытых курсов проверяем назначение
             if access_type == 'closed':
                 cur.execute(
-                    "SELECT id FROM course_assignments WHERE course_id = %s AND user_id = %s",
-                    (course_id_for_query, payload['user_id'])
+                    "SELECT id FROM course_assignments_v2 WHERE course_id = %s AND user_id = %s",
+                    (course_id, payload['user_id'])
                 )
                 if not cur.fetchone():
                     cur.close()
@@ -225,35 +225,30 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     return {
                         'statusCode': 403,
                         'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
-                        'body': json.dumps({'error': 'Курс не назначен. Обратитесь к администратору.'}, ensure_ascii=False),
+                        'body': json.dumps({'error': 'Курс не назначен вам'}, ensure_ascii=False),
                         'isBase64Encoded': False
                     }
             
-            # Создаем новый прогресс
-            cur.execute(
-                "SELECT COUNT(*) FROM lessons WHERE course_id = %s",
-                (course_id_for_query,)
-            )
-            total_lessons = cur.fetchone()[0]
-            
-            progress_id = str(uuid.uuid4())
+            # Создаем прогресс
             now = datetime.utcnow()
+            progress_id = str(uuid.uuid4())
+            
             cur.execute(
-                "INSERT INTO course_progress (id, course_id, user_id, completed_lessons, total_lessons, "
-                "test_score, completed, completed_lesson_ids, last_accessed_lesson, started_at, updated_at, created_at) "
-                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                (progress_id, course_id_for_query, payload['user_id'], 0, total_lessons, 0, False, 
-                 json.dumps([]), start_req.lessonId, now, now, now)
+                "INSERT INTO course_progress_v2 (id, course_id, user_id, completed_lessons, total_lessons, "
+                "completed, started_at, created_at, updated_at) "
+                "SELECT %s, %s, %s, 0, lessons_count, false, %s, %s, %s FROM courses_v2 WHERE id = %s",
+                (progress_id, course_id, payload['user_id'], now, now, now, course_id)
             )
             conn.commit()
-        else:
-            # Обновляем последний урок
-            cur.execute(
-                "UPDATE course_progress SET last_accessed_lesson = %s, updated_at = %s "
-                "WHERE user_id = %s AND course_id = %s",
-                (start_req.lessonId, datetime.utcnow(), payload['user_id'], course_id_for_query)
-            )
-            conn.commit()
+        
+        cur.execute(
+            "SELECT course_id, user_id, completed_lessons, total_lessons, test_score, completed, "
+            "completed_lesson_ids, last_accessed_lesson, started_at "
+            "FROM course_progress_v2 WHERE user_id = %s AND course_id = %s",
+            (payload['user_id'], course_id)
+        )
+        progress = cur.fetchone()
+        progress_data = format_progress_response(progress)
         
         cur.close()
         conn.close()
@@ -261,7 +256,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         return {
             'statusCode': 200,
             'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
-            'body': json.dumps({'success': True}, ensure_ascii=False),
+            'body': json.dumps({'progress': progress_data}, ensure_ascii=False),
             'isBase64Encoded': False
         }
     
@@ -269,162 +264,103 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         body_data = json.loads(event.get('body', '{}'))
         complete_req = CompleteLessonRequest(**body_data)
         
-        # Используем display_id напрямую
-        course_id_for_query = str(complete_req.courseId)
+        # courseId is INTEGER, use directly
+        course_id = complete_req.courseId
         
-        # Сначала проверяем/создаем прогресс
+        # Проверка доступа к курсу
         cur.execute(
-            "SELECT completed_lesson_ids, total_lessons FROM course_progress WHERE user_id = %s AND course_id = %s",
-            (payload['user_id'], course_id_for_query)
+            "SELECT access_type FROM courses_v2 WHERE id = %s",
+            (course_id,)
         )
-        progress = cur.fetchone()
+        course_data = cur.fetchone()
         
-        if not progress:
-            # Создаем прогресс если его нет
-            cur.execute(
-                "SELECT COUNT(*) FROM lessons WHERE course_id = %s",
-                (course_id_for_query,)
-            )
-            total_lessons = cur.fetchone()[0]
-            
-            progress_id = str(uuid.uuid4())
-            now = datetime.utcnow()
-            completed_ids = [complete_req.lessonId]
-            
-            cur.execute(
-                "INSERT INTO course_progress (id, course_id, user_id, completed_lessons, total_lessons, "
-                "test_score, completed, completed_lesson_ids, last_accessed_lesson, started_at, updated_at, created_at) "
-                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                (progress_id, course_id_for_query, payload['user_id'], 1, total_lessons, 0, False, 
-                 json.dumps(completed_ids), complete_req.lessonId, now, now, now)
-            )
-            conn.commit()
-            
-            cur.close()
-            conn.close()
-            
-            return {
-                'statusCode': 200,
-                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'success': True, 'completed': False}, ensure_ascii=False),
-                'isBase64Encoded': False
-            }
-        
-        completed_ids = progress[0] if progress[0] else []
-        total_lessons = progress[1]
-        
-        if complete_req.lessonId not in completed_ids:
-            completed_ids.append(complete_req.lessonId)
-            
-            cur.execute(
-                "UPDATE course_progress SET completed_lessons = %s, completed_lesson_ids = %s, "
-                "last_accessed_lesson = %s, updated_at = %s WHERE user_id = %s AND course_id = %s",
-                (len(completed_ids), json.dumps(completed_ids), complete_req.lessonId,
-                 datetime.utcnow(), payload['user_id'], course_id_for_query)
-            )
-            
-            total = total_lessons
-            course_completed = len(completed_ids) >= total
-            
-            if course_completed:
-                cur.execute(
-                    "UPDATE course_progress SET completed = true, completed_at = %s WHERE user_id = %s AND course_id = %s",
-                    (datetime.utcnow(), payload['user_id'], course_id_for_query)
-                )
-                
-                cur.execute(
-                    "UPDATE course_assignments SET status = 'completed' WHERE user_id = %s AND course_id = %s",
-                    (payload['user_id'], course_id_for_query)
-                )
-            else:
-                cur.execute(
-                    "UPDATE course_assignments SET status = 'in_progress' WHERE user_id = %s AND course_id = %s",
-                    (payload['user_id'], course_id_for_query)
-                )
-            
-            conn.commit()
-            
-            cur.close()
-            conn.close()
-            
-            return {
-                'statusCode': 200,
-                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'success': True, 'completed': course_completed, 'alreadyCompleted': False}, ensure_ascii=False),
-                'isBase64Encoded': False
-            }
-        
-        # Урок уже был завершен ранее
-        cur.close()
-        conn.close()
-        
-        return {
-            'statusCode': 200,
-            'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
-            'body': json.dumps({'success': True, 'completed': False, 'alreadyCompleted': True}, ensure_ascii=False),
-            'isBase64Encoded': False
-        }
-    
-    if method == 'POST' and action == 'submit':
-        body_data = json.loads(event.get('body', '{}'))
-        submit_req = SubmitTestRequest(**body_data)
-        
-        cur.execute(
-            "SELECT pass_score FROM tests WHERE id = %s",
-            (submit_req.testId,)
-        )
-        test = cur.fetchone()
-        
-        if not test:
+        if not course_data:
             cur.close()
             conn.close()
             return {
                 'statusCode': 404,
                 'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'error': 'Тест не найден'}, ensure_ascii=False),
+                'body': json.dumps({'error': 'Курс не найден'}, ensure_ascii=False),
                 'isBase64Encoded': False
             }
         
-        pass_score = test[0]
+        access_type = course_data[0]
         
+        if access_type == 'closed':
+            cur.execute(
+                "SELECT id FROM course_assignments_v2 WHERE course_id = %s AND user_id = %s",
+                (course_id, payload['user_id'])
+            )
+            if not cur.fetchone():
+                cur.close()
+                conn.close()
+                return {
+                    'statusCode': 403,
+                    'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'error': 'Курс не назначен вам'}, ensure_ascii=False),
+                    'isBase64Encoded': False
+                }
+        
+        # Проверяем, что урок существует в курсе
         cur.execute(
-            "SELECT id, correct_answer, points FROM questions WHERE test_id = %s",
-            (submit_req.testId,)
+            "SELECT id FROM lessons_v2 WHERE id = %s AND course_id = %s",
+            (complete_req.lessonId, course_id)
         )
-        questions = cur.fetchall()
+        if not cur.fetchone():
+            cur.close()
+            conn.close()
+            return {
+                'statusCode': 404,
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'Урок не найден в этом курсе'}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
         
-        total_points = sum(q[2] for q in questions)
-        earned_points = 0
+        # Получаем текущий прогресс
+        cur.execute(
+            "SELECT id, completed_lesson_ids FROM course_progress_v2 WHERE user_id = %s AND course_id = %s",
+            (payload['user_id'], course_id)
+        )
+        progress = cur.fetchone()
         
-        for question in questions:
-            question_id = question[0]
-            correct_answer = question[1]
-            points = question[2]
+        if not progress:
+            # Создаем прогресс если его нет
+            now = datetime.utcnow()
+            progress_id = str(uuid.uuid4())
             
-            user_answer = submit_req.answers.get(question_id)
+            cur.execute(
+                "INSERT INTO course_progress_v2 (id, course_id, user_id, completed_lessons, total_lessons, "
+                "completed, started_at, completed_lesson_ids, last_accessed_lesson, created_at, updated_at) "
+                "SELECT %s, %s, %s, 1, lessons_count, false, %s, %s, %s, %s, %s FROM courses_v2 WHERE id = %s",
+                (progress_id, course_id, payload['user_id'], now, 
+                 json.dumps([complete_req.lessonId]), complete_req.lessonId, now, now, course_id)
+            )
+        else:
+            progress_id = progress[0]
+            completed_lesson_ids = progress[1] if progress[1] else []
             
-            if user_answer == correct_answer:
-                earned_points += points
-        
-        score = int((earned_points / total_points * 100)) if total_points > 0 else 0
-        passed = score >= pass_score
-        
-        new_result_id = str(uuid.uuid4())
-        now = datetime.utcnow()
-        
-        cur.execute(
-            "INSERT INTO test_results (id, user_id, course_id, test_id, score, answers, passed, completed_at, created_at) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
-            (new_result_id, payload['user_id'], submit_req.courseId, submit_req.testId,
-             score, json.dumps(submit_req.answers), passed, now, now)
-        )
-        
-        cur.execute(
-            "UPDATE course_progress SET test_score = %s, updated_at = %s WHERE user_id = %s AND course_id = %s",
-            (score, now, payload['user_id'], submit_req.courseId)
-        )
+            # Добавляем урок если его еще нет
+            if complete_req.lessonId not in completed_lesson_ids:
+                completed_lesson_ids.append(complete_req.lessonId)
+                
+                cur.execute(
+                    "UPDATE course_progress_v2 SET completed_lessons = %s, completed_lesson_ids = %s, "
+                    "last_accessed_lesson = %s, updated_at = NOW() WHERE id = %s",
+                    (len(completed_lesson_ids), json.dumps(completed_lesson_ids), 
+                     complete_req.lessonId, progress_id)
+                )
         
         conn.commit()
+        
+        # Возвращаем обновленный прогресс
+        cur.execute(
+            "SELECT course_id, user_id, completed_lessons, total_lessons, test_score, completed, "
+            "completed_lesson_ids, last_accessed_lesson, started_at "
+            "FROM course_progress_v2 WHERE user_id = %s AND course_id = %s",
+            (payload['user_id'], course_id)
+        )
+        progress = cur.fetchone()
+        progress_data = format_progress_response(progress)
         
         cur.close()
         conn.close()
@@ -432,7 +368,69 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         return {
             'statusCode': 200,
             'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
-            'body': json.dumps({'score': score, 'passed': passed, 'message': 'Тест завершен'}, ensure_ascii=False),
+            'body': json.dumps({'progress': progress_data}, ensure_ascii=False),
+            'isBase64Encoded': False
+        }
+    
+    if method == 'POST' and action == 'submit':
+        body_data = json.loads(event.get('body', '{}'))
+        test_req = SubmitTestRequest(**body_data)
+        
+        # courseId is INTEGER, use directly
+        course_id = test_req.courseId
+        
+        # Проверка доступа к курсу
+        cur.execute(
+            "SELECT access_type FROM courses_v2 WHERE id = %s",
+            (course_id,)
+        )
+        course_data = cur.fetchone()
+        
+        if not course_data:
+            cur.close()
+            conn.close()
+            return {
+                'statusCode': 404,
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'Курс не найден'}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
+        
+        access_type = course_data[0]
+        
+        if access_type == 'closed':
+            cur.execute(
+                "SELECT id FROM course_assignments_v2 WHERE course_id = %s AND user_id = %s",
+                (course_id, payload['user_id'])
+            )
+            if not cur.fetchone():
+                cur.close()
+                conn.close()
+                return {
+                    'statusCode': 403,
+                    'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'error': 'Курс не назначен вам'}, ensure_ascii=False),
+                    'isBase64Encoded': False
+                }
+        
+        # Сохраняем результат теста
+        result_id = str(uuid.uuid4())
+        now = datetime.utcnow()
+        
+        cur.execute(
+            "INSERT INTO test_results_v2 (id, test_id, user_id, answers, score, passed, submitted_at, created_at) "
+            "VALUES (%s, %s, %s, %s, 0, false, %s, %s)",
+            (result_id, test_req.testId, payload['user_id'], json.dumps(test_req.answers), now, now)
+        )
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return {
+            'statusCode': 201,
+            'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'message': 'Результаты теста отправлены', 'resultId': result_id}, ensure_ascii=False),
             'isBase64Encoded': False
         }
     
@@ -440,8 +438,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     conn.close()
     
     return {
-        'statusCode': 404,
+        'statusCode': 400,
         'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
-        'body': json.dumps({'error': 'Маршрут не найден'}, ensure_ascii=False),
+        'body': json.dumps({'error': 'Неверный запрос'}, ensure_ascii=False),
         'isBase64Encoded': False
     }
