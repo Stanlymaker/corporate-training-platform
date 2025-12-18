@@ -9,6 +9,8 @@ import QuestionDialog from '@/components/admin/QuestionDialog';
 import TestEditorHeader from '@/components/admin/test-editor/TestEditorHeader';
 import DeleteTestDialog from '@/components/admin/test-editor/DeleteTestDialog';
 import { useTestEditorActions } from '@/components/admin/test-editor/useTestEditorActions';
+import { API_ENDPOINTS, getAuthHeaders } from '@/config/api';
+import { Button } from '@/components/ui/button';
 
 interface Answer {
   id: string;
@@ -56,6 +58,9 @@ export default function TestEditor() {
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   const [showQuestionDialog, setShowQuestionDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showStatusChangeDialog, setShowStatusChangeDialog] = useState(false);
+  const [linkedCourses, setLinkedCourses] = useState<any[]>([]);
+  const [pendingStatus, setPendingStatus] = useState<'draft' | 'published' | null>(null);
 
   const {
     loading,
@@ -72,8 +77,59 @@ export default function TestEditor() {
     }
   }, [testId, isEditMode]);
 
-  const handleInputChange = (field: keyof TestFormData, value: string | number) => {
-    setFormData({ ...formData, [field]: value });
+  const handleInputChange = async (field: keyof TestFormData, value: string | number) => {
+    if (field === 'status' && value === 'draft' && formData.status === 'published' && isEditMode) {
+      await checkLinkedCourses(value as 'draft' | 'published');
+    } else {
+      setFormData({ ...formData, [field]: value });
+    }
+  };
+
+  const checkLinkedCourses = async (newStatus: 'draft' | 'published') => {
+    try {
+      const [coursesRes, lessonsRes] = await Promise.all([
+        fetch(`${API_ENDPOINTS.COURSES}`, { headers: getAuthHeaders() }),
+        fetch(`${API_ENDPOINTS.LESSONS}`, { headers: getAuthHeaders() }),
+      ]);
+
+      if (!coursesRes.ok || !lessonsRes.ok) return;
+
+      const coursesData = await coursesRes.json();
+      const lessonsData = await lessonsRes.json();
+      const courses = coursesData.courses || [];
+      const allLessons = lessonsData.lessons || [];
+
+      const linked = courses.filter((course: any) => {
+        const courseLessons = allLessons.filter((l: any) => l.courseId === course.id);
+        return courseLessons.some((lesson: any) => lesson.testId === parseInt(testId || '0'));
+      });
+
+      if (linked.length > 0) {
+        setLinkedCourses(linked);
+        setPendingStatus(newStatus);
+        setShowStatusChangeDialog(true);
+      } else {
+        setFormData({ ...formData, status: newStatus });
+      }
+    } catch (error) {
+      console.error('Error checking linked courses:', error);
+      setFormData({ ...formData, status: newStatus });
+    }
+  };
+
+  const confirmStatusChange = () => {
+    if (pendingStatus) {
+      setFormData({ ...formData, status: pendingStatus });
+    }
+    setShowStatusChangeDialog(false);
+    setPendingStatus(null);
+    setLinkedCourses([]);
+  };
+
+  const cancelStatusChange = () => {
+    setShowStatusChangeDialog(false);
+    setPendingStatus(null);
+    setLinkedCourses([]);
   };
 
   const handleAddQuestion = () => {
@@ -253,6 +309,47 @@ export default function TestEditor() {
         loading={loading}
         onConfirm={onDeleteConfirm}
       />
+
+      {showStatusChangeDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-lg w-full p-6">
+            <div className="flex items-start gap-4 mb-4">
+              <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <Icon name="AlertTriangle" size={24} className="text-amber-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">
+                  Тест привязан к курсам
+                </h3>
+                <p className="text-sm text-gray-600 mb-3">
+                  Этот тест используется в следующих курсах:
+                </p>
+                <ul className="space-y-1 mb-4">
+                  {linkedCourses.map((course: any) => (
+                    <li key={course.id} className="text-sm font-medium text-gray-900 flex items-center gap-2">
+                      <Icon name="BookOpen" size={14} className="text-orange-500" />
+                      {course.title}
+                    </li>
+                  ))}
+                </ul>
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                  <p className="text-sm text-amber-800 font-medium">
+                    ⚠️ Если вы переведете тест в черновик, все связанные курсы автоматически перейдут в статус "Черновик" и станут недоступны студентам. Вам нужно будет опубликовать их заново.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3">
+              <Button variant="outline" onClick={cancelStatusChange}>
+                Отмена
+              </Button>
+              <Button onClick={confirmStatusChange} className="bg-amber-600 hover:bg-amber-700">
+                Понятно, перевести в черновик
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </AdminLayout>
   );
 }
