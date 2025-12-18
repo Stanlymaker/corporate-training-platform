@@ -78,10 +78,10 @@ export default function TestEditor() {
   }, [testId, isEditMode]);
 
   useEffect(() => {
-    if (isEditMode && formData.status) {
+    if (isEditMode && formData.status && !loadingTest) {
       setSavedStatus(formData.status);
     }
-  }, [loadingTest]);
+  }, [loadingTest, formData.status, isEditMode]);
 
 
 
@@ -116,8 +116,10 @@ export default function TestEditor() {
   };
 
   const handleSaveWithCheck = async () => {
+    console.log('handleSaveWithCheck:', { isEditMode, savedStatus, formDataStatus: formData.status });
     if (isEditMode && savedStatus === 'published' && formData.status === 'draft') {
       const linked = await checkLinkedCourses();
+      console.log('Linked courses:', linked);
       if (linked.length > 0) {
         setLinkedCourses(linked);
         setShowStatusChangeDialog(true);

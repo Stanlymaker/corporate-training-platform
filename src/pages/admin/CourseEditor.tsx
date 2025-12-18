@@ -61,6 +61,7 @@ export default function CourseEditor() {
 
   const [formData, setFormData] = useState<CourseFormData>(initialFormData);
   const [savedStatus, setSavedStatus] = useState<'draft' | 'published' | 'archived'>('draft');
+  const [wasEverPublished, setWasEverPublished] = useState(false);
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
   const [showLessonDialog, setShowLessonDialog] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -116,6 +117,7 @@ export default function CourseEditor() {
           sequenceType: 'linear',
         });
         setSavedStatus(courseData.course.status || 'draft');
+        setWasEverPublished(courseData.course.status === 'published');
       }
     } catch (error) {
       console.error('Error loading course:', error);
@@ -215,8 +217,10 @@ export default function CourseEditor() {
   };
 
   const handleSaveWithCheck = async () => {
-    if (isEditMode && savedStatus === 'published' && formData.status === 'published') {
+    console.log('CourseEditor handleSaveWithCheck:', { isEditMode, wasEverPublished, formDataStatus: formData.status, savedStatus });
+    if (isEditMode && wasEverPublished && formData.status === 'published' && savedStatus !== 'published') {
       const count = await checkStudentsProgress();
+      console.log('Students with progress:', count);
       if (count > 0) {
         setStudentsCount(count);
         setShowProgressResetDialog(true);
@@ -344,6 +348,9 @@ export default function CourseEditor() {
       }
 
       setSavedStatus(formData.status);
+      if (formData.status === 'published') {
+        setWasEverPublished(true);
+      }
       if (resetOption) {
         await applyProgressReset(resetOption);
       }
