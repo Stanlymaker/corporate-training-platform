@@ -9,6 +9,7 @@ import LessonDialog from '@/components/admin/LessonDialog';
 import CourseEditorHeader from '@/components/admin/course-editor/CourseEditorHeader';
 import ProgressResetDialog from '@/components/admin/course-editor/ProgressResetDialog';
 import { useCourseEditorActions } from '@/components/admin/course-editor/useCourseEditorActions';
+import { API_ENDPOINTS, getAuthHeaders } from '@/config/api';
 
 interface Lesson {
   id: string;
@@ -166,6 +167,28 @@ export default function CourseEditor() {
 
   const handleSaveWithCheck = async () => {
     console.log('CourseEditor handleSaveWithCheck:', { isEditMode, wasEverPublished, formDataStatus: formData.status, savedStatus });
+    
+    if (formData.status === 'published') {
+      const testLessons = formData.lessons.filter(l => l.type === 'test' && l.testId);
+      if (testLessons.length > 0) {
+        const testsRes = await fetch(`${API_ENDPOINTS.TESTS}`, { headers: getAuthHeaders() });
+        if (testsRes.ok) {
+          const testsData = await testsRes.json();
+          const allTests = testsData.tests || [];
+          
+          const draftTests = testLessons.filter(lesson => {
+            const test = allTests.find((t: any) => t.id === lesson.testId);
+            return test && test.status === 'draft';
+          });
+          
+          if (draftTests.length > 0) {
+            alert('Невозможно опубликовать курс: в курсе есть тесты в статусе "Черновик". Опубликуйте все тесты перед публикацией курса.');
+            return;
+          }
+        }
+      }
+    }
+    
     if (isEditMode && wasEverPublished && formData.status === 'published' && savedStatus !== 'published') {
       const count = await checkStudentsProgress(actualCourseId);
       console.log('Students with progress:', count);

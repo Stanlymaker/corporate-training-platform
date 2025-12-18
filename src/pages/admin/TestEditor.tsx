@@ -89,6 +89,12 @@ export default function TestEditor() {
 
   const checkLinkedCourses = async () => {
     try {
+      const testRes = await fetch(`${API_ENDPOINTS.TESTS}?id=${testId}`, { headers: getAuthHeaders() });
+      if (!testRes.ok) return [];
+      
+      const testData = await testRes.json();
+      const testUuid = testData.test.id;
+
       const [coursesRes, lessonsRes] = await Promise.all([
         fetch(`${API_ENDPOINTS.COURSES}`, { headers: getAuthHeaders() }),
         fetch(`${API_ENDPOINTS.LESSONS}`, { headers: getAuthHeaders() }),
@@ -103,7 +109,7 @@ export default function TestEditor() {
 
       const linked = courses.filter((course: any) => {
         const courseLessons = allLessons.filter((l: any) => l.courseId === course.id);
-        return courseLessons.some((lesson: any) => lesson.testId === parseInt(testId || '0'));
+        return courseLessons.some((lesson: any) => lesson.testId === testUuid);
       });
 
       return linked;

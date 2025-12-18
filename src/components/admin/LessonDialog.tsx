@@ -245,12 +245,20 @@ export default function LessonDialog({
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                 >
                   <option value="">-- Выберите тест --</option>
-                  {tests.filter(t => t.status === 'published').map(test => (
-                    <option key={test.id} value={test.id}>
-                      {test.title} ({test.questionsCount} вопросов, {test.timeLimit} мин)
+                  {tests.map(test => (
+                    <option key={test.id} value={test.id} disabled={test.status === 'draft'}>
+                      {test.title} {test.status === 'draft' ? '(Черновик - недоступен)' : `(${test.questionsCount} вопросов, ${test.timeLimit} мин)`}
                     </option>
                   ))}
                 </select>
+                {lesson.testId && tests.find(t => t.id === lesson.testId)?.status === 'draft' && (
+                  <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <p className="text-sm text-amber-800 flex items-center gap-2">
+                      <Icon name="AlertTriangle" size={16} />
+                      Выбранный тест находится в статусе "Черновик". Опубликуйте тест перед публикацией курса.
+                    </p>
+                  </div>
+                )}
               </div>
 
               {lesson.testId && (
