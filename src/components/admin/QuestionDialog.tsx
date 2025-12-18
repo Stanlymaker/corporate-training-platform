@@ -11,6 +11,7 @@ interface Question {
   id: string;
   type: 'single' | 'multiple' | 'text' | 'matching';
   question: string;
+  imageUrl?: string;
   answers?: Answer[];
   correctText?: string;
   points: number;
@@ -64,6 +65,42 @@ export default function QuestionDialog({
               rows={3}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Изображение к вопросу (опционально)
+            </label>
+            <div className="space-y-3">
+              <input
+                type="text"
+                value={question.imageUrl || ''}
+                onChange={(e) => onQuestionChange('imageUrl', e.target.value)}
+                placeholder="https://example.com/image.jpg"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+              />
+              {question.imageUrl && (
+                <div className="relative">
+                  <img
+                    src={question.imageUrl}
+                    alt="Превью вопроса"
+                    className="w-full max-h-64 object-contain rounded-lg border border-gray-200"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                  <button
+                    onClick={() => onQuestionChange('imageUrl', '')}
+                    className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-lg hover:bg-red-600 transition-colors"
+                  >
+                    <Icon name="X" size={16} />
+                  </button>
+                </div>
+              )}
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              Можно использовать для визуальных заданий: определить объект, описать ситуацию и т.д.
+            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

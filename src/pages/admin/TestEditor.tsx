@@ -20,6 +20,7 @@ interface Question {
   id: string;
   type: 'single' | 'multiple' | 'text' | 'matching';
   question: string;
+  imageUrl?: string;
   answers?: Answer[];
   correctText?: string;
   points: number;

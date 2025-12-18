@@ -7,6 +7,7 @@ interface Question {
   id: string;
   type: 'single' | 'multiple' | 'text';
   question: string;
+  imageUrl?: string;
   points: number;
 }
 
@@ -58,6 +59,15 @@ export default function TestQuestionsList({
                   <div className="font-medium mb-2">
                     {question.question || 'Без текста вопроса'}
                   </div>
+                  {question.imageUrl && (
+                    <div className="mb-2">
+                      <img 
+                        src={question.imageUrl} 
+                        alt="Изображение вопроса" 
+                        className="max-h-32 rounded-lg border border-gray-200"
+                      />
+                    </div>
+                  )}
                   <div className="flex items-center gap-2">
                     <Badge variant="secondary" className="text-xs">
                       {getQuestionTypeLabel(question.type)}
@@ -65,6 +75,12 @@ export default function TestQuestionsList({
                     <span className="text-xs text-gray-500">
                       {question.points} {question.points === 1 ? 'балл' : 'баллов'}
                     </span>
+                    {question.imageUrl && (
+                      <Badge variant="outline" className="text-xs">
+                        <Icon name="Image" size={12} className="mr-1" />
+                        С изображением
+                      </Badge>
+                    )}
                   </div>
                 </div>
               </div>

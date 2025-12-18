@@ -217,6 +217,15 @@ export default function Test() {
                 </div>
                 <div className="flex-1">
                   <p className="text-gray-900 leading-relaxed">{question.text}</p>
+                  {question.imageUrl && (
+                    <div className="mt-4">
+                      <img 
+                        src={question.imageUrl} 
+                        alt="Изображение к вопросу" 
+                        className="max-w-full max-h-96 rounded-lg border border-gray-200 shadow-sm"
+                      />
+                    </div>
+                  )}
                   <div className="flex items-center gap-4 mt-3 text-sm">
                     <Badge variant="outline">
                       {question.type === 'single' ? 'Один ответ' : 'Несколько ответов'}
