@@ -49,25 +49,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
+      console.log('[DEBUG] Login attempt:', { email, endpoint: API_ENDPOINTS.AUTH });
+      
       const response = await fetch(`${API_ENDPOINTS.AUTH}?action=login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
 
+      console.log('[DEBUG] Response status:', response.status);
+      
+      const responseText = await response.text();
+      console.log('[DEBUG] Response body:', responseText);
+
       if (!response.ok) {
+        console.error('[DEBUG] Login failed with status:', response.status);
         return false;
       }
 
-      const data = await response.json();
+      const data = JSON.parse(responseText);
+      console.log('[DEBUG] Parsed data:', data);
       
       if (data.token && data.user) {
         setAuthToken(data.token);
         setUser(data.user);
         localStorage.setItem('currentUser', JSON.stringify(data.user));
+        console.log('[DEBUG] Login successful');
         return true;
       }
       
+      console.error('[DEBUG] No token or user in response');
       return false;
     } catch (error) {
       console.error('Login error:', error);
