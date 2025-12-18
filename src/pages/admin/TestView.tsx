@@ -31,8 +31,8 @@ export default function TestView() {
       const testData = await testRes.json();
       setTest(testData.test);
       
-      const testId = testData.test.id;
-      const questionsRes = await fetch(`${API_ENDPOINTS.TESTS}?testId=${testId}&action=questions`, { 
+      const loadedTestId = testData.test.id;
+      const questionsRes = await fetch(`${API_ENDPOINTS.TESTS}?testId=${loadedTestId}&action=questions`, { 
         headers: getAuthHeaders() 
       });
       
