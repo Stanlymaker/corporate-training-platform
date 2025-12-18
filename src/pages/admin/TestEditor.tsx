@@ -198,6 +198,20 @@ export default function TestEditor() {
     });
   };
 
+  const handleReorderQuestion = (questionId: string, direction: 'up' | 'down') => {
+    const currentIndex = formData.questions.findIndex(q => q.id === questionId);
+    if (currentIndex === -1) return;
+
+    const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    if (newIndex < 0 || newIndex >= formData.questions.length) return;
+
+    const updatedQuestions = [...formData.questions];
+    const [movedQuestion] = updatedQuestions.splice(currentIndex, 1);
+    updatedQuestions.splice(newIndex, 0, movedQuestion);
+
+    setFormData({ ...formData, questions: updatedQuestions });
+  };
+
   const handleAddAnswer = () => {
     if (!editingQuestion || !editingQuestion.answers) return;
     
@@ -306,6 +320,7 @@ export default function TestEditor() {
           onAddQuestion={handleAddQuestion}
           onEditQuestion={handleEditQuestion}
           onDeleteQuestion={handleDeleteQuestion}
+          onReorderQuestion={handleReorderQuestion}
           getQuestionTypeLabel={getQuestionTypeLabel}
           isDisabled={isEditMode && savedStatus === 'published'}
         />

@@ -16,6 +16,7 @@ interface TestQuestionsListProps {
   onAddQuestion: () => void;
   onEditQuestion: (question: Question) => void;
   onDeleteQuestion: (questionId: string) => void;
+  onReorderQuestion: (questionId: string, direction: 'up' | 'down') => void;
   getQuestionTypeLabel: (type: string) => string;
   isDisabled?: boolean;
 }
@@ -25,6 +26,7 @@ export default function TestQuestionsList({
   onAddQuestion,
   onEditQuestion,
   onDeleteQuestion,
+  onReorderQuestion,
   getQuestionTypeLabel,
   isDisabled = false,
 }: TestQuestionsListProps) {
@@ -51,7 +53,7 @@ export default function TestQuestionsList({
           {questions.map((question, index) => (
             <div
               key={question.id}
-              className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+              className="group flex items-start gap-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
             >
               <div className="flex items-start gap-3 flex-1">
                 <span className="text-sm font-medium text-gray-500 w-8 mt-1">
@@ -87,7 +89,25 @@ export default function TestQuestionsList({
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onReorderQuestion(question.id, 'up')}
+                  disabled={index === 0 || isDisabled}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <Icon name="ChevronUp" size={16} />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onReorderQuestion(question.id, 'down')}
+                  disabled={index === questions.length - 1 || isDisabled}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <Icon name="ChevronDown" size={16} />
+                </Button>
                 <Button
                   variant="ghost"
                   size="sm"
