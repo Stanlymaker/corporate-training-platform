@@ -20,6 +20,7 @@ export default function StudentProfile() {
   const [userProgress, setUserProgress] = useState<CourseProgress[]>([]);
   const [rewards, setRewards] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [rewardCourses, setRewardCourses] = useState<Record<number, Course>>({});
   
   const userId = currentUser?.id || '';
   
@@ -49,12 +50,35 @@ export default function StudentProfile() {
       
       if (rewardsRes.ok) {
         const rewardsData = await rewardsRes.json();
-        setRewards(rewardsData.rewards || []);
+        const rewardsArray = rewardsData.rewards || [];
+        setRewards(rewardsArray);
+        
+        // Загрузим курсы для всех наград
+        const courseIds = [...new Set(rewardsArray.map((r: any) => r.courseId))];
+        for (const courseId of courseIds) {
+          loadRewardCourse(courseId);
+        }
       }
     } catch (error) {
       console.error('Error loading profile data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+  
+  const loadRewardCourse = async (courseId: number) => {
+    try {
+      const response = await fetch(`${API_ENDPOINTS.COURSES}?id=${courseId}`, { 
+        headers: getAuthHeaders() 
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.course) {
+          setRewardCourses(prev => ({ ...prev, [courseId]: data.course }));
+        }
+      }
+    } catch (error) {
+      console.error('Error loading reward course:', error);
     }
   };
   
@@ -65,8 +89,10 @@ export default function StudentProfile() {
     .flatMap(p => p.earnedRewards || [])
     .filter((id, index, self) => self.indexOf(id) === index);
   
-  const selectedRewardData = selectedReward ? rewards.find(r => r.id === selectedReward) : null;
-  const selectedRewardCourse = selectedRewardData ? courses.find(c => c.id === selectedRewardData.courseId) : null;
+  const selectedRewardData = selectedReward ? rewards.find(r => String(r.id) === String(selectedReward)) : null;
+  const selectedRewardCourse = selectedRewardData 
+    ? (courses.find(c => c.id === selectedRewardData.courseId) || rewardCourses[selectedRewardData.courseId])
+    : null;
 
   if (loading) {
     return (
