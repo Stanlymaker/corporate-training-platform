@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import Icon from '@/components/ui/icon';
 import {
   Dialog,
   DialogContent,
@@ -32,37 +32,43 @@ export default function EditRewardDialog({
   reward, 
   onUpdateReward 
 }: EditRewardDialogProps) {
-  const [selectedIcon, setSelectedIcon] = useState('🏆');
-  const [selectedColor, setSelectedColor] = useState('#F97316');
+  const [imageUrl, setImageUrl] = useState('');
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [editingReward, setEditingReward] = useState<(Reward & { earnedCount: number }) | null>(null);
 
-  const icons = ['🏆', '🎯', '💎', '📊', '💰', '🚀', '⭐', '🎓', '👑', '🔥', '💪', '🌟'];
-  const colors = [
-    { name: 'Оранжевый', value: '#F97316' },
-    { name: 'Синий', value: '#3B82F6' },
-    { name: 'Зеленый', value: '#10B981' },
-    { name: 'Фиолетовый', value: '#8B5CF6' },
-    { name: 'Розовый', value: '#EC4899' },
-    { name: 'Желтый', value: '#FBBF24' },
-  ];
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.includes('svg')) {
+      alert('Пожалуйста, загрузите SVG файл');
+      return;
+    }
+
+    setUploadingImage(true);
+    const fakeUrl = URL.createObjectURL(file);
+    setTimeout(() => {
+      setImageUrl(fakeUrl);
+      setUploadingImage(false);
+    }, 500);
+  };
 
   useEffect(() => {
     if (reward) {
       setEditingReward(reward);
-      setSelectedIcon(reward.icon);
-      setSelectedColor(reward.color);
+      setImageUrl(reward.icon);
     }
   }, [reward]);
 
   const handleUpdate = () => {
-    if (!editingReward) return;
+    if (!editingReward || !imageUrl) return;
     
     onUpdateReward({
       id: editingReward.id,
       name: editingReward.name,
-      description: editingReward.description || null,
-      icon: selectedIcon,
-      color: selectedColor,
+      description: null,
+      icon: imageUrl,
+      color: '#F97316',
     });
   };
 
@@ -72,7 +78,7 @@ export default function EditRewardDialog({
         <DialogHeader>
           <DialogTitle>Редактировать награду</DialogTitle>
           <DialogDescription>
-            Измените параметры награды
+            Измените название или изображение награды
           </DialogDescription>
         </DialogHeader>
         {editingReward && (
@@ -88,70 +94,50 @@ export default function EditRewardDialog({
             </div>
 
             <div>
-              <Label htmlFor="edit-reward-description">Описание</Label>
-              <Textarea
-                id="edit-reward-description"
-                className="mt-1"
-                value={editingReward.description || ''}
-                onChange={(e) => setEditingReward({ ...editingReward, description: e.target.value })}
-              />
-            </div>
-
-            <div>
-              <Label>Выберите иконку</Label>
-              <div className="grid grid-cols-6 gap-2 mt-2">
-                {icons.map((icon) => (
-                  <button
-                    key={icon}
-                    onClick={() => setSelectedIcon(icon)}
-                    className={`aspect-square text-4xl rounded-lg border-2 transition-all ${
-                      selectedIcon === icon
-                        ? 'border-orange-500 bg-orange-50 scale-110'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    {icon}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <Label>Выберите цвет</Label>
-              <div className="grid grid-cols-3 gap-2 mt-2">
-                {colors.map((color) => (
-                  <button
-                    key={color.value}
-                    onClick={() => setSelectedColor(color.value)}
-                    className={`p-3 rounded-lg border-2 transition-all ${
-                      selectedColor === color.value
-                        ? 'border-gray-900'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                    style={{ backgroundColor: color.value + '20' }}
-                  >
-                    <div
-                      className="w-full h-6 rounded"
-                      style={{ backgroundColor: color.value }}
-                    />
-                    <div className="text-xs font-medium text-gray-700 mt-1">{color.name}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="p-4 bg-gray-50 rounded-xl">
-              <Label className="mb-2 block text-sm">Предпросмотр</Label>
-              <div className="flex items-center justify-center">
-                <div
-                  className="w-24 h-24 rounded-2xl flex items-center justify-center text-5xl border-4"
-                  style={{
-                    backgroundColor: selectedColor + '20',
-                    borderColor: selectedColor,
-                  }}
-                >
-                  {selectedIcon}
-                </div>
+              <Label>Изображение награды (SVG)</Label>
+              <div className="mt-2">
+                <input
+                  type="file"
+                  accept=".svg,image/svg+xml"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                  id="edit-reward-image-upload"
+                  disabled={uploadingImage}
+                />
+                <label htmlFor="edit-reward-image-upload">
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-orange-500 transition-colors">
+                    {uploadingImage ? (
+                      <div className="flex flex-col items-center gap-2">
+                        <Icon name="Loader2" className="animate-spin text-gray-400" size={32} />
+                        <p className="text-sm text-gray-600">Загрузка...</p>
+                      </div>
+                    ) : imageUrl ? (
+                      <div className="flex flex-col items-center gap-3">
+                        <div className="w-32 h-32 flex items-center justify-center">
+                          <img src={imageUrl} alt="Награда" className="max-w-full max-h-full" />
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            document.getElementById('edit-reward-image-upload')?.click();
+                          }}
+                        >
+                          <Icon name="Upload" className="mr-2" size={14} />
+                          Изменить изображение
+                        </Button>
+                      </div>
+                    ) : (
+                      <>
+                        <Icon name="Upload" size={32} className="mx-auto text-gray-400 mb-2" />
+                        <p className="text-sm text-gray-600 mb-1">Нажмите для загрузки SVG изображения</p>
+                        <p className="text-xs text-gray-500">Рекомендуемый размер: 128x128px</p>
+                      </>
+                    )}
+                  </div>
+                </label>
               </div>
             </div>
           </div>

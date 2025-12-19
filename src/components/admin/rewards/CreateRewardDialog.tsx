@@ -41,36 +41,42 @@ export default function CreateRewardDialog({
   courses, 
   onCreateReward 
 }: CreateRewardDialogProps) {
-  const [selectedIcon, setSelectedIcon] = useState('🏆');
-  const [selectedColor, setSelectedColor] = useState('#F97316');
+  const [imageUrl, setImageUrl] = useState('');
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [newReward, setNewReward] = useState({
     name: '',
     courseId: '',
-    description: '',
   });
 
-  const icons = ['🏆', '🎯', '💎', '📊', '💰', '🚀', '⭐', '🎓', '👑', '🔥', '💪', '🌟'];
-  const colors = [
-    { name: 'Оранжевый', value: '#F97316' },
-    { name: 'Синий', value: '#3B82F6' },
-    { name: 'Зеленый', value: '#10B981' },
-    { name: 'Фиолетовый', value: '#8B5CF6' },
-    { name: 'Розовый', value: '#EC4899' },
-    { name: 'Желтый', value: '#FBBF24' },
-  ];
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.includes('svg')) {
+      alert('Пожалуйста, загрузите SVG файл');
+      return;
+    }
+
+    setUploadingImage(true);
+    const fakeUrl = URL.createObjectURL(file);
+    setTimeout(() => {
+      setImageUrl(fakeUrl);
+      setUploadingImage(false);
+    }, 500);
+  };
 
   const handleCreate = () => {
-    if (!newReward.name || !newReward.courseId) return;
+    if (!newReward.name || !newReward.courseId || !imageUrl) return;
     
     onCreateReward({
       ...newReward,
-      icon: selectedIcon,
-      color: selectedColor,
+      description: '',
+      icon: imageUrl,
+      color: '#F97316',
     });
 
-    setNewReward({ name: '', courseId: '', description: '' });
-    setSelectedIcon('🏆');
-    setSelectedColor('#F97316');
+    setNewReward({ name: '', courseId: '' });
+    setImageUrl('');
   };
 
   return (
@@ -85,7 +91,7 @@ export default function CreateRewardDialog({
         <DialogHeader>
           <DialogTitle>Создать новую награду</DialogTitle>
           <DialogDescription>
-            Добавьте новую награду за прохождение курса
+            Награда будет автоматически выдана при завершении курса
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
@@ -117,71 +123,50 @@ export default function CreateRewardDialog({
           </div>
 
           <div>
-            <Label htmlFor="reward-description">Описание (опционально)</Label>
-            <Textarea
-              id="reward-description"
-              placeholder="Краткое описание награды"
-              className="mt-1"
-              value={newReward.description}
-              onChange={(e) => setNewReward({ ...newReward, description: e.target.value })}
-            />
-          </div>
-
-          <div>
-            <Label>Выберите иконку</Label>
-            <div className="grid grid-cols-6 gap-2 mt-2">
-              {icons.map((icon) => (
-                <button
-                  key={icon}
-                  onClick={() => setSelectedIcon(icon)}
-                  className={`aspect-square text-4xl rounded-lg border-2 transition-all ${
-                    selectedIcon === icon
-                      ? 'border-orange-500 bg-orange-50 scale-110'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  {icon}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <Label>Выберите цвет</Label>
-            <div className="grid grid-cols-3 gap-2 mt-2">
-              {colors.map((color) => (
-                <button
-                  key={color.value}
-                  onClick={() => setSelectedColor(color.value)}
-                  className={`p-3 rounded-lg border-2 transition-all ${
-                    selectedColor === color.value
-                      ? 'border-gray-900'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                  style={{ backgroundColor: color.value + '20' }}
-                >
-                  <div
-                    className="w-full h-6 rounded"
-                    style={{ backgroundColor: color.value }}
-                  />
-                  <div className="text-xs font-medium text-gray-700 mt-1">{color.name}</div>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="p-4 bg-gray-50 rounded-xl">
-            <Label className="mb-2 block text-sm">Предпросмотр</Label>
-            <div className="flex items-center justify-center">
-              <div
-                className="w-24 h-24 rounded-2xl flex items-center justify-center text-5xl border-4"
-                style={{
-                  backgroundColor: selectedColor + '20',
-                  borderColor: selectedColor,
-                }}
-              >
-                {selectedIcon}
-              </div>
+            <Label>Изображение награды (SVG)</Label>
+            <div className="mt-2">
+              <input
+                type="file"
+                accept=".svg,image/svg+xml"
+                onChange={handleImageUpload}
+                className="hidden"
+                id="reward-image-upload"
+                disabled={uploadingImage}
+              />
+              <label htmlFor="reward-image-upload">
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-orange-500 transition-colors">
+                  {uploadingImage ? (
+                    <div className="flex flex-col items-center gap-2">
+                      <Icon name="Loader2" className="animate-spin text-gray-400" size={32} />
+                      <p className="text-sm text-gray-600">Загрузка...</p>
+                    </div>
+                  ) : imageUrl ? (
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="w-32 h-32 flex items-center justify-center">
+                        <img src={imageUrl} alt="Награда" className="max-w-full max-h-full" />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setImageUrl('');
+                        }}
+                      >
+                        <Icon name="Trash2" className="mr-2" size={14} />
+                        Удалить
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      <Icon name="Upload" size={32} className="mx-auto text-gray-400 mb-2" />
+                      <p className="text-sm text-gray-600 mb-1">Нажмите для загрузки SVG изображения</p>
+                      <p className="text-xs text-gray-500">Рекомендуемый размер: 128x128px</p>
+                    </>
+                  )}
+                </div>
+              </label>
             </div>
           </div>
         </div>
@@ -192,7 +177,7 @@ export default function CreateRewardDialog({
           <Button 
             className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600"
             onClick={handleCreate}
-            disabled={!newReward.name || !newReward.courseId}
+            disabled={!newReward.name || !newReward.courseId || !imageUrl || uploadingImage}
           >
             Создать награду
           </Button>
