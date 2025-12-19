@@ -172,10 +172,12 @@ export default function CourseDetails() {
               <h1 className="text-3xl font-bold text-gray-900 mb-2">{course.title}</h1>
               <p className="text-gray-600 mb-4 text-lg">{course.description}</p>
               <div className="flex items-center gap-6 text-sm text-gray-600">
-                <div className="flex items-center gap-2">
-                  <Icon name="User" size={16} />
-                  <span>{course.instructor}</span>
-                </div>
+                {course.instructor && (
+                  <div className="flex items-center gap-2">
+                    <Icon name="User" size={16} />
+                    <span>{course.instructor}</span>
+                  </div>
+                )}
                 <div className="flex items-center gap-2">
                   <Icon name="Clock" size={16} />
                   <span>{course.duration} мин</span>
