@@ -99,6 +99,7 @@ export default function LessonPage() {
           });
           if (testRes.ok) {
             const testData = await testRes.json();
+            console.log('Test data from backend:', testData);
             setTest(testData.test || testData);
           }
         }
