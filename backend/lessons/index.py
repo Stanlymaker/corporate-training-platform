@@ -23,6 +23,7 @@ class CreateLessonRequest(BaseModel):
     isFinalTest: bool = Field(default=False)
     finalTestRequiresAllLessons: bool = Field(default=False)
     finalTestRequiresAllTests: bool = Field(default=False)
+    imageUrl: Optional[str] = None
 
 class UpdateLessonRequest(BaseModel):
     title: Optional[str] = Field(None, min_length=1)
@@ -37,6 +38,7 @@ class UpdateLessonRequest(BaseModel):
     isFinalTest: Optional[bool] = None
     finalTestRequiresAllLessons: Optional[bool] = None
     finalTestRequiresAllTests: Optional[bool] = None
+    imageUrl: Optional[str] = None
 
 class LessonMaterialRequest(BaseModel):
     title: str = Field(..., min_length=1)
@@ -91,6 +93,7 @@ def format_lesson_response(lesson_row: tuple, materials: list = None) -> Dict[st
         'isFinalTest': lesson_row[11],
         'finalTestRequiresAllLessons': lesson_row[12],
         'finalTestRequiresAllTests': lesson_row[13],
+        'imageUrl': lesson_row[14],
     }
     
     if materials is not None:
@@ -183,7 +186,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         cur.execute(
             "SELECT id, course_id, title, content, type, \"order\", duration, video_url, "
             "description, requires_previous, test_id, is_final_test, "
-            "final_test_requires_all_lessons, final_test_requires_all_tests "
+            "final_test_requires_all_lessons, final_test_requires_all_tests, image_url "
             "FROM lessons_v2 WHERE course_id = %s ORDER BY \"order\"",
             (course_id_int,)
         )
@@ -213,7 +216,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         cur.execute(
             "SELECT id, course_id, title, content, type, \"order\", duration, video_url, "
             "description, requires_previous, test_id, is_final_test, "
-            "final_test_requires_all_lessons, final_test_requires_all_tests "
+            "final_test_requires_all_lessons, final_test_requires_all_tests, image_url "
             "FROM lessons_v2 WHERE id = %s",
             (lesson_id,)
         )
@@ -419,8 +422,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         cur.execute(
             "INSERT INTO lessons_v2 (course_id, title, content, type, \"order\", duration, video_url, "
             "description, requires_previous, test_id, is_final_test, final_test_requires_all_lessons, "
-            "final_test_requires_all_tests) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
+            "final_test_requires_all_tests, image_url) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
             (
                 course_id,
                 create_req.title,
@@ -434,7 +437,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 create_req.testId,
                 create_req.isFinalTest,
                 create_req.finalTestRequiresAllLessons,
-                create_req.finalTestRequiresAllTests
+                create_req.finalTestRequiresAllTests,
+                create_req.imageUrl
             )
         )
         lesson_id = cur.fetchone()[0]
@@ -543,6 +547,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         if update_req.finalTestRequiresAllTests is not None:
             updates.append("final_test_requires_all_tests = %s")
             params.append(update_req.finalTestRequiresAllTests)
+        if update_req.imageUrl is not None:
+            updates.append("image_url = %s")
+            params.append(update_req.imageUrl)
         
         if not updates:
             cur.close()

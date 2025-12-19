@@ -207,23 +207,66 @@ export function useCourseEditorActions(
             isFinalTest: lesson.isFinalTest || false,
             finalTestRequiresAllLessons: lesson.finalTestRequiresAllLessons || false,
             finalTestRequiresAllTests: lesson.finalTestRequiresAllTests || false,
+            imageUrl: lesson.imageUrl,
           };
 
           // ID > 100000 означает временный ID (Date.now()), это новый урок
           const isNewLesson = lesson.id > 100000;
           
+          let savedLessonId = lesson.id;
+          
           if (!isNewLesson && existingLessonIds.has(lesson.id)) {
-            await fetch(`${API_ENDPOINTS.LESSONS}?id=${lesson.id}`, {
+            const updateRes = await fetch(`${API_ENDPOINTS.LESSONS}?id=${lesson.id}`, {
               method: 'PUT',
               headers: getAuthHeaders(),
               body: JSON.stringify(lessonPayload),
             });
+            if (updateRes.ok) {
+              const updateData = await updateRes.json();
+              savedLessonId = updateData.lesson.id;
+            }
           } else {
-            await fetch(API_ENDPOINTS.LESSONS, {
+            const createRes = await fetch(API_ENDPOINTS.LESSONS, {
               method: 'POST',
               headers: getAuthHeaders(),
               body: JSON.stringify(lessonPayload),
             });
+            if (createRes.ok) {
+              const createData = await createRes.json();
+              savedLessonId = createData.lesson.id;
+            }
+          }
+          
+          // Save materials separately
+          if (lesson.materials && lesson.materials.length > 0) {
+            // Delete existing materials
+            const existingMaterialsRes = await fetch(`${API_ENDPOINTS.LESSONS}?id=${savedLessonId}`, {
+              headers: getAuthHeaders(),
+            });
+            if (existingMaterialsRes.ok) {
+              const existingData = await existingMaterialsRes.json();
+              const existingMaterials = existingData.lesson.materials || [];
+              
+              for (const material of existingMaterials) {
+                await fetch(`${API_ENDPOINTS.LESSONS}?action=material&materialId=${material.id}`, {
+                  method: 'DELETE',
+                  headers: getAuthHeaders(),
+                });
+              }
+            }
+            
+            // Create new materials
+            for (const material of lesson.materials) {
+              await fetch(`${API_ENDPOINTS.LESSONS}?action=material&lessonId=${savedLessonId}`, {
+                method: 'POST',
+                headers: getAuthHeaders(),
+                body: JSON.stringify({
+                  title: material.title,
+                  type: material.type,
+                  url: material.url,
+                }),
+              });
+            }
           }
         }
       } else {
@@ -242,13 +285,34 @@ export function useCourseEditorActions(
             isFinalTest: lesson.isFinalTest || false,
             finalTestRequiresAllLessons: lesson.finalTestRequiresAllLessons || false,
             finalTestRequiresAllTests: lesson.finalTestRequiresAllTests || false,
+            imageUrl: lesson.imageUrl,
           };
 
-          await fetch(API_ENDPOINTS.LESSONS, {
+          const createRes = await fetch(API_ENDPOINTS.LESSONS, {
             method: 'POST',
             headers: getAuthHeaders(),
             body: JSON.stringify(lessonPayload),
           });
+          
+          if (createRes.ok) {
+            const createData = await createRes.json();
+            const savedLessonId = createData.lesson.id;
+            
+            // Save materials
+            if (lesson.materials && lesson.materials.length > 0) {
+              for (const material of lesson.materials) {
+                await fetch(`${API_ENDPOINTS.LESSONS}?action=material&lessonId=${savedLessonId}`, {
+                  method: 'POST',
+                  headers: getAuthHeaders(),
+                  body: JSON.stringify({
+                    title: material.title,
+                    type: material.type,
+                    url: material.url,
+                  }),
+                });
+              }
+            }
+          }
         }
       }
 
