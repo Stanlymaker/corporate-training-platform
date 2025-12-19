@@ -159,6 +159,9 @@ export function useTestEditorActions(
           
           if (question.imageUrl) {
             questionPayload.imageUrl = question.imageUrl;
+            console.log('[DEBUG] Adding imageUrl to question payload:', question.imageUrl);
+          } else {
+            console.log('[DEBUG] No imageUrl for question:', question.question);
           }
           
           if (question.type === 'matching' && question.matchingPairs) {
@@ -246,6 +249,9 @@ export function useTestEditorActions(
         
         if (question.imageUrl) {
           questionPayload.imageUrl = question.imageUrl;
+          console.log('[DEBUG] Adding imageUrl to question payload (edit mode):', question.imageUrl);
+        } else {
+          console.log('[DEBUG] No imageUrl for question (edit mode):', question.question);
         }
         
         if (question.type === 'matching' && question.matchingPairs) {
