@@ -4,6 +4,7 @@ import AdminLayout from '@/components/AdminLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
   DropdownMenu,
@@ -40,6 +41,9 @@ interface Test {
 export default function Tests() {
   const navigate = useNavigate();
   const [filter, setFilter] = useState<'all' | 'published' | 'draft'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [courseFilter, setCourseFilter] = useState<number | 'all' | 'unused'>('all');
+  const [questionCountFilter, setQuestionCountFilter] = useState<'all' | '0' | '1-5' | '6-10' | '10+'>('all');
   const [tests, setTests] = useState<Test[]>([]);
   const [courses, setCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -195,9 +199,41 @@ export default function Tests() {
     }
   };
 
+  const getTestCourses = (testId: number) => {
+    return courses.filter(course => 
+      course.lessons?.some((lesson: any) => lesson.testId === testId)
+    );
+  };
+
   const filteredTests = tests.filter(test => {
-    if (filter === 'published') return test.status === 'published';
-    if (filter === 'draft') return test.status === 'draft';
+    // Status filter
+    if (filter === 'published' && test.status !== 'published') return false;
+    if (filter === 'draft' && test.status !== 'draft') return false;
+
+    // Search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      const matchesTitle = test.title.toLowerCase().includes(query);
+      const matchesDescription = test.description?.toLowerCase().includes(query);
+      if (!matchesTitle && !matchesDescription) return false;
+    }
+
+    // Course filter
+    if (courseFilter !== 'all') {
+      const testCourses = getTestCourses(test.id);
+      if (courseFilter === 'unused' && testCourses.length > 0) return false;
+      if (typeof courseFilter === 'number' && !testCourses.some(c => c.id === courseFilter)) return false;
+    }
+
+    // Question count filter
+    if (questionCountFilter !== 'all') {
+      const count = test.questionsCount;
+      if (questionCountFilter === '0' && count !== 0) return false;
+      if (questionCountFilter === '1-5' && (count < 1 || count > 5)) return false;
+      if (questionCountFilter === '6-10' && (count < 6 || count > 10)) return false;
+      if (questionCountFilter === '10+' && count <= 10) return false;
+    }
+
     return true;
   });
 
@@ -225,25 +261,83 @@ export default function Tests() {
           </Button>
         </div>
 
-        <div className="flex gap-3 mb-6">
-          <Button
-            variant={filter === 'all' ? 'default' : 'outline'}
-            onClick={() => setFilter('all')}
-          >
-            Все тесты ({tests.length})
-          </Button>
-          <Button
-            variant={filter === 'published' ? 'default' : 'outline'}
-            onClick={() => setFilter('published')}
-          >
-            Опубликованные ({tests.filter(t => t.status === 'published').length})
-          </Button>
-          <Button
-            variant={filter === 'draft' ? 'default' : 'outline'}
-            onClick={() => setFilter('draft')}
-          >
-            Черновики ({tests.filter(t => t.status === 'draft').length})
-          </Button>
+        <div className="space-y-4 mb-6">
+          <div className="flex gap-3">
+            <div className="flex-1 relative">
+              <Icon name="Search" size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <Input
+                placeholder="Поиск по названию или описанию..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <Button
+              variant={filter === 'all' ? 'default' : 'outline'}
+              onClick={() => setFilter('all')}
+              size="sm"
+            >
+              Все ({tests.length})
+            </Button>
+            <Button
+              variant={filter === 'published' ? 'default' : 'outline'}
+              onClick={() => setFilter('published')}
+              size="sm"
+            >
+              Опубликованные ({tests.filter(t => t.status === 'published').length})
+            </Button>
+            <Button
+              variant={filter === 'draft' ? 'default' : 'outline'}
+              onClick={() => setFilter('draft')}
+              size="sm"
+            >
+              Черновики ({tests.filter(t => t.status === 'draft').length})
+            </Button>
+          </div>
+
+          <div className="flex gap-3 flex-wrap">
+            <select
+              value={courseFilter}
+              onChange={(e) => setCourseFilter(e.target.value === 'all' ? 'all' : e.target.value === 'unused' ? 'unused' : parseInt(e.target.value))}
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="all">Все курсы</option>
+              <option value="unused">Не используется</option>
+              {courses.map(course => (
+                <option key={course.id} value={course.id}>{course.title}</option>
+              ))}
+            </select>
+
+            <select
+              value={questionCountFilter}
+              onChange={(e) => setQuestionCountFilter(e.target.value as any)}
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="all">Любое кол-во вопросов</option>
+              <option value="0">Без вопросов</option>
+              <option value="1-5">1-5 вопросов</option>
+              <option value="6-10">6-10 вопросов</option>
+              <option value="10+">Более 10 вопросов</option>
+            </select>
+
+            {(searchQuery || courseFilter !== 'all' || questionCountFilter !== 'all') && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSearchQuery('');
+                  setCourseFilter('all');
+                  setQuestionCountFilter('all');
+                }}
+              >
+                <Icon name="X" size={16} className="mr-1" />
+                Сбросить фильтры
+              </Button>
+            )}
+          </div>
         </div>
 
         <Card className="border-0 shadow-md">
