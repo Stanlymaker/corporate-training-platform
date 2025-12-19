@@ -84,7 +84,7 @@ export default function TestInterface({
               {index + 1}. {question.question}
             </h4>
             <div className="space-y-2">
-              {question.options.map((option, optionIndex) => (
+              {question.options?.map((option, optionIndex) => (
                 <label
                   key={optionIndex}
                   className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-colors ${
