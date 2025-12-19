@@ -286,14 +286,14 @@ export default function LessonPage() {
         }
       } else if (q.type === 'matching' && q.matchingPairs) {
         // Для сопоставления: проверяем что все пары совпадают
-        const userMatching = userAnswer as Record<number, string>;
+        const userMatching = userAnswer as Record<string, string>;
         let allCorrect = true;
-        q.matchingPairs.forEach((pair, index) => {
-          if (userMatching?.[index] !== pair.right) {
+        q.matchingPairs.forEach(pair => {
+          if (userMatching?.[pair.left] !== pair.right) {
             allCorrect = false;
           }
         });
-        if (allCorrect) {
+        if (allCorrect && Object.keys(userMatching || {}).length === q.matchingPairs.length) {
           correctCount++;
         }
       } else if (userAnswer === correctAnswer) {
