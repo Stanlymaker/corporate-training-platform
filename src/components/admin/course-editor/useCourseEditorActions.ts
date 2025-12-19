@@ -176,7 +176,20 @@ export function useCourseEditorActions(
         });
         const existingLessons = existingLessonsRes.ok ? (await existingLessonsRes.json()).lessons : [];
         const existingLessonIds = new Set(existingLessons.map((l: any) => l.id));
+        const currentLessonIds = new Set(formData.lessons.filter(l => l.id <= 100000).map(l => l.id));
 
+        // Delete lessons that were removed
+        for (const existingLesson of existingLessons) {
+          if (!currentLessonIds.has(existingLesson.id)) {
+            console.log('[useCourseEditorActions] Deleting lesson:', existingLesson.id);
+            await fetch(`${API_ENDPOINTS.LESSONS}?id=${existingLesson.id}`, {
+              method: 'DELETE',
+              headers: getAuthHeaders(),
+            });
+          }
+        }
+
+        // Update or create lessons
         for (const lesson of formData.lessons) {
           const lessonPayload = {
             courseId: savedCourseId,
