@@ -19,6 +19,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Reward, Course } from '@/types';
+import { uploadImage } from '@/utils/uploadImage';
 
 interface EditRewardDialogProps {
   isOpen: boolean;
@@ -50,17 +51,21 @@ export default function EditRewardDialog({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.includes('svg')) {
-      alert('Пожалуйста, загрузите SVG файл');
+    if (!file.type.includes('image')) {
+      alert('Пожалуйста, загрузите изображение');
       return;
     }
 
     setUploadingImage(true);
-    const fakeUrl = URL.createObjectURL(file);
-    setTimeout(() => {
-      setImageUrl(fakeUrl);
+    try {
+      const url = await uploadImage(file);
+      setImageUrl(url);
+    } catch (error) {
+      console.error('Ошибка загрузки:', error);
+      alert('Не удалось загрузить изображение');
+    } finally {
       setUploadingImage(false);
-    }, 500);
+    }
   };
 
   useEffect(() => {
@@ -124,11 +129,11 @@ export default function EditRewardDialog({
             </div>
 
             <div>
-              <Label>Изображение награды (SVG)</Label>
+              <Label>Изображение награды</Label>
               <div className="mt-2">
                 <input
                   type="file"
-                  accept=".svg,image/svg+xml"
+                  accept="image/*"
                   onChange={handleImageUpload}
                   className="hidden"
                   id="edit-reward-image-upload"
@@ -144,7 +149,7 @@ export default function EditRewardDialog({
                     ) : imageUrl ? (
                       <div className="flex flex-col items-center gap-3">
                         <div className="w-32 h-32 flex items-center justify-center">
-                          <img src={imageUrl} alt="Награда" className="max-w-full max-h-full" />
+                          <img src={imageUrl} alt="Награда" className="max-w-full max-h-full object-contain" />
                         </div>
                         <Button
                           type="button"
@@ -162,8 +167,8 @@ export default function EditRewardDialog({
                     ) : (
                       <>
                         <Icon name="Upload" size={32} className="mx-auto text-gray-400 mb-2" />
-                        <p className="text-sm text-gray-600 mb-1">Нажмите для загрузки SVG изображения</p>
-                        <p className="text-xs text-gray-500">Рекомендуемый размер: 128x128px</p>
+                        <p className="text-sm text-gray-600 mb-1">Нажмите для загрузки изображения</p>
+                        <p className="text-xs text-gray-500">PNG, JPG, SVG до 5 МБ</p>
                       </>
                     )}
                   </div>

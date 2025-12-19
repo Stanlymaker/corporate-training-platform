@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
+import { uploadImage } from '@/utils/uploadImage';
 
 interface CourseFormData {
   title: string;
@@ -31,11 +32,15 @@ export default function CourseInfoForm({ formData, onInputChange, isEditMode = f
 
   const handleImageUpload = async (file: File) => {
     setUploadingImage(true);
-    const fakeUrl = URL.createObjectURL(file);
-    setTimeout(() => {
-      onInputChange('image', fakeUrl);
+    try {
+      const url = await uploadImage(file);
+      onInputChange('image', url);
+    } catch (error) {
+      console.error('Ошибка загрузки:', error);
+      alert('Не удалось загрузить изображение');
+    } finally {
       setUploadingImage(false);
-    }, 500);
+    }
   };
 
   return (
