@@ -66,6 +66,7 @@ export default function StudentProfile() {
     .filter((id, index, self) => self.indexOf(id) === index);
   
   const selectedRewardData = selectedReward ? rewards.find(r => r.id === selectedReward) : null;
+  const selectedRewardCourse = selectedRewardData ? courses.find(c => c.id === selectedRewardData.courseId) : null;
 
   if (loading) {
     return (
@@ -284,7 +285,11 @@ export default function StudentProfile() {
           <div className="space-y-4">
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <p className="text-sm font-medium text-blue-900 mb-2">Условие получения:</p>
-              <p className="text-sm text-blue-700">{selectedRewardData?.condition || 'Условие не указано'}</p>
+              <p className="text-sm text-blue-700">
+                {selectedRewardCourse 
+                  ? `Завершить курс "${selectedRewardCourse.title}"`
+                  : 'Завершить связанный курс'}
+              </p>
             </div>
           </div>
         </DialogContent>
