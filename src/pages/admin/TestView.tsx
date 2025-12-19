@@ -116,26 +116,7 @@ export default function TestView() {
                 </div>
                 
                 <h1 className="text-3xl font-bold text-gray-900 mb-4">{test.title}</h1>
-                <p className="text-gray-600 mb-6">{test.description}</p>
-                
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-xl">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-primary mb-1">{testQuestions.length}</div>
-                    <div className="text-sm text-gray-600">Вопросов</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-primary mb-1">{test.timeLimit}</div>
-                    <div className="text-sm text-gray-600">Минут</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-primary mb-1">{test.passScore}%</div>
-                    <div className="text-sm text-gray-600">Проходной</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-primary mb-1">{test.attempts}</div>
-                    <div className="text-sm text-gray-600">Попытки</div>
-                  </div>
-                </div>
+                <p className="text-gray-600">{test.description}</p>
               </CardContent>
             </Card>
 
@@ -321,6 +302,15 @@ export default function TestView() {
                   </div>
                   <span className="font-semibold">
                     {testQuestions.filter(q => q.type === 'text').length}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-2">
+                    <Icon name="ArrowRight" size={14} className="text-gray-500" />
+                    <span className="text-gray-600">Сопоставление</span>
+                  </div>
+                  <span className="font-semibold">
+                    {testQuestions.filter(q => q.type === 'matching').length}
                   </span>
                 </div>
               </CardContent>
