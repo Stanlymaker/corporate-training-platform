@@ -290,8 +290,7 @@ export default function Tests() {
                           {usedInCourses.map(course => (
                             <Badge 
                               key={course.id} 
-                              variant="outline" 
-                              className="text-xs cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
+                              className="text-xs cursor-pointer bg-blue-100 text-blue-700 border-blue-300 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all font-medium"
                               onClick={() => navigate(`/admin/courses/edit/${course.id}`)}
                             >
                               {course.title}
