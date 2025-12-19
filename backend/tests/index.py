@@ -95,20 +95,25 @@ def format_test_response(test_row: tuple) -> Dict[str, Any]:
         'updatedAt': test_row[11].isoformat() if test_row[11] else None,
     }
 
-def format_question_response(question_row: tuple) -> Dict[str, Any]:
-    return {
+def format_question_response(question_row: tuple, hide_correct_answer: bool = False) -> Dict[str, Any]:
+    question = {
         'id': question_row[0],
         'testId': question_row[1],
         'type': question_row[2],
-        'text': question_row[3],
+        'question': question_row[3],  # Renamed from 'text' to 'question' for frontend
         'options': question_row[4],
-        'correctAnswer': question_row[5],
         'points': question_row[6],
         'order': question_row[7],
         'matchingPairs': question_row[8],
         'textCheckType': question_row[9],
         'imageUrl': question_row[10] if len(question_row) > 10 else None,
     }
+    
+    # Добавляем correctAnswer только для админов
+    if not hide_correct_answer:
+        question['correctAnswer'] = question_row[5]
+    
+    return question
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     '''
@@ -196,6 +201,18 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             }
         
         test_data = format_test_response(test)
+        
+        # Загружаем вопросы теста
+        cur.execute(
+            "SELECT id, test_id, type, text, options, correct_answer, points, \"order\", "
+            "matching_pairs, text_check_type, image_url FROM questions_v2 WHERE test_id = %s ORDER BY \"order\"",
+            (int(test_id),)
+        )
+        questions = cur.fetchall()
+        
+        # Скрываем правильные ответы для студентов
+        is_student = payload.get('role') == 'student'
+        test_data['questions'] = [format_question_response(q, hide_correct_answer=is_student) for q in questions]
         
         cur.close()
         conn.close()
