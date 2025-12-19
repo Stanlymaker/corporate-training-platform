@@ -143,11 +143,12 @@ export default function AdminLessonPage() {
             </CardHeader>
             <CardContent className="p-6">
               {lesson.type === 'video' && lesson.videoUrl && (
-                <div className="mb-6 rounded-lg overflow-hidden bg-black">
+                <div className="mb-6 rounded-lg overflow-hidden bg-black relative w-full" style={{ paddingTop: '56.25%' }}>
                   <div 
-                    className="w-full"
-                    style={{ aspectRatio: '16/9' }}
-                    dangerouslySetInnerHTML={{ __html: lesson.videoUrl }}
+                    className="absolute inset-0"
+                    dangerouslySetInnerHTML={{ 
+                      __html: lesson.videoUrl.replace(/width="\d+"/, 'width="100%"').replace(/height="\d+"/, 'height="100%"')
+                    }}
                   />
                 </div>
               )}
