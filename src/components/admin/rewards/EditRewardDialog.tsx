@@ -2,6 +2,13 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import Icon from '@/components/ui/icon';
 import {
   Dialog,
@@ -11,15 +18,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Reward } from '@/types';
+import { Reward, Course } from '@/types';
 
 interface EditRewardDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   reward: (Reward & { earnedCount: number }) | null;
+  courses: Course[];
   onUpdateReward: (rewardData: {
     id: string;
     name: string;
+    courseId: string;
     description: string | null;
     icon: string;
     color: string;
@@ -29,7 +38,8 @@ interface EditRewardDialogProps {
 export default function EditRewardDialog({ 
   isOpen, 
   onOpenChange, 
-  reward, 
+  reward,
+  courses,
   onUpdateReward 
 }: EditRewardDialogProps) {
   const [imageUrl, setImageUrl] = useState('');
@@ -61,11 +71,12 @@ export default function EditRewardDialog({
   }, [reward]);
 
   const handleUpdate = () => {
-    if (!editingReward || !imageUrl) return;
+    if (!editingReward || !imageUrl || !editingReward.courseId) return;
     
     onUpdateReward({
       id: editingReward.id,
       name: editingReward.name,
+      courseId: editingReward.courseId,
       description: null,
       icon: imageUrl,
       color: '#F97316',
@@ -91,6 +102,25 @@ export default function EditRewardDialog({
                 value={editingReward.name}
                 onChange={(e) => setEditingReward({ ...editingReward, name: e.target.value })}
               />
+            </div>
+
+            <div>
+              <Label>Курс</Label>
+              <Select 
+                value={editingReward.courseId} 
+                onValueChange={(value) => setEditingReward({ ...editingReward, courseId: value })}
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Выберите курс" />
+                </SelectTrigger>
+                <SelectContent>
+                  {courses.map(course => (
+                    <SelectItem key={course.id} value={course.id}>
+                      {course.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div>

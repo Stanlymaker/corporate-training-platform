@@ -89,6 +89,7 @@ export default function Rewards() {
   const handleUpdateReward = async (rewardData: {
     id: string;
     name: string;
+    courseId: string;
     description: string | null;
     icon: string;
     color: string;
@@ -99,6 +100,7 @@ export default function Rewards() {
         headers: getAuthHeaders(),
         body: JSON.stringify({
           name: rewardData.name,
+          course_id: rewardData.courseId,
           icon: rewardData.icon,
           color: rewardData.color,
           description: rewardData.description,
@@ -190,6 +192,7 @@ export default function Rewards() {
           isOpen={isEditDialogOpen}
           onOpenChange={setIsEditDialogOpen}
           reward={editingReward}
+          courses={courses}
           onUpdateReward={handleUpdateReward}
         />
       </div>
