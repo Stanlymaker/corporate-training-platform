@@ -162,8 +162,6 @@ export default function CourseDetails() {
           <div className="flex items-start justify-between gap-6">
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-3">
-                <Badge variant="outline">{course.category}</Badge>
-                <Badge variant="outline">{course.level}</Badge>
                 {progress?.completed && (
                   <Badge className="bg-green-500">
                     <Icon name="CheckCircle" size={14} className="mr-1" />
@@ -188,13 +186,11 @@ export default function CourseDetails() {
                 </div>
               </div>
             </div>
-            {course.image && (
-              <img 
-                src={course.image} 
-                alt={course.title}
-                className="w-48 h-32 object-cover rounded-xl shadow-lg"
-              />
-            )}
+            <img 
+              src={course.image || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400'} 
+              alt={course.title}
+              className="w-48 h-32 object-cover rounded-xl shadow-lg"
+            />
           </div>
           
           <div className="mt-6">
