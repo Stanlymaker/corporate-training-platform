@@ -217,10 +217,11 @@ export default function CourseEditor() {
     if (formData.status === 'published' && wasEverPublished) {
       const count = await checkStudentsProgress();
       console.log('Students with progress:', count);
-      // Показываем модалку всегда при переиздании курса (даже если студентов 0)
-      setStudentsCount(count);
-      setShowProgressResetDialog(true);
-      return;
+      if (count > 0) {
+        setStudentsCount(count);
+        setShowProgressResetDialog(true);
+        return;
+      }
     }
     await handleSaveCourse();
   };
