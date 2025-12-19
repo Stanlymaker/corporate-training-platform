@@ -154,7 +154,33 @@ export default function CourseEditor() {
 
   const handleLessonChange = (field: keyof Lesson, value: any) => {
     if (!editingLesson) return;
-    setEditingLesson({ ...editingLesson, [field]: value });
+    
+    // При смене типа урока очищаем поля, которые не относятся к новому типу
+    if (field === 'type') {
+      const newType = value as 'video' | 'text' | 'test';
+      const updates: Partial<Lesson> = { type: newType };
+      
+      if (newType === 'video') {
+        updates.testId = undefined;
+        updates.isFinalTest = false;
+        updates.finalTestRequiresAllLessons = false;
+        updates.finalTestRequiresAllTests = false;
+        updates.content = undefined;
+      } else if (newType === 'text') {
+        updates.testId = undefined;
+        updates.isFinalTest = false;
+        updates.finalTestRequiresAllLessons = false;
+        updates.finalTestRequiresAllTests = false;
+        updates.videoUrl = undefined;
+      } else if (newType === 'test') {
+        updates.videoUrl = undefined;
+        updates.content = undefined;
+      }
+      
+      setEditingLesson({ ...editingLesson, ...updates });
+    } else {
+      setEditingLesson({ ...editingLesson, [field]: value });
+    }
   };
 
   const handleDeleteLesson = (lessonId: number) => {
