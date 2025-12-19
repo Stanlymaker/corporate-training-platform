@@ -229,8 +229,8 @@ export default function CourseEditor() {
       }
     }
     
-    // Если курс публикуется и был ранее опубликован хотя бы раз - показываем предупреждение
-    if (formData.status === 'published' && wasEverPublished) {
+    // Если курс опубликован И есть изменения - показываем модалку умного сброса
+    if (formData.status === 'published' && wasEverPublished && hasUnsavedChanges) {
       const count = await checkStudentsProgress();
       console.log('Students with progress:', count);
       if (count > 0) {
