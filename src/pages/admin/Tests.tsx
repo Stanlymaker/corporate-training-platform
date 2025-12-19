@@ -4,6 +4,7 @@ import AdminLayout from '@/components/AdminLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -202,88 +203,75 @@ export default function Tests() {
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {filteredTests.map((test) => (
-            <Card key={test.id} className="transition-shadow hover:shadow-md">
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <h3 className="font-bold text-lg text-gray-900">{test.title}</h3>
-                      <Badge variant={test.status === 'published' ? 'default' : 'secondary'}>
-                        {test.status === 'published' ? 'Опубликован' : 'Черновик'}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-gray-600 mb-2">{test.description}</p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-4 gap-3 p-3 bg-gray-50 rounded-lg mb-4">
-                  <div className="text-center">
-                    <div className="text-lg font-bold text-gray-900">{test.questionsCount || 0}</div>
-                    <div className="text-xs text-gray-600">Вопросов</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-lg font-bold text-gray-900">{test.timeLimit}</div>
-                    <div className="text-xs text-gray-600">Минут</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-lg font-bold text-gray-900">{test.passScore}%</div>
-                    <div className="text-xs text-gray-600">Проходной</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-lg font-bold text-gray-900">{test.attempts}</div>
-                    <div className="text-xs text-gray-600">Попытки</div>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between text-xs text-gray-500 mb-4">
-                  <span>Создан: {new Date(test.createdAt).toLocaleDateString('ru-RU')}</span>
-                  <span>Обновлён: {new Date(test.updatedAt).toLocaleDateString('ru-RU')}</span>
-                </div>
-
-                <div className="flex gap-2">
-                  <Button 
-                    variant="outline" 
-                    className="flex-1"
-                    onClick={() => navigate(`/admin/tests/edit/${test.id}`)}
-                  >
-                    <Icon name="Edit" className="mr-2" size={16} />
-                    Редактировать
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    className="flex-1"
-                    onClick={() => navigate(`/admin/tests/view/${test.id}`)}
-                  >
-                    <Icon name="Eye" className="mr-2" size={16} />
-                    Просмотр
-                  </Button>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="icon" disabled={actionLoading}>
-                        <Icon name="MoreVertical" size={16} />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleCopyTest(test)}>
-                        <Icon name="Copy" className="mr-2" size={16} />
-                        Копировать
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={() => setDeletingTest(test)}
-                        className="text-red-600 focus:text-red-600"
+        <Card className="border-0 shadow-md">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Название</TableHead>
+                <TableHead>Статус</TableHead>
+                <TableHead className="text-center">Вопросов</TableHead>
+                <TableHead className="text-right">Действия</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredTests.map((test) => (
+                <TableRow key={test.id}>
+                  <TableCell>
+                    <div className="font-medium text-gray-900">{test.title}</div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={test.status === 'published' ? 'default' : 'secondary'}>
+                      {test.status === 'published' ? 'Опубликован' : 'Черновик'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {test.questionsCount || 0}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex gap-2 justify-end">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => navigate(`/admin/tests/edit/${test.id}`)}
                       >
-                        <Icon name="Trash2" className="mr-2" size={16} />
-                        Удалить
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                        <Icon name="Edit" className="mr-2" size={16} />
+                        Редактировать
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => navigate(`/admin/tests/view/${test.id}`)}
+                      >
+                        <Icon name="Eye" className="mr-2" size={16} />
+                        Просмотр
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="sm" disabled={actionLoading}>
+                            <Icon name="MoreVertical" size={16} />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleCopyTest(test)}>
+                            <Icon name="Copy" className="mr-2" size={16} />
+                            Копировать
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => setDeletingTest(test)}
+                            className="text-red-600 focus:text-red-600"
+                          >
+                            <Icon name="Trash2" className="mr-2" size={16} />
+                            Удалить
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
         </>
         )}
       </div>
