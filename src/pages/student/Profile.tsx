@@ -304,9 +304,6 @@ export default function StudentProfile() {
               </div>
               <span>{selectedRewardData?.name}</span>
             </DialogTitle>
-            <DialogDescription>
-              {selectedRewardData?.description || 'Информация о награде'}
-            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
