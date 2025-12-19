@@ -34,6 +34,7 @@ class CreateQuestionRequest(BaseModel):
     order: int = Field(..., ge=0)
     matchingPairs: Optional[list] = None
     textCheckType: Optional[str] = Field(None, pattern='^(manual|automatic)$')
+    imageUrl: Optional[str] = None
 
 class UpdateQuestionRequest(BaseModel):
     type: Optional[str] = Field(None, pattern='^(single|multiple|text|matching)$')
@@ -44,6 +45,7 @@ class UpdateQuestionRequest(BaseModel):
     order: Optional[int] = Field(None, ge=0)
     matchingPairs: Optional[list] = None
     textCheckType: Optional[str] = Field(None, pattern='^(manual|automatic)$')
+    imageUrl: Optional[str] = None
 
 def get_db_connection():
     dsn = os.environ['DATABASE_URL']
@@ -263,7 +265,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         cur.execute(
             "INSERT INTO questions_v2 (test_id, type, text, options, correct_answer, points, \"order\", "
-            "matching_pairs, text_check_type) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
+            "matching_pairs, text_check_type, image_url) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
             (
                 request.testId,
                 request.type,
@@ -273,7 +275,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 request.points,
                 request.order,
                 json.dumps(request.matchingPairs) if request.matchingPairs else None,
-                request.textCheckType
+                request.textCheckType,
+                request.imageUrl
             )
         )
         question_id = cur.fetchone()[0]
@@ -433,6 +436,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         if request.textCheckType is not None:
             updates.append("text_check_type = %s")
             params.append(request.textCheckType)
+        if request.imageUrl is not None:
+            updates.append("image_url = %s")
+            params.append(request.imageUrl)
         
         if not updates:
             cur.close()
