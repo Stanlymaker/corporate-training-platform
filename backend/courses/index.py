@@ -137,18 +137,22 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     if method == 'GET' and not course_id:
         if payload.get('role') == 'admin':
             cur.execute(
-                "SELECT id, title, description, duration, lessons_count, category, image, published, "
-                "pass_score, level, instructor, status, start_date, end_date, access_type "
-                "FROM courses_v2 ORDER BY created_at DESC"
+                "SELECT c.id, c.title, c.description, c.duration, "
+                "(SELECT COUNT(*) FROM lessons_v2 WHERE course_id = c.id) as lessons_count, "
+                "c.category, c.image, c.published, c.pass_score, c.level, c.instructor, "
+                "c.status, c.start_date, c.end_date, c.access_type "
+                "FROM courses_v2 c ORDER BY c.created_at DESC"
             )
             courses = cur.fetchall()
         else:
             user_id_int = int(payload['user_id'])
             
             cur.execute(
-                "SELECT id, title, description, duration, lessons_count, category, image, "
-                "published, pass_score, level, instructor, status, start_date, end_date, access_type "
-                "FROM courses_v2 WHERE published = true AND access_type = 'open'"
+                "SELECT c.id, c.title, c.description, c.duration, "
+                "(SELECT COUNT(*) FROM lessons_v2 WHERE course_id = c.id) as lessons_count, "
+                "c.category, c.image, c.published, c.pass_score, c.level, c.instructor, "
+                "c.status, c.start_date, c.end_date, c.access_type "
+                "FROM courses_v2 c WHERE c.published = true AND c.access_type = 'open'"
             )
             open_courses = list(cur.fetchall())
             
@@ -162,9 +166,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             if assigned_course_ids:
                 placeholders = ','.join(str(cid) for cid in assigned_course_ids)
                 cur.execute(
-                    f"SELECT id, title, description, duration, lessons_count, category, image, "
-                    f"published, pass_score, level, instructor, status, start_date, end_date, access_type "
-                    f"FROM courses_v2 WHERE published = true AND access_type = 'closed' AND id IN ({placeholders})"
+                    f"SELECT c.id, c.title, c.description, c.duration, "
+                    f"(SELECT COUNT(*) FROM lessons_v2 WHERE course_id = c.id) as lessons_count, "
+                    f"c.category, c.image, c.published, c.pass_score, c.level, c.instructor, "
+                    f"c.status, c.start_date, c.end_date, c.access_type "
+                    f"FROM courses_v2 c WHERE c.published = true AND c.access_type = 'closed' AND c.id IN ({placeholders})"
                 )
                 closed_courses = list(cur.fetchall())
             
@@ -185,9 +191,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     
     if method == 'GET' and course_id:
         cur.execute(
-            "SELECT id, title, description, duration, lessons_count, category, image, published, "
-            "pass_score, level, instructor, status, start_date, end_date, access_type "
-            "FROM courses_v2 WHERE id = %s",
+            "SELECT c.id, c.title, c.description, c.duration, "
+            "(SELECT COUNT(*) FROM lessons_v2 WHERE course_id = c.id) as lessons_count, "
+            "c.category, c.image, c.published, c.pass_score, c.level, c.instructor, "
+            "c.status, c.start_date, c.end_date, c.access_type "
+            "FROM courses_v2 c WHERE c.id = %s",
             (course_id,)
         )
         course = cur.fetchone()
