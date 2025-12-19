@@ -227,7 +227,10 @@ export default function Tests() {
             <TableBody>
               {filteredTests.map((test) => {
                 const usedInCourses = courses.filter(course => 
-                  course.lessons?.some((lesson: any) => lesson.testId === test.id)
+                  course.lessons?.some((lesson: any) => {
+                    const matches = Number(lesson.testId) === Number(test.id);
+                    return matches;
+                  })
                 );
                 
                 return (
