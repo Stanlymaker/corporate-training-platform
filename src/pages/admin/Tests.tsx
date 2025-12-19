@@ -181,54 +181,6 @@ export default function Tests() {
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          <Card className="border-0 shadow-sm">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                  <Icon name="FileQuestion" className="text-blue-600" size={24} />
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-gray-900">{tests.length}</div>
-                  <div className="text-sm text-gray-600">Всего тестов</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-0 shadow-sm">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                  <Icon name="CheckCircle" className="text-green-600" size={24} />
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-gray-900">
-                    {tests.filter(t => t.status === 'published').length}
-                  </div>
-                  <div className="text-sm text-gray-600">Опубликовано</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-0 shadow-sm">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center">
-                  <Icon name="FileEdit" className="text-yellow-600" size={24} />
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-gray-900">
-                    {tests.filter(t => t.status === 'draft').length}
-                  </div>
-                  <div className="text-sm text-gray-600">Черновики</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
         <div className="flex gap-3 mb-6">
           <Button
             variant={filter === 'all' ? 'default' : 'outline'}

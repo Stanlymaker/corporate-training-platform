@@ -147,12 +147,6 @@ export default function Rewards() {
           />
         </div>
 
-        <RewardStatsCards
-          totalRewards={rewards.length}
-          totalEarned={totalEarned}
-          totalCourses={courses.length}
-        />
-
         {loading ? (
           <div className="flex justify-center py-12">
             <Icon name="Loader2" className="animate-spin" size={32} />
