@@ -28,7 +28,7 @@ export interface Course {
   students?: number;
   rating?: number;
   instructor?: string;
-  status?: 'draft' | 'published' | 'archived';
+  status: 'draft' | 'published' | 'archived';
   startDate?: string;
   endDate?: string;
   prerequisiteCourses?: number[];

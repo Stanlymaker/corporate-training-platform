@@ -24,6 +24,7 @@ export default function UserCoursesManagement({
   const [lessonsData, setLessonsData] = useState<Record<number, Lesson[]>>({});
   const [progressData, setProgressData] = useState<CourseProgress[]>([]);
   const [testResults, setTestResults] = useState<Record<number, TestResult[]>>({});
+  const [statusFilter, setStatusFilter] = useState<'published' | 'draft' | 'archived'>('published');
 
   useEffect(() => {
     loadCourses();
@@ -162,173 +163,140 @@ export default function UserCoursesManagement({
     );
   }
 
-  // Фильтруем курсы: только опубликованные или архивные (без черновиков)
-  const visibleCourses = courses.filter(c => c.published !== false);
-  const openCourses = visibleCourses.filter(c => c.accessType === 'open');
-  const closedCourses = visibleCourses.filter(c => c.accessType === 'closed');
+  // Разделяем курсы по статусам публикации
+  const publishedCourses = courses.filter(c => c.status === 'published');
+  const draftCourses = courses.filter(c => c.status === 'draft');
+  const archivedCourses = courses.filter(c => c.status === 'archived');
+
+  const getCoursesToShow = () => {
+    switch (statusFilter) {
+      case 'published': return publishedCourses;
+      case 'draft': return draftCourses;
+      case 'archived': return archivedCourses;
+      default: return publishedCourses;
+    }
+  };
+
+  const coursesToShow = getCoursesToShow();
 
   return (
     <div className="border-t pt-6">
       <h5 className="font-bold mb-4 flex items-center gap-2">
         <Icon name="BookOpen" size={18} />
-        Все курсы и доступ
+        Все курсы и прогресс
       </h5>
       
-      <div className="space-y-6">
-        <div>
-          <div className="flex items-center gap-2 mb-3">
-            <Icon name="Unlock" size={16} className="text-green-500" />
-            <h6 className="font-semibold text-gray-700">Открытые курсы</h6>
-            <span className="text-xs text-gray-500">({openCourses.length})</span>
+      <div className="flex gap-2 mb-4">
+        <Button
+          variant={statusFilter === 'published' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setStatusFilter('published')}
+        >
+          Опубликованные ({publishedCourses.length})
+        </Button>
+        <Button
+          variant={statusFilter === 'draft' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setStatusFilter('draft')}
+        >
+          Черновики ({draftCourses.length})
+        </Button>
+        <Button
+          variant={statusFilter === 'archived' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setStatusFilter('archived')}
+        >
+          Архив ({archivedCourses.length})
+        </Button>
+      </div>
+      
+      <div className="space-y-2">
+        {coursesToShow.length === 0 ? (
+          <div className="text-sm text-gray-500 text-center py-8 bg-gray-50 rounded-lg">
+            Нет курсов в этом разделе
           </div>
-          <div className="space-y-2">
-            {openCourses.length === 0 ? (
-              <div className="text-sm text-gray-500 text-center py-4">Нет открытых курсов</div>
-            ) : (
-              openCourses.map((course) => {
+        ) : (
+          coursesToShow.map((course) => {
               const courseStatus = getCourseStatus(course);
               
-              const isExpanded = expandedCourseId === course.id;
-              const lessons = lessonsData[course.id] || [];
-              const progress = progressData.find(p => p.courseId === course.id);
-              const courseTestResults = testResults[course.id] || [];
-              
-              return (
-                <div key={course.id} className="bg-gray-50 rounded-lg">
-                  <div 
-                    className="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-100 transition-colors"
-                    onClick={() => toggleCourse(course.id)}
-                  >
-                    <div className="flex items-center gap-3 flex-1">
-                      <Icon name={isExpanded ? "ChevronDown" : "ChevronRight"} size={18} className="text-gray-400" />
-                      <div>
-                        <div className="font-medium text-gray-900">{course.title}</div>
-                        <div className="text-xs text-gray-500 mt-0.5">
-                          {course.lessonsCount} уроков • {course.duration} мин
-                        </div>
+            const isExpanded = expandedCourseId === course.id;
+            const lessons = lessonsData[course.id] || [];
+            const progress = progressData.find(p => p.courseId === course.id);
+            const courseTestResults = testResults[course.id] || [];
+            
+            return (
+              <div key={course.id} className="bg-gray-50 rounded-lg">
+                <div 
+                  className="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-100 transition-colors"
+                  onClick={() => toggleCourse(course.id)}
+                >
+                  <div className="flex items-center gap-3 flex-1">
+                    <Icon name={isExpanded ? "ChevronDown" : "ChevronRight"} size={18} className="text-gray-400" />
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-gray-900">{course.title}</span>
+                        {course.accessType === 'closed' && (
+                          <Badge variant="outline" className="text-xs">
+                            <Icon name="Lock" size={10} className="mr-1" />
+                            Закрытый
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-0.5">
+                        {course.lessonsCount} уроков • {course.duration} мин
                       </div>
                     </div>
+                  </div>
+                  <div className="flex items-center gap-2">
                     <Badge className={courseStatus.progressColor}>
                       {courseStatus.progressLabel}
                     </Badge>
-                  </div>
-                  
-                  {isExpanded && (
-                    <div className="px-4 pb-4 space-y-2">
-                      {lessons.length === 0 ? (
-                        <div className="text-sm text-gray-500 text-center py-4">Загрузка уроков...</div>
-                      ) : (
-                        lessons.map((lesson) => {
-                          const isCompleted = progress?.completedLessonIds?.includes(String(lesson.id)) || false;
-                          const testResult = courseTestResults.find(tr => tr.testId === lesson.testId);
-                          
-                          return (
-                            <div key={lesson.id} className="bg-white rounded-lg p-3 flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                                  isCompleted ? 'bg-green-500' : 'bg-gray-200'
-                                }`}>
-                                  {isCompleted ? (
-                                    <Icon name="Check" size={14} className="text-white" />
-                                  ) : (
-                                    <span className="text-xs text-gray-500">{lesson.order + 1}</span>
-                                  )}
-                                </div>
-                                <div>
-                                  <div className="text-sm font-medium text-gray-900">{lesson.title}</div>
-                                  <div className="text-xs text-gray-500">{lesson.duration} мин</div>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                {lesson.type === 'test' && testResult && (
-                                  <Badge className={testResult.passed ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}>
-                                    {testResult.score}%
-                                  </Badge>
-                                )}
-                                {isCompleted ? (
-                                  <Badge className="bg-green-100 text-green-700">Пройден</Badge>
-                                ) : (
-                                  <Badge className="bg-gray-100 text-gray-600">Не начат</Badge>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })
-            )}
-          </div>
-        </div>
-
-        <div>
-          <div className="flex items-center gap-2 mb-3">
-            <Icon name="Lock" size={16} className="text-orange-500" />
-            <h6 className="font-semibold text-gray-700">Закрытые курсы</h6>
-            <span className="text-xs text-gray-500">({closedCourses.length})</span>
-          </div>
-          <div className="space-y-2">
-            {closedCourses.length === 0 ? (
-              <div className="text-sm text-gray-500 text-center py-4">Нет закрытых курсов</div>
-            ) : (
-              closedCourses.map((course) => {
-              const courseStatus = getCourseStatus(course);
-              const assignment = userAssignments.find(a => a.courseId === course.id);
-              
-              const isExpanded = expandedCourseId === course.id;
-              const lessons = lessonsData[course.id] || [];
-              const progress = progressData.find(p => p.courseId === course.id);
-              const courseTestResults = testResults[course.id] || [];
-              
-              return (
-                <div key={course.id} className="bg-gray-50 rounded-lg">
-                  <div className="p-4 flex items-center justify-between">
-                    <div 
-                      className="flex items-center gap-3 flex-1 cursor-pointer hover:opacity-75 transition-opacity"
-                      onClick={() => toggleCourse(course.id)}
-                    >
-                      <Icon name={isExpanded ? "ChevronDown" : "ChevronRight"} size={18} className="text-gray-400" />
-                      <div>
-                        <div className="font-medium text-gray-900">{course.title}</div>
-                        <div className="text-xs text-gray-500 mt-0.5">
-                          {course.lessonsCount} уроков • {course.duration} мин
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
+                    {course.accessType === 'closed' && courseStatus.assignmentStatus && (
                       <Badge className={courseStatus.assignmentColor}>
                         {courseStatus.assignmentLabel}
                       </Badge>
-                      <Badge className={courseStatus.progressColor}>
-                        {courseStatus.progressLabel}
-                      </Badge>
-                      {!courseStatus.isAssigned && onAssignCourse && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={(e) => { e.stopPropagation(); onAssignCourse(user.id, course.id); }}
-                        >
-                          <Icon name="Plus" size={14} className="mr-1" />
-                          Назначить
-                        </Button>
-                      )}
-                      {courseStatus.isAssigned && onRemoveAssignment && assignment && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={(e) => { e.stopPropagation(); onRemoveAssignment(assignment.id); }}
-                        >
-                          <Icon name="X" size={14} />
-                        </Button>
-                      )}
-                    </div>
+                    )}
                   </div>
-                  
-                  {isExpanded && (
-                    <div className="px-4 pb-4 space-y-2">
+                </div>
+                
+                {isExpanded && (
+                  <div className="px-4 pb-4 space-y-3">
+                    {course.accessType === 'closed' && (
+                      <div className="flex items-center gap-2 p-3 bg-white rounded border border-gray-200">
+                        <Icon name="Lock" size={16} className="text-gray-400" />
+                        <span className="text-sm text-gray-600 flex-1">Закрытый курс — требуется назначение</span>
+                        {courseStatus.isAssigned ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const assignment = userAssignments.find(a => a.courseId === course.id);
+                              if (assignment && onRemoveAssignment) {
+                                onRemoveAssignment(assignment.id);
+                              }
+                            }}
+                          >
+                            <Icon name="UserMinus" size={14} className="mr-1" />
+                            Отозвать доступ
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (onAssignCourse) {
+                                onAssignCourse(user.id, course.id);
+                              }
+                            }}
+                          >
+                            <Icon name="UserPlus" size={14} className="mr-1" />
+                            Назначить курс
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                    <div className="space-y-2">
                       {lessons.length === 0 ? (
                         <div className="text-sm text-gray-500 text-center py-4">Загрузка уроков...</div>
                       ) : (
@@ -370,13 +338,12 @@ export default function UserCoursesManagement({
                         })
                       )}
                     </div>
-                  )}
-                </div>
-              );
-              })
-            )}
-          </div>
-        </div>
+                  </div>
+                )}
+              </div>
+            );
+          })
+        )}
       </div>
     </div>
   );
