@@ -25,6 +25,7 @@ interface Lesson {
   order: number;
   duration: number;
   videoUrl?: string;
+  testId?: string;
 }
 
 export default function AdminLessonPage() {
@@ -34,6 +35,7 @@ export default function AdminLessonPage() {
   const [course, setCourse] = useState<Course | null>(null);
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [courseLessons, setCourseLessons] = useState<Lesson[]>([]);
+  const [test, setTest] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -64,6 +66,15 @@ export default function AdminLessonPage() {
         const lessonOrder = parseInt(lessonId || '0') - 1;
         const foundLesson = lessonsData.find((l: Lesson) => l.order === lessonOrder) || null;
         setLesson(foundLesson);
+        
+        // Загружаем тест если урок типа test
+        if (foundLesson && foundLesson.type === 'test' && foundLesson.testId) {
+          const testRes = await fetch(`${API_ENDPOINTS.TESTS}?id=${foundLesson.testId}`, { headers: getAuthHeaders() });
+          if (testRes.ok) {
+            const testData = await testRes.json();
+            setTest(testData.test);
+          }
+        }
       }
     } catch (error) {
       console.error('Error loading lesson:', error);
@@ -153,9 +164,41 @@ export default function AdminLessonPage() {
                 </div>
               )}
               
-              <div className="prose prose-lg max-w-none">
-                <ReactMarkdown>{lesson.content}</ReactMarkdown>
-              </div>
+              {lesson.type === 'test' && test && (
+                <div className="mb-6">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-4">
+                    <h3 className="text-lg font-semibold mb-2">{test.title}</h3>
+                    <p className="text-gray-600 mb-4">{test.description}</p>
+                    <div className="flex items-center gap-4 text-sm text-gray-600">
+                      <div className="flex items-center gap-1">
+                        <Icon name="HelpCircle" size={16} />
+                        <span>{test.questionsCount} вопросов</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Icon name="Clock" size={16} />
+                        <span>{test.timeLimit} мин</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Icon name="Target" size={16} />
+                        <span>Проходной балл: {test.passingScore}%</span>
+                      </div>
+                    </div>
+                  </div>
+                  <Button 
+                    className="w-full"
+                    onClick={() => navigate(`/admin/tests/view/${test.id}`)}
+                  >
+                    <Icon name="PlayCircle" size={16} className="mr-2" />
+                    Просмотреть тест
+                  </Button>
+                </div>
+              )}
+              
+              {lesson.type === 'text' && (
+                <div className="prose prose-lg max-w-none">
+                  <ReactMarkdown>{lesson.content}</ReactMarkdown>
+                </div>
+              )}
             </CardContent>
           </Card>
 
