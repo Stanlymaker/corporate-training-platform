@@ -213,9 +213,20 @@ export default function LessonPage() {
     navigate(ROUTES.STUDENT.LESSON(courseId!, String(targetLesson.order + 1)));
   };
 
-  const handleDownload = (url: string, filename: string) => {
-    // Открываем файл напрямую - браузер предложит скачать
-    window.open(url, '_blank');
+  const handleDownload = async (url: string, filename: string) => {
+    try {
+      // Проверяем доступность файла
+      const response = await fetch(url, { method: 'HEAD' });
+      if (!response.ok) {
+        alert('Файл недоступен или был удалён. Пожалуйста, обратитесь к администратору.');
+        return;
+      }
+      // Открываем файл напрямую - браузер предложит скачать
+      window.open(url, '_blank');
+    } catch (error) {
+      alert('Ошибка при загрузке файла. Пожалуйста, попробуйте позже.');
+      console.error('Download error:', error);
+    }
   };
 
   const progressPercent = progress ? (progress.completedLessons / progress.totalLessons) * 100 : 0;
