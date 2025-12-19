@@ -316,17 +316,16 @@ export default function LessonPage() {
                       <a
                         key={material.id}
                         href={material.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                        download
                         className="flex items-center gap-3 p-4 rounded-lg border hover:border-primary hover:bg-primary/5 transition-colors"
                       >
                         <Icon
-                          name={material.type === 'pdf' ? 'FileText' : material.type === 'video' ? 'Video' : 'Link'}
+                          name={material.type === 'pdf' ? 'FileText' : material.type === 'video' ? 'Video' : 'File'}
                           size={20}
                           className="text-primary"
                         />
                         <span className="font-medium">{material.title}</span>
-                        <Icon name="ExternalLink" size={16} className="ml-auto text-gray-400" />
+                        <Icon name="Download" size={16} className="ml-auto text-gray-400" />
                       </a>
                     ))}
                   </div>
