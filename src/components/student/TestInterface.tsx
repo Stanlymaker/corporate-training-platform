@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import { Test } from './types';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 
 interface TestInterfaceProps {
   test: Test;
@@ -154,41 +154,76 @@ export default function TestInterface({
                   {(() => {
                     // Получаем текущий порядок из ответов или используем перемешанный порядок
                     const currentOrder = (testAnswers[currentQuestion.id] as string[]) || shuffledRightItems;
+                    const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
+                    const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
                     
-                    return currentOrder.map((rightItem, index) => (
-                      <div
-                        key={`right-${index}`}
-                        draggable
-                        onDragStart={(e) => {
-                          e.dataTransfer.setData('text', String(index));
-                          e.dataTransfer.effectAllowed = 'move';
-                        }}
-                        onDragOver={(e) => {
-                          e.preventDefault();
-                          e.dataTransfer.dropEffect = 'move';
-                        }}
-                        onDrop={(e) => {
-                          e.preventDefault();
-                          const draggedIndex = parseInt(e.dataTransfer.getData('text'));
-                          
-                          if (draggedIndex === index) return;
-                          
-                          // Меняем элементы местами
-                          const newOrder = [...currentOrder];
-                          const draggedItem = newOrder[draggedIndex];
-                          newOrder.splice(draggedIndex, 1);
-                          newOrder.splice(index, 0, draggedItem);
-                          
-                          onAnswerChange(currentQuestion.id, newOrder, false);
-                        }}
-                        className="p-4 rounded-lg border-2 border-primary bg-white cursor-move hover:shadow-lg transition-all min-h-[60px] flex items-center"
-                      >
-                        <div className="flex items-center gap-2">
-                          <Icon name="GripVertical" size={16} className="text-gray-400" />
-                          <span className="font-medium">{rightItem}</span>
+                    return currentOrder.map((rightItem, index) => {
+                      const isDragging = draggedIdx === index;
+                      const isDragOver = dragOverIdx === index;
+                      
+                      return (
+                        <div
+                          key={`right-${rightItem}`}
+                          draggable
+                          onDragStart={(e) => {
+                            setDraggedIdx(index);
+                            e.dataTransfer.setData('text', String(index));
+                            e.dataTransfer.effectAllowed = 'move';
+                            // Добавляем небольшую задержку для визуального эффекта
+                            setTimeout(() => {
+                              (e.target as HTMLElement).style.opacity = '0.5';
+                            }, 0);
+                          }}
+                          onDragEnd={(e) => {
+                            setDraggedIdx(null);
+                            setDragOverIdx(null);
+                            (e.target as HTMLElement).style.opacity = '1';
+                          }}
+                          onDragEnter={() => {
+                            if (draggedIdx !== index) {
+                              setDragOverIdx(index);
+                            }
+                          }}
+                          onDragLeave={() => {
+                            setDragOverIdx(null);
+                          }}
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            e.dataTransfer.dropEffect = 'move';
+                          }}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            const draggedIndex = parseInt(e.dataTransfer.getData('text'));
+                            
+                            if (draggedIndex === index) return;
+                            
+                            // Меняем элементы местами
+                            const newOrder = [...currentOrder];
+                            const draggedItem = newOrder[draggedIndex];
+                            newOrder.splice(draggedIndex, 1);
+                            newOrder.splice(index, 0, draggedItem);
+                            
+                            onAnswerChange(currentQuestion.id, newOrder, false);
+                            setDragOverIdx(null);
+                          }}
+                          className={`p-4 rounded-lg border-2 bg-white cursor-move min-h-[60px] flex items-center transition-all duration-200 ${
+                            isDragging 
+                              ? 'border-primary/30 scale-105 shadow-2xl rotate-2' 
+                              : isDragOver
+                              ? 'border-primary border-dashed scale-105 bg-primary/5'
+                              : 'border-primary hover:shadow-lg hover:scale-[1.02]'
+                          }`}
+                          style={{
+                            transform: isDragging ? 'scale(1.05) rotate(2deg)' : isDragOver ? 'scale(1.05)' : 'scale(1)',
+                          }}
+                        >
+                          <div className="flex items-center gap-2">
+                            <Icon name="GripVertical" size={16} className="text-gray-400" />
+                            <span className="font-medium">{rightItem}</span>
+                          </div>
                         </div>
-                      </div>
-                    ));
+                      );
+                    });
                   })()}
                 </div>
               </div>
