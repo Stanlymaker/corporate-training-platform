@@ -64,7 +64,6 @@ export default function CourseEditor() {
   const [formData, setFormData] = useState<CourseFormData>(initialFormData);
   const [savedStatus, setSavedStatus] = useState<'draft' | 'published' | 'archived'>('draft');
   const [wasEverPublished, setWasEverPublished] = useState(false);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
   const [showLessonDialog, setShowLessonDialog] = useState(false);
   const [showProgressResetDialog, setShowProgressResetDialog] = useState(false);
@@ -95,9 +94,7 @@ export default function CourseEditor() {
 
   useEffect(() => {
     if (isEditMode && courseId) {
-      loadCourse(courseId).then(() => {
-        setHasUnsavedChanges(false);
-      });
+      loadCourse(courseId);
     }
     loadAllTests();
   }, [courseId, isEditMode]);
@@ -116,9 +113,6 @@ export default function CourseEditor() {
 
   const handleInputChange = (field: keyof CourseFormData, value: any) => {
     setFormData({ ...formData, [field]: value });
-    if (isEditMode && savedStatus === 'published') {
-      setHasUnsavedChanges(true);
-    }
   };
 
   const handleAddLesson = () => {
@@ -149,10 +143,6 @@ export default function CourseEditor() {
       setFormData({ ...formData, lessons: [...formData.lessons, editingLesson] });
     }
 
-    if (isEditMode && savedStatus === 'published') {
-      setHasUnsavedChanges(true);
-    }
-
     setShowLessonDialog(false);
     setEditingLesson(null);
   };
@@ -172,9 +162,6 @@ export default function CourseEditor() {
       ...formData,
       lessons: formData.lessons.filter(l => l.id !== lessonId),
     });
-    if (isEditMode && savedStatus === 'published') {
-      setHasUnsavedChanges(true);
-    }
   };
 
   const handleReorderLesson = (lessonId: number, direction: 'up' | 'down') => {
@@ -195,13 +182,10 @@ export default function CourseEditor() {
     });
 
     setFormData({ ...formData, lessons: newLessons });
-    if (isEditMode && savedStatus === 'published') {
-      setHasUnsavedChanges(true);
-    }
   };
 
   const handleSaveWithCheck = async () => {
-    console.log('CourseEditor handleSaveWithCheck:', { isEditMode, wasEverPublished, formDataStatus: formData.status, savedStatus, hasUnsavedChanges });
+    console.log('CourseEditor handleSaveWithCheck:', { isEditMode, wasEverPublished, formDataStatus: formData.status, savedStatus });
     
     if (formData.status === 'published') {
       const testLessons = formData.lessons.filter(l => l.type === 'test' && l.testId);
@@ -241,13 +225,11 @@ export default function CourseEditor() {
       }
     }
     await handleSaveCourse();
-    setHasUnsavedChanges(false);
   };
 
   const confirmProgressReset = async () => {
     setShowProgressResetDialog(false);
     await handleSaveCourse(progressResetOption);
-    setHasUnsavedChanges(false);
   };
 
   const onDeleteConfirm = async () => {
