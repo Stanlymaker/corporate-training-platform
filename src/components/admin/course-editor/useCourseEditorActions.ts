@@ -257,7 +257,8 @@ export function useCourseEditorActions(
       if (resetOption) {
         await applyProgressReset(resetOption);
       }
-      navigate(ROUTES.ADMIN.COURSES);
+      // Don't navigate - stay on the page after save
+      // navigate(ROUTES.ADMIN.COURSES);
     } catch (error) {
       console.error('Error saving course:', error);
       alert('Ошибка при сохранении курса');

@@ -106,6 +106,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     GET ?id=x - один урок
     POST - создать урок (только админ)
     PUT ?id=x - обновить урок (только админ)
+    DELETE ?id=x - удалить урок (только админ)
     POST ?lessonId=x&action=material - добавить материал (админ)
     '''
     method: str = event.get('httpMethod', 'GET')
@@ -115,7 +116,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'statusCode': 200,
             'headers': {
                 'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
+                'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
                 'Access-Control-Allow-Headers': 'Content-Type, X-Auth-Token',
                 'Access-Control-Max-Age': '86400'
             },
@@ -584,6 +585,57 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'statusCode': 200,
             'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
             'body': json.dumps({'lesson': lesson_data}, ensure_ascii=False),
+            'isBase64Encoded': False
+        }
+    
+    if method == 'DELETE':
+        admin_error = require_admin(headers)
+        if admin_error:
+            cur.close()
+            conn.close()
+            return {
+                'statusCode': admin_error['statusCode'],
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': admin_error['error']}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
+        
+        if not lesson_id:
+            cur.close()
+            conn.close()
+            return {
+                'statusCode': 400,
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'lesson_id обязателен'}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
+        
+        # Check if lesson exists
+        cur.execute("SELECT id FROM lessons_v2 WHERE id = %s", (lesson_id,))
+        if not cur.fetchone():
+            cur.close()
+            conn.close()
+            return {
+                'statusCode': 404,
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'Урок не найден'}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
+        
+        # Delete lesson materials first
+        cur.execute("DELETE FROM lesson_materials_v2 WHERE lesson_id = %s", (lesson_id,))
+        
+        # Delete lesson
+        cur.execute("DELETE FROM lessons_v2 WHERE id = %s", (lesson_id,))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return {
+            'statusCode': 200,
+            'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'success': True, 'message': 'Урок удален'}, ensure_ascii=False),
             'isBase64Encoded': False
         }
     
