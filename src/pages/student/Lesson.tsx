@@ -32,6 +32,7 @@ export default function LessonPage() {
   const [testSubmitted, setTestSubmitted] = useState(false);
   const [testScore, setTestScore] = useState<number>(0);
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
 
   useEffect(() => {
     loadLessonData();
@@ -242,6 +243,7 @@ export default function LessonPage() {
     setTimeRemaining(test.timeLimit * 60); // конвертируем в секунды
     setTestAnswers({});
     setTestSubmitted(false);
+    setCurrentQuestionIndex(0);
   };
 
   const handleAnswerChange = (questionId: number, answerIndex: number) => {
@@ -276,6 +278,19 @@ export default function LessonPage() {
     setTestStarted(false);
     setTestSubmitted(false);
     setTestAnswers({});
+    setCurrentQuestionIndex(0);
+  };
+
+  const handleNextQuestion = () => {
+    if (test && currentQuestionIndex < test.questions.length - 1) {
+      setCurrentQuestionIndex(prev => prev + 1);
+    }
+  };
+
+  const handlePreviousQuestion = () => {
+    if (currentQuestionIndex > 0) {
+      setCurrentQuestionIndex(prev => prev - 1);
+    }
   };
 
   const progressPercent = progress ? (progress.completedLessons / progress.totalLessons) * 100 : 0;
@@ -351,10 +366,13 @@ export default function LessonPage() {
                 testAnswers={testAnswers}
                 testScore={testScore}
                 timeRemaining={timeRemaining}
+                currentQuestionIndex={currentQuestionIndex}
                 onStartTest={handleStartTest}
                 onAnswerChange={handleAnswerChange}
                 onSubmitTest={handleSubmitTest}
                 onRetry={handleRetryTest}
+                onNextQuestion={handleNextQuestion}
+                onPreviousQuestion={handlePreviousQuestion}
               />
             )}
           </LessonContent>

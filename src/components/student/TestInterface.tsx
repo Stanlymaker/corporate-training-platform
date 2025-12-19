@@ -9,10 +9,13 @@ interface TestInterfaceProps {
   testAnswers: Record<number, number>;
   testScore: number;
   timeRemaining: number;
+  currentQuestionIndex: number;
   onStartTest: () => void;
   onAnswerChange: (questionId: number, answerIndex: number) => void;
   onSubmitTest: () => void;
   onRetry: () => void;
+  onNextQuestion: () => void;
+  onPreviousQuestion: () => void;
 }
 
 export default function TestInterface({
@@ -22,10 +25,13 @@ export default function TestInterface({
   testAnswers,
   testScore,
   timeRemaining,
+  currentQuestionIndex,
   onStartTest,
   onAnswerChange,
   onSubmitTest,
-  onRetry
+  onRetry,
+  onNextQuestion,
+  onPreviousQuestion
 }: TestInterfaceProps) {
   if (!testStarted) {
     return (
@@ -66,6 +72,12 @@ export default function TestInterface({
   }
 
   if (!testSubmitted) {
+    const currentQuestion = test.questions?.[currentQuestionIndex];
+    const isLastQuestion = currentQuestionIndex === (test.questions?.length || 0) - 1;
+    const allQuestionsAnswered = Object.keys(testAnswers).length === (test.questions?.length || 0);
+    
+    if (!currentQuestion) return null;
+    
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
@@ -77,45 +89,76 @@ export default function TestInterface({
             {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}
           </span>
         </div>
+
+        <div className="text-center text-sm text-gray-500 mb-4">
+          Вопрос {currentQuestionIndex + 1} из {test.questions?.length || 0}
+        </div>
         
-        {test.questions?.map((question, index) => (
-          <div key={question.id} className="p-6 border rounded-lg">
-            <h4 className="font-bold mb-4">
-              {index + 1}. {question.question}
-            </h4>
-            <div className="space-y-2">
-              {question.options?.map((option, optionIndex) => (
-                <label
-                  key={optionIndex}
-                  className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-colors ${
-                    testAnswers[question.id] === optionIndex
-                      ? 'border-primary bg-primary/5'
-                      : 'border-gray-200 hover:border-primary/50'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name={`question-${question.id}`}
-                    checked={testAnswers[question.id] === optionIndex}
-                    onChange={() => onAnswerChange(question.id, optionIndex)}
-                    className="w-4 h-4"
-                  />
-                  <span>{option}</span>
-                </label>
-              ))}
-            </div>
+        <div className="p-6 border rounded-lg">
+          {currentQuestion.imageUrl && (
+            <img 
+              src={currentQuestion.imageUrl} 
+              alt="Вопрос" 
+              className="w-full max-h-64 object-contain rounded-lg mb-4"
+            />
+          )}
+          
+          <h4 className="font-bold mb-4 text-lg">
+            {currentQuestion.question}
+          </h4>
+          
+          <div className="space-y-2">
+            {currentQuestion.options?.map((option, optionIndex) => (
+              <label
+                key={optionIndex}
+                className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-colors ${
+                  testAnswers[currentQuestion.id] === optionIndex
+                    ? 'border-primary bg-primary/5'
+                    : 'border-gray-200 hover:border-primary/50'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name={`question-${currentQuestion.id}`}
+                  checked={testAnswers[currentQuestion.id] === optionIndex}
+                  onChange={() => onAnswerChange(currentQuestion.id, optionIndex)}
+                  className="w-4 h-4"
+                />
+                <span>{option}</span>
+              </label>
+            ))}
           </div>
-        ))}
+        </div>
         
-        <Button 
-          onClick={onSubmitTest} 
-          className="w-full" 
-          size="lg"
-          disabled={Object.keys(testAnswers).length < (test.questions?.length || 0)}
-        >
-          <Icon name="CheckCircle" size={20} className="mr-2" />
-          Завершить тестирование
-        </Button>
+        <div className="flex items-center justify-between gap-4">
+          <Button 
+            onClick={onPreviousQuestion}
+            variant="outline"
+            disabled={currentQuestionIndex === 0}
+          >
+            <Icon name="ChevronLeft" size={20} className="mr-2" />
+            Назад
+          </Button>
+
+          {isLastQuestion ? (
+            <Button 
+              onClick={onSubmitTest}
+              disabled={!allQuestionsAnswered}
+              className="flex-1"
+            >
+              <Icon name="CheckCircle" size={20} className="mr-2" />
+              Завершить тестирование
+            </Button>
+          ) : (
+            <Button 
+              onClick={onNextQuestion}
+              className="flex-1"
+            >
+              Далее
+              <Icon name="ChevronRight" size={20} className="ml-2" />
+            </Button>
+          )}
+        </div>
       </div>
     );
   }
