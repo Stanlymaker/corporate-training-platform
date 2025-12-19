@@ -36,9 +36,11 @@ export interface Test {
 
 export interface TestQuestion {
   id: number;
+  type: string;
   question: string;
   options: string[];
-  correctAnswer: number;
+  correctAnswer: number | number[];
+  imageUrl?: string;
 }
 
 export interface CourseProgress {

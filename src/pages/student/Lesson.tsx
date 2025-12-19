@@ -28,7 +28,7 @@ export default function LessonPage() {
   // Состояния для теста
   const [test, setTest] = useState<Test | null>(null);
   const [testStarted, setTestStarted] = useState(false);
-  const [testAnswers, setTestAnswers] = useState<Record<number, number>>({});
+  const [testAnswers, setTestAnswers] = useState<Record<number, number | number[]>>({});
   const [testSubmitted, setTestSubmitted] = useState(false);
   const [testScore, setTestScore] = useState<number>(0);
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
@@ -246,11 +246,18 @@ export default function LessonPage() {
     setCurrentQuestionIndex(0);
   };
 
-  const handleAnswerChange = (questionId: number, answerIndex: number) => {
-    setTestAnswers(prev => ({
-      ...prev,
-      [questionId]: answerIndex
-    }));
+  const handleAnswerChange = (questionId: number, answerIndex: number, isMultiple: boolean = false) => {
+    setTestAnswers(prev => {
+      if (isMultiple) {
+        const currentAnswers = (prev[questionId] as number[]) || [];
+        const newAnswers = currentAnswers.includes(answerIndex)
+          ? currentAnswers.filter(a => a !== answerIndex)
+          : [...currentAnswers, answerIndex];
+        return { ...prev, [questionId]: newAnswers };
+      } else {
+        return { ...prev, [questionId]: answerIndex };
+      }
+    });
   };
 
   const handleSubmitTest = () => {
@@ -259,7 +266,18 @@ export default function LessonPage() {
     // Подсчитываем баллы
     let correctCount = 0;
     test.questions.forEach(q => {
-      if (testAnswers[q.id] === q.correctAnswer) {
+      const userAnswer = testAnswers[q.id];
+      const correctAnswer = q.correctAnswer;
+      
+      if (q.type === 'multiple' && Array.isArray(correctAnswer) && Array.isArray(userAnswer)) {
+        // Для множественного выбора: проверяем что массивы идентичны
+        const sortedUser = [...userAnswer].sort();
+        const sortedCorrect = [...correctAnswer].sort();
+        if (JSON.stringify(sortedUser) === JSON.stringify(sortedCorrect)) {
+          correctCount++;
+        }
+      } else if (userAnswer === correctAnswer) {
+        // Для одиночного выбора
         correctCount++;
       }
     });
