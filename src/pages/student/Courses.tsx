@@ -213,10 +213,6 @@ export default function StudentCourses() {
                       <Icon name="Clock" size={14} />
                       {course.duration} мин
                     </span>
-                    <span className="flex items-center gap-1">
-                      <Icon name="Target" size={14} />
-                      {course.passScore}%
-                    </span>
                   </div>
 
                   <Button 
