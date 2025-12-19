@@ -22,6 +22,7 @@ interface CourseLessonsListProps {
   onReorderLesson: (lessonId: number, direction: 'up' | 'down') => void;
   getTypeIcon: (type: string) => string;
   isDisabled?: boolean;
+  allTests?: any[];
 }
 
 export default function CourseLessonsList({
@@ -32,6 +33,7 @@ export default function CourseLessonsList({
   onReorderLesson,
   getTypeIcon,
   isDisabled = false,
+  allTests = [],
 }: CourseLessonsListProps) {
   const getTypeName = (type: string) => {
     switch (type) {
@@ -84,36 +86,57 @@ export default function CourseLessonsList({
           </div>
         ) : (
           <div className="space-y-2">
-            {lessons.map((lesson, index) => (
-              <div
-                key={lesson.id}
-                className="group relative flex items-center gap-4 p-4 bg-white border-2 border-gray-200 rounded-xl hover:border-primary hover:shadow-sm transition-all"
-              >
-                <div className="flex items-center gap-4 flex-1">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold flex-shrink-0">
-                      {index + 1}
+            {lessons.map((lesson, index) => {
+              const linkedTest = lesson.testId ? allTests.find(t => t.id === lesson.testId) : null;
+              
+              return (
+                <div
+                  key={lesson.id}
+                  className="group relative flex items-center gap-4 p-4 bg-white border-2 border-gray-200 rounded-xl hover:border-primary hover:shadow-sm transition-all"
+                >
+                  <div className="flex items-center gap-4 flex-1">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold flex-shrink-0">
+                        {index + 1}
+                      </div>
+                      <div className={`w-10 h-10 rounded-lg ${getTypeColor(lesson.type).split(' ')[0]} flex items-center justify-center flex-shrink-0`}>
+                        <Icon name={getTypeIcon(lesson.type) as any} size={20} className={getTypeColor(lesson.type).split(' ')[1]} />
+                      </div>
                     </div>
-                    <div className={`w-10 h-10 rounded-lg ${getTypeColor(lesson.type).split(' ')[0]} flex items-center justify-center flex-shrink-0`}>
-                      <Icon name={getTypeIcon(lesson.type) as any} size={20} className={getTypeColor(lesson.type).split(' ')[1]} />
+                    
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-semibold text-gray-900 mb-1 truncate">
+                        {lesson.title || 'Без названия'}
+                      </h4>
+                      <div className="flex items-center gap-3 text-sm flex-wrap">
+                        <Badge variant="outline" className={`text-xs ${getTypeColor(lesson.type)}`}>
+                          {getTypeName(lesson.type)}
+                        </Badge>
+                        <span className="text-gray-500 flex items-center gap-1">
+                          <Icon name="Clock" size={14} />
+                          {lesson.duration} мин
+                        </span>
+                        {lesson.type === 'test' && linkedTest && (
+                          <div className="flex items-center gap-2">
+                            <Icon name="Link" size={14} className="text-gray-400" />
+                            <span className="text-gray-700 font-medium">{linkedTest.title}</span>
+                            <Badge 
+                              variant={linkedTest.status === 'published' ? 'default' : 'secondary'}
+                              className="text-xs"
+                            >
+                              {linkedTest.status === 'published' ? 'Опубликован' : 'Черновик'}
+                            </Badge>
+                          </div>
+                        )}
+                        {lesson.type === 'test' && !linkedTest && lesson.testId && (
+                          <div className="flex items-center gap-2">
+                            <Icon name="AlertTriangle" size={14} className="text-amber-500" />
+                            <span className="text-amber-600 text-xs">Тест не найден (ID: {lesson.testId})</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-semibold text-gray-900 mb-1 truncate">
-                      {lesson.title || 'Без названия'}
-                    </h4>
-                    <div className="flex items-center gap-3 text-sm">
-                      <Badge variant="outline" className={`text-xs ${getTypeColor(lesson.type)}`}>
-                        {getTypeName(lesson.type)}
-                      </Badge>
-                      <span className="text-gray-500 flex items-center gap-1">
-                        <Icon name="Clock" size={14} />
-                        {lesson.duration} мин
-                      </span>
-                    </div>
-                  </div>
-                </div>
 
                 <div className="flex items-center gap-1">
                   <Button
@@ -151,9 +174,10 @@ export default function CourseLessonsList({
                   >
                     <Icon name="Trash2" size={18} />
                   </Button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </CardContent>

@@ -73,6 +73,7 @@ export default function CourseEditor() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showDraftTestsDialog, setShowDraftTestsDialog] = useState(false);
   const [draftTestsNames, setDraftTestsNames] = useState<string[]>([]);
+  const [allTests, setAllTests] = useState<any[]>([]);
 
   const {
     loading,
@@ -97,7 +98,20 @@ export default function CourseEditor() {
         setHasUnsavedChanges(false);
       });
     }
+    loadAllTests();
   }, [courseId, isEditMode]);
+
+  const loadAllTests = async () => {
+    try {
+      const response = await fetch(API_ENDPOINTS.TESTS, { headers: getAuthHeaders() });
+      if (response.ok) {
+        const data = await response.json();
+        setAllTests(data.tests || []);
+      }
+    } catch (error) {
+      console.error('Error loading tests:', error);
+    }
+  };
 
   const handleInputChange = (field: keyof CourseFormData, value: any) => {
     setFormData({ ...formData, [field]: value });
@@ -301,6 +315,7 @@ export default function CourseEditor() {
             onReorderLesson={handleReorderLesson}
             getTypeIcon={getTypeIcon}
             isDisabled={isEditMode && savedStatus === 'published'}
+            allTests={allTests}
           />
         </div>
       </div>
