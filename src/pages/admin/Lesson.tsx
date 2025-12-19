@@ -139,10 +139,9 @@ export default function AdminLessonPage() {
                   <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">
                     {currentIndex + 1}
                   </div>
-                  <div>
-                    <div className="text-lg">{lesson.title}</div>
+                  {lesson.description && (
                     <div className="text-sm text-gray-500 font-normal">{lesson.description}</div>
-                  </div>
+                  )}
                 </div>
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <Icon name="Clock" size={16} />
