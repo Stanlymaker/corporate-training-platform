@@ -171,8 +171,7 @@ export default function Tests() {
           <>
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Управление тестами</h1>
-            <p className="text-gray-600">Создавайте и редактируйте тесты для проверки знаний студентов</p>
+            <h1 className="text-3xl font-bold text-gray-900">Управление тестами</h1>
           </div>
           <Button 
             onClick={() => navigate('/admin/tests/edit')}

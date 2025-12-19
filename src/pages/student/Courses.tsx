@@ -120,8 +120,7 @@ export default function StudentCourses() {
   return (
     <StudentLayout>
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Мои курсы</h1>
-        <p className="text-gray-600">Продолжайте обучение или начните новый курс</p>
+        <h1 className="text-3xl font-bold text-gray-900">Мои курсы</h1>
       </div>
 
       <div className="flex gap-3 mb-6">

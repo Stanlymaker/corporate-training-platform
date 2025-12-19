@@ -104,10 +104,7 @@ export default function AdminLogs() {
       <div className="animate-fade-in">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Системные логи</h1>
-            <p className="text-gray-600">
-              Отслеживание действий пользователей и ошибок системы
-            </p>
+            <h1 className="text-3xl font-bold text-gray-900">Системные логи</h1>
           </div>
           <div className="flex gap-3">
             <Button variant="outline">

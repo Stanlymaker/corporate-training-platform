@@ -87,8 +87,7 @@ export default function AdminCourses() {
     <AdminLayout>
       <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Управление курсами</h1>
-            <p className="text-gray-600">Создавайте и редактируйте образовательный контент</p>
+            <h1 className="text-3xl font-bold text-gray-900">Управление курсами</h1>
           </div>
           <Button 
             onClick={() => navigate('/admin/courses/edit')}

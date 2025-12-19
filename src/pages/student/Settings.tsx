@@ -121,8 +121,7 @@ export default function StudentSettings() {
     <StudentLayout>
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Настройки</h1>
-          <p className="text-gray-600">Управление личной информацией и безопасностью</p>
+          <h1 className="text-3xl font-bold text-gray-900">Настройки</h1>
         </div>
 
         <div className="space-y-6">
