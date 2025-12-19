@@ -274,31 +274,17 @@ export default function Tests() {
             </div>
           </div>
 
-          <div className="flex gap-3">
-            <Button
-              variant={filter === 'all' ? 'default' : 'outline'}
-              onClick={() => setFilter('all')}
-              size="sm"
-            >
-              Все ({tests.length})
-            </Button>
-            <Button
-              variant={filter === 'published' ? 'default' : 'outline'}
-              onClick={() => setFilter('published')}
-              size="sm"
-            >
-              Опубликованные ({tests.filter(t => t.status === 'published').length})
-            </Button>
-            <Button
-              variant={filter === 'draft' ? 'default' : 'outline'}
-              onClick={() => setFilter('draft')}
-              size="sm"
-            >
-              Черновики ({tests.filter(t => t.status === 'draft').length})
-            </Button>
-          </div>
-
           <div className="flex gap-3 flex-wrap">
+            <select
+              value={filter}
+              onChange={(e) => setFilter(e.target.value as any)}
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="all">Все ({tests.length})</option>
+              <option value="published">Опубликованные ({tests.filter(t => t.status === 'published').length})</option>
+              <option value="draft">Черновики ({tests.filter(t => t.status === 'draft').length})</option>
+            </select>
+
             <select
               value={courseFilter}
               onChange={(e) => setCourseFilter(e.target.value === 'all' ? 'all' : e.target.value === 'unused' ? 'unused' : parseInt(e.target.value))}
