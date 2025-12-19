@@ -210,12 +210,15 @@ export function useCourseEditorActions(
             imageUrl: lesson.imageUrl,
           };
 
+          console.log(`[useCourseEditorActions] Saving lesson ${lesson.id}:`, lessonPayload);
+
           // ID > 100000 означает временный ID (Date.now()), это новый урок
           const isNewLesson = lesson.id > 100000;
           
           let savedLessonId = lesson.id;
           
           if (!isNewLesson && existingLessonIds.has(lesson.id)) {
+            console.log(`[useCourseEditorActions] Updating existing lesson ${lesson.id}`);
             const updateRes = await fetch(`${API_ENDPOINTS.LESSONS}?id=${lesson.id}`, {
               method: 'PUT',
               headers: getAuthHeaders(),

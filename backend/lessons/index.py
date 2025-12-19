@@ -595,6 +595,41 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'isBase64Encoded': False
         }
     
+    if method == 'DELETE' and action == 'material':
+        admin_error = require_admin(headers)
+        if admin_error:
+            cur.close()
+            conn.close()
+            return {
+                'statusCode': admin_error['statusCode'],
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': admin_error['error']}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
+        
+        material_id = query_params.get('materialId')
+        if not material_id:
+            cur.close()
+            conn.close()
+            return {
+                'statusCode': 400,
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'materialId обязателен'}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
+        
+        cur.execute("DELETE FROM lesson_materials_v2 WHERE id = %s", (material_id,))
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return {
+            'statusCode': 200,
+            'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'success': True, 'message': 'Материал удален'}, ensure_ascii=False),
+            'isBase64Encoded': False
+        }
+    
     if method == 'DELETE':
         admin_error = require_admin(headers)
         if admin_error:
