@@ -252,7 +252,9 @@ export default function StudentProfile() {
                             : 'bg-gray-100 opacity-50 hover:opacity-70'
                         }`}
                       >
-                        <div className="text-3xl mb-1">{reward.icon}</div>
+                        <div className="flex items-center justify-center h-12 mb-1">
+                          <img src={reward.icon} alt={reward.name} className="max-h-full max-w-full object-contain" />
+                        </div>
                         <div className="text-xs font-medium text-gray-700">{reward.name}</div>
                       </div>
                     );
@@ -270,7 +272,9 @@ export default function StudentProfile() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3">
-              <span className="text-5xl">{selectedRewardData?.icon}</span>
+              <div className="w-16 h-16 flex items-center justify-center">
+                <img src={selectedRewardData?.icon} alt={selectedRewardData?.name} className="max-h-full max-w-full object-contain" />
+              </div>
               <span>{selectedRewardData?.name}</span>
             </DialogTitle>
             <DialogDescription>
