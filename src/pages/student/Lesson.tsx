@@ -28,7 +28,7 @@ export default function LessonPage() {
   // Состояния для теста
   const [test, setTest] = useState<Test | null>(null);
   const [testStarted, setTestStarted] = useState(false);
-  const [testAnswers, setTestAnswers] = useState<Record<number, number | number[]>>({});
+  const [testAnswers, setTestAnswers] = useState<Record<number, number | number[] | string>>({});
   const [testSubmitted, setTestSubmitted] = useState(false);
   const [testScore, setTestScore] = useState<number>(0);
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
@@ -246,16 +246,21 @@ export default function LessonPage() {
     setCurrentQuestionIndex(0);
   };
 
-  const handleAnswerChange = (questionId: number, answerIndex: number, isMultiple: boolean = false) => {
+  const handleAnswerChange = (questionId: number, answerValue: number | string, isMultiple: boolean = false) => {
     setTestAnswers(prev => {
-      if (isMultiple) {
+      if (typeof answerValue === 'string') {
+        // Текстовый ответ
+        return { ...prev, [questionId]: answerValue };
+      } else if (isMultiple) {
+        // Множественный выбор
         const currentAnswers = (prev[questionId] as number[]) || [];
-        const newAnswers = currentAnswers.includes(answerIndex)
-          ? currentAnswers.filter(a => a !== answerIndex)
-          : [...currentAnswers, answerIndex];
+        const newAnswers = currentAnswers.includes(answerValue)
+          ? currentAnswers.filter(a => a !== answerValue)
+          : [...currentAnswers, answerValue];
         return { ...prev, [questionId]: newAnswers };
       } else {
-        return { ...prev, [questionId]: answerIndex };
+        // Одиночный выбор
+        return { ...prev, [questionId]: answerValue };
       }
     });
   };

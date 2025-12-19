@@ -6,12 +6,12 @@ interface TestInterfaceProps {
   test: Test;
   testStarted: boolean;
   testSubmitted: boolean;
-  testAnswers: Record<number, number | number[]>;
+  testAnswers: Record<number, number | number[] | string>;
   testScore: number;
   timeRemaining: number;
   currentQuestionIndex: number;
   onStartTest: () => void;
-  onAnswerChange: (questionId: number, answerIndex: number, isMultiple?: boolean) => void;
+  onAnswerChange: (questionId: number, answerValue: number | string, isMultiple?: boolean) => void;
   onSubmitTest: () => void;
   onRetry: () => void;
   onNextQuestion: () => void;
@@ -114,35 +114,44 @@ export default function TestInterface({
             </p>
           )}
           
-          <div className="space-y-2">
-            {currentQuestion.options?.map((option, optionIndex) => {
-              const isMultiple = currentQuestion.type === 'multiple';
-              const userAnswer = testAnswers[currentQuestion.id];
-              const isChecked = isMultiple 
-                ? Array.isArray(userAnswer) && userAnswer.includes(optionIndex)
-                : userAnswer === optionIndex;
-              
-              return (
-                <label
-                  key={optionIndex}
-                  className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-colors ${
-                    isChecked
-                      ? 'border-primary bg-primary/5'
-                      : 'border-gray-200 hover:border-primary/50'
-                  }`}
-                >
-                  <input
-                    type={isMultiple ? 'checkbox' : 'radio'}
-                    name={`question-${currentQuestion.id}`}
-                    checked={isChecked}
-                    onChange={() => onAnswerChange(currentQuestion.id, optionIndex, isMultiple)}
-                    className="w-4 h-4"
-                  />
-                  <span>{option}</span>
-                </label>
-              );
-            })}
-          </div>
+          {currentQuestion.type === 'text' ? (
+            <textarea
+              value={(testAnswers[currentQuestion.id] as string) || ''}
+              onChange={(e) => onAnswerChange(currentQuestion.id, e.target.value as any, false)}
+              placeholder="Введите ваш ответ..."
+              className="w-full min-h-[120px] p-4 border-2 border-gray-200 rounded-lg focus:border-primary focus:outline-none resize-y"
+            />
+          ) : (
+            <div className="space-y-2">
+              {currentQuestion.options?.map((option, optionIndex) => {
+                const isMultiple = currentQuestion.type === 'multiple';
+                const userAnswer = testAnswers[currentQuestion.id];
+                const isChecked = isMultiple 
+                  ? Array.isArray(userAnswer) && userAnswer.includes(optionIndex)
+                  : userAnswer === optionIndex;
+                
+                return (
+                  <label
+                    key={optionIndex}
+                    className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-colors ${
+                      isChecked
+                        ? 'border-primary bg-primary/5'
+                        : 'border-gray-200 hover:border-primary/50'
+                    }`}
+                  >
+                    <input
+                      type={isMultiple ? 'checkbox' : 'radio'}
+                      name={`question-${currentQuestion.id}`}
+                      checked={isChecked}
+                      onChange={() => onAnswerChange(currentQuestion.id, optionIndex, isMultiple)}
+                      className="w-4 h-4"
+                    />
+                    <span>{option}</span>
+                  </label>
+                );
+              })}
+            </div>
+          )}
         </div>
         
         <div className="flex items-center justify-between gap-4">
