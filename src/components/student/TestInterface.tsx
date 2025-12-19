@@ -36,6 +36,10 @@ export default function TestInterface({
 }: TestInterfaceProps) {
   const currentQuestion = test.questions?.[currentQuestionIndex];
   
+  // Состояние для drag-and-drop
+  const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
+  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
+  
   // Запоминаем порядок правых элементов один раз для текущего вопроса
   const shuffledRightItems = useMemo(() => {
     if (!currentQuestion?.matchingPairs) return [];
@@ -154,8 +158,6 @@ export default function TestInterface({
                   {(() => {
                     // Получаем текущий порядок из ответов или используем перемешанный порядок
                     const currentOrder = (testAnswers[currentQuestion.id] as string[]) || shuffledRightItems;
-                    const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
-                    const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
                     
                     return currentOrder.map((rightItem, index) => {
                       const isDragging = draggedIdx === index;
