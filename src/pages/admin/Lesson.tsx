@@ -117,17 +117,6 @@ export default function AdminLessonPage() {
           <Icon name="ArrowLeft" className="mr-2" size={16} />
           Назад к курсу
         </Button>
-        
-        <div className="flex items-center justify-between mb-2">
-          <div>
-            <div className="text-sm text-gray-500 mb-1">{course.title}</div>
-            <h1 className="text-3xl font-bold text-gray-900">{lesson.title}</h1>
-          </div>
-          <Badge className="bg-blue-500">
-            <Icon name="Eye" size={14} className="mr-1" />
-            Просмотр
-          </Badge>
-        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
