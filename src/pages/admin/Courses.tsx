@@ -8,6 +8,13 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API_ENDPOINTS, getAuthHeaders } from '@/config/api';
 import AssignStudentsModal from '@/components/admin/AssignStudentsModal';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 
 interface Course {
   id: number;
@@ -66,6 +73,23 @@ export default function AdminCourses() {
 
   const handleAssignmentComplete = () => {
     loadCourses();
+  };
+
+  const handleDeleteCourse = async (courseId: number) => {
+    if (!confirm('Вы уверены, что хотите удалить этот курс?')) return;
+    
+    try {
+      const response = await fetch(`${API_ENDPOINTS.COURSES}?id=${courseId}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+      });
+
+      if (response.ok) {
+        loadCourses();
+      }
+    } catch (error) {
+      console.error('Error deleting course:', error);
+    }
   };
 
   const filteredCourses = courses.filter(course => {
@@ -139,8 +163,41 @@ export default function AdminCourses() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
           {filteredCourses.map((course) => (
-            <Card key={course.id} className="transition-shadow hover:shadow-md overflow-hidden">
-              <div className="aspect-video w-full bg-gradient-to-br from-gray-100 to-gray-200 relative">
+            <Card key={course.id} className="transition-shadow hover:shadow-md overflow-hidden relative group">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="absolute top-3 right-3 z-10 h-8 w-8 p-0 bg-white/80 hover:bg-white shadow-sm"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Icon name="MoreVertical" size={16} />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {course.accessType === 'closed' && (
+                    <>
+                      <DropdownMenuItem onClick={() => handleAssignStudents(course)}>
+                        <Icon name="UserPlus" size={14} className="mr-2" />
+                        Назначить
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
+                  <DropdownMenuItem 
+                    onClick={() => handleDeleteCourse(course.id)}
+                    className="text-red-600 focus:text-red-600"
+                  >
+                    <Icon name="Trash2" size={14} className="mr-2" />
+                    Удалить
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <div 
+                className="aspect-video w-full bg-gradient-to-br from-gray-100 to-gray-200 relative cursor-pointer"
+                onClick={() => navigate(`/admin/courses/view/${course.id}`)}
+              >
                 {course.image ? (
                   <img 
                     src={course.image} 
@@ -158,7 +215,10 @@ export default function AdminCourses() {
                   </>
                 )}
               </div>
-              <CardContent className="p-5">
+              <CardContent 
+                className="p-5 cursor-pointer"
+                onClick={() => navigate(`/admin/courses/view/${course.id}`)}
+              >
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <h3 className="font-bold text-base text-gray-900 line-clamp-2 flex-1">{course.title}</h3>
                   <div className="flex gap-1 shrink-0">
@@ -189,35 +249,18 @@ export default function AdminCourses() {
                     {course.passScore}%
                   </span>
                 </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => navigate(`/admin/courses/edit/${course.id}`)}
-                  >
-                    <Icon name="Edit" className="mr-1" size={14} />
-                    Ред.
-                  </Button>
-                  <Button
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => navigate(`/admin/courses/view/${course.id}`)}
-                  >
-                    <Icon name="Eye" className="mr-1" size={14} />
-                    Вид
-                  </Button>
-                  {course.accessType === 'closed' && (
-                    <Button
-                      variant="default" 
-                      size="sm"
-                      onClick={() => handleAssignStudents(course)}
-                      className="bg-green-600 hover:bg-green-700"
-                    >
-                      <Icon name="UserPlus" className="mr-1" size={14} />
-                      Наз.
-                    </Button>
-                  )}
-                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="w-full"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/admin/courses/edit/${course.id}`);
+                  }}
+                >
+                  <Icon name="Edit" className="mr-2" size={14} />
+                  Редактировать
+                </Button>
               </CardContent>
             </Card>
           ))}
