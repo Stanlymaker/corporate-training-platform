@@ -21,6 +21,7 @@ interface Course {
   published: boolean;
   createdAt: string;
   updatedAt: string;
+  image?: string;
 }
 
 export default function AdminCourses() {
@@ -140,12 +141,22 @@ export default function AdminCourses() {
           {filteredCourses.map((course) => (
             <Card key={course.id} className="transition-shadow hover:shadow-md overflow-hidden">
               <div className="aspect-video w-full bg-gradient-to-br from-gray-100 to-gray-200 relative">
-                <div className={`absolute inset-0 bg-gradient-to-br ${getCategoryGradient(course.category)} opacity-10`} />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${getCategoryGradient(course.category)} flex items-center justify-center shadow-lg`}>
-                    <Icon name={getCategoryIcon(course.category) as any} size={40} className="text-white" />
-                  </div>
-                </div>
+                {course.image ? (
+                  <img 
+                    src={course.image} 
+                    alt={course.title}
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                ) : (
+                  <>
+                    <div className={`absolute inset-0 bg-gradient-to-br ${getCategoryGradient(course.category)} opacity-10`} />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${getCategoryGradient(course.category)} flex items-center justify-center shadow-lg`}>
+                        <Icon name={getCategoryIcon(course.category) as any} size={40} className="text-white" />
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
               <CardContent className="p-5">
                 <div className="flex items-start justify-between gap-2 mb-2">
