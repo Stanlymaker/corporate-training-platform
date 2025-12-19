@@ -115,42 +115,6 @@ export default function CourseInfoForm({ formData, onInputChange, isEditMode = f
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Категория
-            </label>
-            <select
-              value={formData.category}
-              onChange={(e) => onInputChange('category', e.target.value)}
-              disabled={isDisabled}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-            >
-              <option value="">Выберите категорию</option>
-              <option value="Программирование">Программирование</option>
-              <option value="Дизайн">Дизайн</option>
-              <option value="Маркетинг">Маркетинг</option>
-              <option value="Бизнес">Бизнес</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Уровень сложности
-            </label>
-            <select
-              value={formData.level}
-              onChange={(e) => onInputChange('level', e.target.value as any)}
-              disabled={isDisabled}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-            >
-              <option value="Начальный">Начальный</option>
-              <option value="Средний">Средний</option>
-              <option value="Продвинутый">Продвинутый</option>
-            </select>
-          </div>
-        </div>
-
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Преподаватель
