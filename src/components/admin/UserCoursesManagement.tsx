@@ -4,6 +4,16 @@ import Icon from '@/components/ui/icon';
 import { User, CourseAssignment, Course, Lesson, CourseProgress, TestResult } from '@/types';
 import { useState, useEffect } from 'react';
 import { API_ENDPOINTS, getAuthHeaders } from '@/config/api';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface UserCoursesManagementProps {
   user: User;
@@ -25,6 +35,10 @@ export default function UserCoursesManagement({
   const [progressData, setProgressData] = useState<CourseProgress[]>([]);
   const [testResults, setTestResults] = useState<Record<number, TestResult[]>>({});
   const [statusFilter, setStatusFilter] = useState<'published' | 'draft' | 'archived'>('published');
+  const [showRevokeDialog, setShowRevokeDialog] = useState(false);
+  const [revokeAssignmentId, setRevokeAssignmentId] = useState<number | null>(null);
+  const [revokeCourseTitle, setRevokeCourseTitle] = useState<string>('');
+  const [revokeHasProgress, setRevokeHasProgress] = useState(false);
 
   useEffect(() => {
     loadCourses();
@@ -272,8 +286,12 @@ export default function UserCoursesManagement({
                             onClick={(e) => {
                               e.stopPropagation();
                               const assignment = userAssignments.find(a => a.courseId === course.id);
-                              if (assignment && onRemoveAssignment) {
-                                onRemoveAssignment(assignment.id);
+                              const hasProgress = progress && (progress.completedLessons > 0 || progress.completed);
+                              if (assignment) {
+                                setRevokeAssignmentId(assignment.id);
+                                setRevokeCourseTitle(course.title);
+                                setRevokeHasProgress(!!hasProgress);
+                                setShowRevokeDialog(true);
                               }
                             }}
                           >
@@ -345,6 +363,70 @@ export default function UserCoursesManagement({
           })
         )}
       </div>
+
+      <AlertDialog open={showRevokeDialog} onOpenChange={setShowRevokeDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Icon name="AlertTriangle" size={24} className="text-orange-500" />
+              Отзыв доступа к курсу
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3 pt-2">
+              <p>
+                Вы собираетесь отозвать доступ пользователя <strong>{user.name}</strong> к курсу <strong>"{revokeCourseTitle}"</strong>.
+              </p>
+              {revokeHasProgress && (
+                <div className="bg-orange-50 border-2 border-orange-200 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <Icon name="AlertCircle" size={20} className="text-orange-600 mt-0.5 flex-shrink-0" />
+                    <div className="space-y-2">
+                      <p className="font-semibold text-orange-900">
+                        ⚠️ Будет сброшен весь прогресс!
+                      </p>
+                      <p className="text-sm text-orange-800">
+                        У пользователя есть прогресс по этому курсу. При отзыве доступа:
+                      </p>
+                      <ul className="text-sm text-orange-800 list-disc list-inside space-y-1 ml-2">
+                        <li>Все пройденные уроки будут сброшены</li>
+                        <li>Результаты тестов будут удалены</li>
+                        <li>Статус курса станет "Не начат"</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              )}
+              <p className="text-sm text-gray-600">
+                Это действие нельзя отменить. Продолжить?
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setShowRevokeDialog(false);
+              setRevokeAssignmentId(null);
+              setRevokeCourseTitle('');
+              setRevokeHasProgress(false);
+            }}>
+              Отмена
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (revokeAssignmentId && onRemoveAssignment) {
+                  onRemoveAssignment(revokeAssignmentId);
+                }
+                setShowRevokeDialog(false);
+                setRevokeAssignmentId(null);
+                setRevokeCourseTitle('');
+                setRevokeHasProgress(false);
+              }}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              <Icon name="Trash2" size={14} className="mr-2" />
+              Отозвать и сбросить прогресс
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
