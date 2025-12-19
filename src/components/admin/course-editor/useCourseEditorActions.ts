@@ -46,6 +46,7 @@ export function useCourseEditorActions(
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [loadingCourse, setLoadingCourse] = useState(isEditMode);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   const loadCourse = async (id: string) => {
     setLoadingCourse(true);
@@ -138,6 +139,7 @@ export function useCourseEditorActions(
 
   const handleSaveCourse = async (resetOption?: 'keep' | 'reset_tests' | 'reset_all') => {
     setLoading(true);
+    setSaveSuccess(false);
     try {
       const totalDuration = formData.lessons.reduce((sum, lesson) => sum + lesson.duration, 0);
       const method = isEditMode ? 'PUT' : 'POST';
@@ -257,6 +259,11 @@ export function useCourseEditorActions(
       if (resetOption) {
         await applyProgressReset(resetOption);
       }
+      
+      // Показываем индикатор успешного сохранения
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+      
       // Don't navigate - stay on the page after save
       // navigate(ROUTES.ADMIN.COURSES);
     } catch (error) {
@@ -292,6 +299,7 @@ export function useCourseEditorActions(
   return {
     loading,
     loadingCourse,
+    saveSuccess,
     loadCourse,
     handleSaveCourse,
     handleDeleteCourse,

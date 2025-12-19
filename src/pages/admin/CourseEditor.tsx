@@ -78,6 +78,7 @@ export default function CourseEditor() {
   const {
     loading,
     loadingCourse,
+    saveSuccess,
     loadCourse,
     handleSaveCourse,
     handleDeleteCourse,
@@ -284,6 +285,7 @@ export default function CourseEditor() {
         courseTitle={formData.title}
         hasLessons={formData.lessons.length > 0}
         loading={loading}
+        saveSuccess={saveSuccess}
         onSave={handleSaveWithCheck}
         onDelete={() => setShowDeleteDialog(true)}
       />

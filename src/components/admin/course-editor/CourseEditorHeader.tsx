@@ -8,6 +8,7 @@ interface CourseEditorHeaderProps {
   courseTitle: string;
   hasLessons: boolean;
   loading: boolean;
+  saveSuccess?: boolean;
   onSave: () => void;
   onDelete: () => void;
 }
@@ -17,6 +18,7 @@ export default function CourseEditorHeader({
   courseTitle,
   hasLessons,
   loading,
+  saveSuccess = false,
   onSave,
   onDelete,
 }: CourseEditorHeaderProps) {
@@ -38,6 +40,12 @@ export default function CourseEditorHeader({
         </h1>
       </div>
       <div className="flex items-center gap-3">
+        {saveSuccess && (
+          <div className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded-lg animate-fade-in">
+            <Icon name="CheckCircle2" size={16} className="text-green-600" />
+            <span className="text-sm font-medium text-green-700">Изменения сохранены</span>
+          </div>
+        )}
         <Button
           onClick={onSave}
           disabled={!courseTitle || !hasLessons || loading}

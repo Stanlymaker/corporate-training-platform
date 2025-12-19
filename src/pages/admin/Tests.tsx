@@ -75,16 +75,29 @@ export default function Tests() {
             });
             if (detailRes.ok) {
               const detailData = await detailRes.json();
-              return detailData.course;
+              const course = detailData.course;
+              
+              // Load lessons for this course
+              const lessonsRes = await fetch(`${API_ENDPOINTS.LESSONS}?courseId=${course.id}`, {
+                headers: getAuthHeaders()
+              });
+              if (lessonsRes.ok) {
+                const lessonsData = await lessonsRes.json();
+                course.lessons = lessonsData.lessons || [];
+                console.log(`[Tests] Course ${course.id} (${course.title}) has ${course.lessons.length} lessons`);
+              } else {
+                course.lessons = [];
+              }
+              
+              return course;
             }
           } catch (err) {
             console.error(`Error loading course ${summary.id}:`, err);
           }
-          return summary;
+          return { ...summary, lessons: [] };
         });
         
         const fullCourses = await Promise.all(fullCoursesPromises);
-        console.log('[Tests] Loaded full courses with lessons:', fullCourses);
         setCourses(fullCourses);
       }
     } catch (error) {
