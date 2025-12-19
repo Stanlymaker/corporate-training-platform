@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import RichTextEditor from './RichTextEditor';
 import { API_ENDPOINTS, getAuthHeaders } from '@/config/api';
+import { uploadImage } from '@/utils/uploadImage';
 
 interface LessonMaterial {
   id: number;
@@ -74,25 +75,29 @@ export default function LessonDialog({
   const handleFileUpload = async (file: File, type: 'video' | 'image' | 'material') => {
     setUploadingFile(true);
     
-    const fakeUrl = URL.createObjectURL(file);
-    
-    setTimeout(() => {
+    try {
+      const url = await uploadImage(file);
+      
       if (type === 'video') {
-        onLessonChange('videoUrl', fakeUrl);
+        onLessonChange('videoUrl', url);
       } else if (type === 'image') {
-        onLessonChange('imageUrl', fakeUrl);
+        onLessonChange('imageUrl', url);
       } else if (type === 'material') {
         const newMaterial: LessonMaterial = {
-          id: Date.now().toString(),
+          id: Date.now(),
           title: file.name,
           type: file.type.includes('pdf') ? 'pdf' : 'doc',
-          url: fakeUrl,
+          url: url,
         };
         const materials = lesson.materials || [];
         onLessonChange('materials', [...materials, newMaterial]);
       }
+    } catch (error) {
+      console.error('Ошибка загрузки:', error);
+      alert('Не удалось загрузить файл');
+    } finally {
       setUploadingFile(false);
-    }, 500);
+    }
   };
 
   const handleRemoveMaterial = (materialId: string) => {

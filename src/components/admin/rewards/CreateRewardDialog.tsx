@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/dialog';
 import Icon from '@/components/ui/icon';
 import { Course } from '@/types';
+import { uploadImage } from '@/utils/uploadImage';
 
 interface CreateRewardDialogProps {
   isOpen: boolean;
@@ -52,17 +53,21 @@ export default function CreateRewardDialog({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.includes('svg')) {
-      alert('Пожалуйста, загрузите SVG файл');
+    if (!file.type.includes('image')) {
+      alert('Пожалуйста, загрузите изображение');
       return;
     }
 
     setUploadingImage(true);
-    const fakeUrl = URL.createObjectURL(file);
-    setTimeout(() => {
-      setImageUrl(fakeUrl);
+    try {
+      const url = await uploadImage(file);
+      setImageUrl(url);
+    } catch (error) {
+      console.error('Ошибка загрузки:', error);
+      alert('Не удалось загрузить изображение');
+    } finally {
       setUploadingImage(false);
-    }, 500);
+    }
   };
 
   const handleCreate = () => {
@@ -123,11 +128,11 @@ export default function CreateRewardDialog({
           </div>
 
           <div>
-            <Label>Изображение награды (SVG)</Label>
+            <Label>Изображение награды</Label>
             <div className="mt-2">
               <input
                 type="file"
-                accept=".svg,image/svg+xml"
+                accept="image/*"
                 onChange={handleImageUpload}
                 className="hidden"
                 id="reward-image-upload"
