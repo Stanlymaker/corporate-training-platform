@@ -115,8 +115,6 @@ export default function AdminCourseView() {
           <div className="flex items-start justify-between gap-6">
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-3">
-                <Badge variant="outline">{course.category}</Badge>
-                <Badge variant="outline">{course.level}</Badge>
                 <Badge className="bg-blue-500">
                   <Icon name="Eye" size={14} className="mr-1" />
                   Просмотр
@@ -125,10 +123,12 @@ export default function AdminCourseView() {
               <h1 className="text-3xl font-bold text-gray-900 mb-2">{course.title}</h1>
               <p className="text-gray-600 mb-4 text-lg">{course.description}</p>
               <div className="flex items-center gap-6 text-sm text-gray-600">
-                <div className="flex items-center gap-2">
-                  <Icon name="User" size={16} />
-                  <span>{course.instructor}</span>
-                </div>
+                {course.instructor && (
+                  <div className="flex items-center gap-2">
+                    <Icon name="User" size={16} />
+                    <span>{course.instructor}</span>
+                  </div>
+                )}
                 <div className="flex items-center gap-2">
                   <Icon name="Clock" size={16} />
                   <span>{course.duration} мин</span>
