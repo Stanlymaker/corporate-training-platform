@@ -293,7 +293,26 @@ export default function LessonPage() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="lg:col-span-3 space-y-6">
           <Card className="border-0 shadow-md">
-            <CardContent className="p-8">
+            <CardHeader className="border-b bg-gradient-to-r from-primary/5 to-transparent">
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">
+                    {currentIndex + 1}
+                  </div>
+                  <div>
+                    <div className="text-lg">{lesson.title}</div>
+                    {lesson.description && (
+                      <div className="text-sm text-gray-500 font-normal">{lesson.description}</div>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <Icon name="Clock" size={16} />
+                  <span>{lesson.duration} мин</span>
+                </div>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
               <div className="prose prose-lg max-w-none">
                 {lesson.type === 'text' && (
                   <ReactMarkdown>{lesson.content}</ReactMarkdown>
