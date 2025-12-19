@@ -8,6 +8,7 @@ interface TestEditorHeaderProps {
   formTitle: string;
   loading: boolean;
   hasQuestions: boolean;
+  saveSuccess?: boolean;
   onSave: () => void;
   onCopy: () => void;
   onDelete: () => void;
@@ -18,6 +19,7 @@ export default function TestEditorHeader({
   formTitle,
   loading,
   hasQuestions,
+  saveSuccess = false,
   onSave,
   onCopy,
   onDelete,
@@ -39,7 +41,13 @@ export default function TestEditorHeader({
           {isEditMode ? 'Редактировать тест' : 'Создать новый тест'}
         </h1>
       </div>
-      <div className="flex gap-3">
+      <div className="flex items-center gap-3">
+        {saveSuccess && (
+          <div className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded-lg animate-fade-in">
+            <Icon name="CheckCircle2" size={16} className="text-green-600" />
+            <span className="text-sm font-medium text-green-700">Изменения сохранены</span>
+          </div>
+        )}
         {isEditMode && (
           <>
             <Button

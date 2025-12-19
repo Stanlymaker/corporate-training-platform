@@ -39,6 +39,7 @@ export function useTestEditorActions(
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [loadingTest, setLoadingTest] = useState(isEditMode);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   const loadTest = async (id: string): Promise<'draft' | 'published' | null> => {
     setLoadingTest(true);
@@ -99,6 +100,7 @@ export function useTestEditorActions(
     }
 
     setLoading(true);
+    setSaveSuccess(false);
     try {
       const method = isEditMode ? 'PUT' : 'POST';
       const url = isEditMode ? `${API_ENDPOINTS.TESTS}?id=${testId}` : API_ENDPOINTS.TESTS;
@@ -294,6 +296,9 @@ export function useTestEditorActions(
         }
       }
 
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+      
       // Don't navigate - stay on the page after save
       // navigate(ROUTES.ADMIN.TESTS);
     } catch (error) {
@@ -402,6 +407,7 @@ export function useTestEditorActions(
   return {
     loading,
     loadingTest,
+    saveSuccess,
     loadTest,
     handleSaveTest,
     handleCopyTest,

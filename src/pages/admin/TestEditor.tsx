@@ -65,6 +65,7 @@ export default function TestEditor() {
   const {
     loading,
     loadingTest,
+    saveSuccess,
     loadTest,
     handleSaveTest,
     handleCopyTest,
@@ -308,6 +309,7 @@ export default function TestEditor() {
         formTitle={formData.title}
         loading={loading}
         hasQuestions={formData.questions.length > 0}
+        saveSuccess={saveSuccess}
         onSave={handleSaveWithCheck}
         onCopy={handleCopyTest}
         onDelete={() => setShowDeleteDialog(true)}
