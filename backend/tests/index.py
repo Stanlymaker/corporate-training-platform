@@ -105,6 +105,7 @@ def format_question_response(question_row: tuple) -> Dict[str, Any]:
         'order': question_row[7],
         'matchingPairs': question_row[8],
         'textCheckType': question_row[9],
+        'imageUrl': question_row[10] if len(question_row) > 10 else None,
     }
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
@@ -158,7 +159,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         cur.execute(
             "SELECT id, test_id, type, text, options, correct_answer, points, \"order\", "
-            "matching_pairs, text_check_type FROM questions_v2 WHERE test_id = %s ORDER BY \"order\"",
+            "matching_pairs, text_check_type, image_url FROM questions_v2 WHERE test_id = %s ORDER BY \"order\"",
             (test_id_int,)
         )
         questions = cur.fetchall()
