@@ -109,12 +109,6 @@ export default function TestView() {
           <div className="lg:col-span-2 space-y-6">
             <Card>
               <CardContent className="p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <Badge className={getStatusColor(test.status)}>
-                    {test.status === 'published' ? 'Опубликован' : 'Черновик'}
-                  </Badge>
-                </div>
-                
                 <h1 className="text-3xl font-bold text-gray-900 mb-4">{test.title}</h1>
                 <p className="text-gray-600">{test.description}</p>
               </CardContent>
@@ -219,6 +213,13 @@ export default function TestView() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-600">Статус:</span>
+                  <Badge className={getStatusColor(test.status)}>
+                    {test.status === 'published' ? 'Опубликован' : 'Черновик'}
+                  </Badge>
+                </div>
+
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Всего вопросов:</span>
                   <span className="font-semibold">{testQuestions.length}</span>
