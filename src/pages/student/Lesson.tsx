@@ -82,9 +82,15 @@ export default function LessonPage() {
         const lessonOrder = parseInt(lessonId || '0') - 1;
         foundLesson = lessonsData.find(l => l.order === lessonOrder) || null;
         
-        if (foundLesson?.materials) {
-          console.log('Lesson materials:', foundLesson.materials);
-          console.log('Unique materials:', Array.from(new Map(foundLesson.materials.map(m => [m.id, m])).values()));
+        if (foundLesson) {
+          console.log('Found lesson:', {
+            id: foundLesson.id,
+            title: foundLesson.title,
+            requiresPrevious: foundLesson.requiresPrevious,
+            isFinalTest: foundLesson.isFinalTest,
+            finalTestRequiresAllLessons: foundLesson.finalTestRequiresAllLessons,
+            finalTestRequiresAllTests: foundLesson.finalTestRequiresAllTests
+          });
         }
         
         setLesson(foundLesson);
@@ -104,6 +110,11 @@ export default function LessonPage() {
       if (progressRes.ok && courseData && foundLesson) {
         const data = await progressRes.json();
         const courseProgress = data.progress?.find((p: CourseProgress) => p.courseId === courseData.id);
+        console.log('Course progress:', {
+          courseId: courseData.id,
+          completedLessonIds: courseProgress?.completedLessonIds,
+          currentLessonId: foundLesson.id
+        });
         setProgress(courseProgress || null);
         setIsCompleted(courseProgress?.completedLessonIds.includes(foundLesson.id) || false);
         
@@ -168,8 +179,18 @@ export default function LessonPage() {
   const nextLesson = currentIndex < courseLessons.length - 1 ? courseLessons[currentIndex + 1] : null;
 
   const getLockStatus = () => {
+    console.log('Checking lock status for lesson:', lesson.title, {
+      requiresPrevious: lesson.requiresPrevious,
+      isFinalTest: lesson.isFinalTest,
+      finalTestRequiresAllLessons: lesson.finalTestRequiresAllLessons,
+      finalTestRequiresAllTests: lesson.finalTestRequiresAllTests,
+      completedLessonIds: progress?.completedLessonIds
+    });
+
     if (lesson.requiresPrevious && previousLesson) {
-      if (!progress?.completedLessonIds.includes(previousLesson.id)) {
+      const isPrevCompleted = progress?.completedLessonIds.includes(previousLesson.id);
+      console.log('Previous lesson check:', previousLesson.title, 'completed:', isPrevCompleted);
+      if (!isPrevCompleted) {
         return {
           isLocked: true,
           reason: 'previous',
@@ -183,6 +204,7 @@ export default function LessonPage() {
       const completedNonTestLessons = nonTestLessons.filter(l => 
         progress?.completedLessonIds.includes(l.id)
       );
+      console.log('All lessons check:', completedNonTestLessons.length, '/', nonTestLessons.length);
       
       if (completedNonTestLessons.length < nonTestLessons.length) {
         return {
@@ -198,6 +220,7 @@ export default function LessonPage() {
       const completedTests = testLessons.filter(l => 
         progress?.completedLessonIds.includes(l.id)
       );
+      console.log('All tests check:', completedTests.length, '/', testLessons.length);
       
       if (completedTests.length < testLessons.length) {
         return {
@@ -232,6 +255,12 @@ export default function LessonPage() {
       if (response.ok) {
         setIsCompleted(true);
         await loadLessonData();
+        
+        if (nextLesson) {
+          setTimeout(() => {
+            handleNavigateToLesson(nextLesson.order);
+          }, 500);
+        }
       }
     } catch (error) {
       console.error('Error completing lesson:', error);
@@ -286,6 +315,12 @@ export default function LessonPage() {
         if (response.ok) {
           setIsCompleted(true);
           await loadLessonData();
+          
+          if (nextLesson) {
+            setTimeout(() => {
+              handleNavigateToLesson(nextLesson.order);
+            }, 2000);
+          }
         }
       } catch (error) {
         console.error('Error completing test:', error);
