@@ -4,12 +4,12 @@ import { Lesson, CourseProgress } from './types';
 
 interface LessonSidebarProps {
   courseLessons: Lesson[];
-  currentLesson: Lesson;
+  currentLessonId: string;
   progress: CourseProgress | null;
-  onNavigateLesson: (lesson: Lesson) => void;
+  onNavigate: (lessonOrder: number) => void;
 }
 
-export default function LessonSidebar({ courseLessons, currentLesson, progress, onNavigateLesson }: LessonSidebarProps) {
+export default function LessonSidebar({ courseLessons, currentLessonId, progress, onNavigate }: LessonSidebarProps) {
   // Проверка блокировки урока
   const isLessonLocked = (lesson: Lesson, index: number): boolean => {
     // 1. Обычный урок с требованием завершить предыдущий
@@ -58,12 +58,12 @@ export default function LessonSidebar({ courseLessons, currentLesson, progress, 
           {courseLessons.map((l, index) => {
             const lessonCompleted = progress?.completedLessonIds.includes(l.id);
             const lessonLocked = isLessonLocked(l, index);
-            const isActive = l.id === currentLesson.id;
+            const isActive = l.id === currentLessonId;
 
             return (
               <button
                 key={l.id}
-                onClick={() => !lessonLocked && onNavigateLesson(l)}
+                onClick={() => !lessonLocked && onNavigate(l.order)}
                 disabled={lessonLocked}
                 className={`w-full text-left p-3 rounded-lg transition-colors ${
                   isActive
