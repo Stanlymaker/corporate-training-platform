@@ -214,15 +214,13 @@ export default function CourseEditor() {
     }
     
     // Если курс публикуется и был ранее опубликован - показываем модалку умного сброса
-    // (независимо от hasUnsavedChanges, т.к. переключение статуса тоже изменение)
     if (formData.status === 'published' && wasEverPublished) {
       const count = await checkStudentsProgress();
       console.log('Students with progress:', count);
-      if (count > 0) {
-        setStudentsCount(count);
-        setShowProgressResetDialog(true);
-        return;
-      }
+      // Показываем модалку всегда при переиздании курса (даже если студентов 0)
+      setStudentsCount(count);
+      setShowProgressResetDialog(true);
+      return;
     }
     await handleSaveCourse();
   };
