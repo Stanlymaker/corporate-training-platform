@@ -240,26 +240,36 @@ export function useCourseEditorActions(
             }
           }
           
-          // Save materials separately
-          if (lesson.materials && lesson.materials.length > 0) {
-            // Delete existing materials
-            const existingMaterialsRes = await fetch(`${API_ENDPOINTS.LESSONS}?id=${savedLessonId}`, {
-              headers: getAuthHeaders(),
-            });
-            if (existingMaterialsRes.ok) {
-              const existingData = await existingMaterialsRes.json();
-              const existingMaterials = existingData.lesson.materials || [];
-              
-              for (const material of existingMaterials) {
-                await fetch(`${API_ENDPOINTS.LESSONS}?action=material&materialId=${material.id}`, {
-                  method: 'DELETE',
-                  headers: getAuthHeaders(),
-                });
-              }
+          // Save materials separately with smart sync
+          const existingMaterialsRes = await fetch(`${API_ENDPOINTS.LESSONS}?id=${savedLessonId}`, {
+            headers: getAuthHeaders(),
+          });
+          
+          let existingMaterials: any[] = [];
+          if (existingMaterialsRes.ok) {
+            const existingData = await existingMaterialsRes.json();
+            existingMaterials = existingData.lesson.materials || [];
+          }
+          
+          const currentMaterials = lesson.materials || [];
+          
+          // Create maps for comparison by URL (URL is unique identifier)
+          const existingByUrl = new Map(existingMaterials.map(m => [m.url, m]));
+          const currentByUrl = new Map(currentMaterials.map(m => [m.url, m]));
+          
+          // Delete materials that no longer exist in current list
+          for (const existing of existingMaterials) {
+            if (!currentByUrl.has(existing.url)) {
+              await fetch(`${API_ENDPOINTS.LESSONS}?action=material&materialId=${existing.id}`, {
+                method: 'DELETE',
+                headers: getAuthHeaders(),
+              });
             }
-            
-            // Create new materials
-            for (const material of lesson.materials) {
+          }
+          
+          // Add only new materials (not in existing)
+          for (const material of currentMaterials) {
+            if (!existingByUrl.has(material.url)) {
               await fetch(`${API_ENDPOINTS.LESSONS}?action=material&lessonId=${savedLessonId}`, {
                 method: 'POST',
                 headers: getAuthHeaders(),

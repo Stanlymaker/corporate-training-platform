@@ -2,6 +2,7 @@ import json
 import os
 import psycopg2
 import jwt
+import boto3
 from datetime import datetime
 from typing import Dict, Any, Optional
 from pydantic import BaseModel, Field
@@ -664,7 +665,34 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'isBase64Encoded': False
             }
         
-        # Delete lesson materials first
+        # Get materials to delete files from S3
+        cur.execute("SELECT url FROM lesson_materials_v2 WHERE lesson_id = %s", (lesson_id,))
+        material_urls = [row[0] for row in cur.fetchall()]
+        
+        # Delete files from S3
+        if material_urls:
+            try:
+                s3 = boto3.client('s3',
+                    endpoint_url='https://bucket.poehali.dev',
+                    aws_access_key_id=os.environ['AWS_ACCESS_KEY_ID'],
+                    aws_secret_access_key=os.environ['AWS_SECRET_ACCESS_KEY']
+                )
+                
+                for url in material_urls:
+                    # Extract key from CDN URL
+                    # Format: https://cdn.poehali.dev/projects/{ACCESS_KEY}/bucket/{key}
+                    if 'cdn.poehali.dev' in url:
+                        parts = url.split('/bucket/')
+                        if len(parts) == 2:
+                            key = parts[1]
+                            try:
+                                s3.delete_object(Bucket='files', Key=key)
+                            except Exception as e:
+                                print(f'Failed to delete file {key}: {e}')
+            except Exception as e:
+                print(f'S3 cleanup error: {e}')
+        
+        # Delete lesson materials from DB
         cur.execute("DELETE FROM lesson_materials_v2 WHERE lesson_id = %s", (lesson_id,))
         
         # Delete lesson
