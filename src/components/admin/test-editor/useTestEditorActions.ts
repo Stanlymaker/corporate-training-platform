@@ -279,7 +279,8 @@ export function useTestEditorActions(
         }
       }
 
-      navigate(ROUTES.ADMIN.TESTS);
+      // Don't navigate - stay on the page after save
+      // navigate(ROUTES.ADMIN.TESTS);
     } catch (error) {
       console.error('Error saving test:', error);
       alert('Ошибка при сохранении теста');
