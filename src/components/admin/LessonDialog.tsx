@@ -4,6 +4,7 @@ import Icon from '@/components/ui/icon';
 import RichTextEditor from './RichTextEditor';
 import { API_ENDPOINTS, getAuthHeaders } from '@/config/api';
 import { uploadImage } from '@/utils/uploadImage';
+import { uploadFile } from '@/utils/uploadFile';
 
 interface LessonMaterial {
   id: number;
@@ -76,7 +77,15 @@ export default function LessonDialog({
     setUploadingFile(true);
     
     try {
-      const url = await uploadImage(file);
+      let url: string;
+      
+      // Для изображений используем uploadImage (с сжатием)
+      // Для документов и видео используем uploadFile (без сжатия)
+      if (type === 'image') {
+        url = await uploadImage(file);
+      } else {
+        url = await uploadFile(file);
+      }
       
       if (type === 'video') {
         onLessonChange('videoUrl', url);
@@ -91,6 +100,7 @@ export default function LessonDialog({
         };
         const materials = lesson.materials || [];
         onLessonChange('materials', [...materials, newMaterial]);
+        setShowMaterialForm(false);
       }
     } catch (error) {
       console.error('Ошибка загрузки:', error);
