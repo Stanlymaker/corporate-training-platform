@@ -214,11 +214,11 @@ export default function LessonPage() {
   };
 
   const handleDownload = (url: string, filename: string) => {
-    // Создаем временную ссылку и кликаем по ней
+    // Используем прокси-функцию для скачивания
+    const downloadUrl = `${API_ENDPOINTS.DOWNLOAD}?url=${encodeURIComponent(url)}&filename=${encodeURIComponent(filename)}`;
     const link = document.createElement('a');
-    link.href = url;
+    link.href = downloadUrl;
     link.download = filename;
-    link.target = '_blank';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
