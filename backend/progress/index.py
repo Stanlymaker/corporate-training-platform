@@ -69,7 +69,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'statusCode': 200,
             'headers': {
                 'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+                'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
                 'Access-Control-Allow-Headers': 'Content-Type, X-Auth-Token',
                 'Access-Control-Max-Age': '86400'
             },
@@ -492,6 +492,52 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'statusCode': 200,
             'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
             'body': json.dumps({'message': 'Прогресс успешно сброшен'}, ensure_ascii=False),
+            'isBase64Encoded': False
+        }
+    
+    if method == 'DELETE':
+        # Только админ может удалять прогресс
+        if payload.get('role') != 'admin':
+            cur.close()
+            conn.close()
+            return {
+                'statusCode': 403,
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'Доступ запрещен'}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
+        
+        if not user_id or not course_id_int:
+            cur.close()
+            conn.close()
+            return {
+                'statusCode': 400,
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'userId и courseId обязательны'}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
+        
+        # Удаляем прогресс пользователя по курсу
+        cur.execute(
+            "DELETE FROM course_progress_v2 WHERE user_id = %s AND course_id = %s",
+            (int(user_id), course_id_int)
+        )
+        
+        # Удаляем результаты тестов пользователя по этому курсу
+        cur.execute(
+            "DELETE FROM test_results_v2 WHERE user_id = %s AND test_id IN "
+            "(SELECT test_id FROM lessons_v2 WHERE course_id = %s AND test_id IS NOT NULL)",
+            (int(user_id), course_id_int)
+        )
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return {
+            'statusCode': 200,
+            'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'message': 'Прогресс удален'}, ensure_ascii=False),
             'isBase64Encoded': False
         }
     
