@@ -156,9 +156,9 @@ export default function AdminDashboard() {
           }
         }
 
-        // Сортируем по дате и берем последние 5
+        // Сортируем по дате и берем последние 25
         activities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-        setRecentActivities(activities.slice(0, 5));
+        setRecentActivities(activities.slice(0, 25));
 
         // Обновляем статистику
         setStats({
@@ -244,7 +244,7 @@ export default function AdminDashboard() {
                 Последняя активность
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="max-h-[600px] overflow-y-auto">
               {recentActivities.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
                   <Icon name="Inbox" size={48} className="mx-auto mb-2 opacity-20" />
