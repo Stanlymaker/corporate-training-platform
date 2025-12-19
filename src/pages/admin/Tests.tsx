@@ -65,7 +65,9 @@ export default function Tests() {
       
       if (coursesRes.ok) {
         const coursesData = await coursesRes.json();
-        setCourses(coursesData.courses || []);
+        const loadedCourses = coursesData.courses || [];
+        console.log('[Tests] Loaded courses:', loadedCourses);
+        setCourses(loadedCourses);
       }
     } catch (error) {
       console.error('Error loading data:', error);
@@ -226,12 +228,16 @@ export default function Tests() {
             </TableHeader>
             <TableBody>
               {filteredTests.map((test) => {
-                const usedInCourses = courses.filter(course => 
-                  course.lessons?.some((lesson: any) => {
+                const usedInCourses = courses.filter(course => {
+                  const hasTest = course.lessons?.some((lesson: any) => {
                     const matches = Number(lesson.testId) === Number(test.id);
+                    if (matches) {
+                      console.log(`[Tests] Test ${test.id} found in course ${course.id} (${course.title}), lesson testId:`, lesson.testId);
+                    }
                     return matches;
-                  })
-                );
+                  });
+                  return hasTest;
+                });
                 
                 return (
                   <TableRow 

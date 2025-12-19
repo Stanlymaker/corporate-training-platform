@@ -246,8 +246,8 @@ export default function LessonDialog({
                 >
                   <option value="">-- Выберите тест --</option>
                   {tests.map(test => (
-                    <option key={test.id} value={test.id} disabled={test.status === 'draft'}>
-                      {test.title} {test.status === 'draft' ? '(Черновик - недоступен)' : `(${test.questionsCount} вопросов, ${test.timeLimit} мин)`}
+                    <option key={test.id} value={test.id}>
+                      {test.title} {test.status === 'draft' ? '(Черновик)' : '(Опубликован)'} - {test.questionsCount} вопросов, {test.timeLimit} мин
                     </option>
                   ))}
                 </select>
