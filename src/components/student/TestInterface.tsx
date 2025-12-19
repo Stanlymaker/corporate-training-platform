@@ -78,7 +78,7 @@ export default function TestInterface({
           </span>
         </div>
         
-        {test.questions.map((question, index) => (
+        {test.questions?.map((question, index) => (
           <div key={question.id} className="p-6 border rounded-lg">
             <h4 className="font-bold mb-4">
               {index + 1}. {question.question}
@@ -111,7 +111,7 @@ export default function TestInterface({
           onClick={onSubmitTest} 
           className="w-full" 
           size="lg"
-          disabled={Object.keys(testAnswers).length < test.questions.length}
+          disabled={Object.keys(testAnswers).length < (test.questions?.length || 0)}
         >
           <Icon name="CheckCircle" size={20} className="mr-2" />
           Завершить тестирование
