@@ -263,25 +263,6 @@ export default function LessonPage() {
           <Icon name="ArrowLeft" size={16} className="mr-2" />
           Назад к курсу
         </Button>
-        <div className="flex items-start justify-between gap-4 mb-4">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <Badge variant="outline">Урок {lesson.order + 1}</Badge>
-              {isCompleted && (
-                <Badge className="bg-green-500">
-                  <Icon name="CheckCircle" size={14} className="mr-1" />
-                  Завершен
-                </Badge>
-              )}
-            </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">{lesson.title}</h1>
-            <p className="text-gray-600">{course.title}</p>
-          </div>
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <Icon name="Clock" size={16} />
-            {lesson.duration} мин
-          </div>
-        </div>
         <div className="flex items-center gap-3">
           <Progress value={progressPercent} className="flex-1" />
           <span className="text-sm text-gray-600 whitespace-nowrap">
