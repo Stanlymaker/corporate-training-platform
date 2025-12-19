@@ -5,10 +5,11 @@ import { useState, useEffect } from 'react';
 import { API_ENDPOINTS, getAuthHeaders } from '@/config/api';
 
 interface RecentActivity {
-  type: 'course_completed' | 'reward_earned' | 'lesson_completed';
+  type: 'course_started' | 'course_completed' | 'reward_earned' | 'lesson_completed';
   studentName: string;
   itemName: string;
   timestamp: string;
+  courseName?: string;
 }
 
 export default function AdminDashboard() {
@@ -78,18 +79,59 @@ export default function AdminDashboard() {
               const progress = progressData.progress || [];
               console.log(`Progress for ${student.name}:`, progress);
 
-              // Завершенные курсы и награды
+              // Прогресс по курсам
               for (const p of progress) {
+                const course = courses.find((c: any) => c.id === p.courseId);
+                if (!course) continue;
+
+                // Начало курса
+                if (p.startedAt && !p.completed) {
+                  activities.push({
+                    type: 'course_started',
+                    studentName: student.name,
+                    itemName: course.title,
+                    timestamp: p.startedAt
+                  });
+                }
+
+                // Завершение курса
                 if (p.completed) {
                   completedCoursesCount++;
-                  const course = courses.find((c: any) => c.id === p.courseId);
-                  if (course) {
-                    activities.push({
-                      type: 'course_completed',
-                      studentName: student.name,
-                      itemName: course.title,
-                      timestamp: p.startedAt || new Date().toISOString()
+                  activities.push({
+                    type: 'course_completed',
+                    studentName: student.name,
+                    itemName: course.title,
+                    timestamp: p.completedAt || p.startedAt || new Date().toISOString()
+                  });
+                }
+
+                // Завершенные уроки
+                if (p.completedLessons && Array.isArray(p.completedLessons)) {
+                  // Загружаем уроки курса
+                  try {
+                    const lessonsRes = await fetch(`${API_ENDPOINTS.LESSONS}?courseId=${course.id}`, {
+                      headers: getAuthHeaders()
                     });
+                    if (lessonsRes.ok) {
+                      const lessonsData = await lessonsRes.json();
+                      const lessons = lessonsData.lessons || [];
+                      
+                      // Добавляем только последние 3 урока
+                      for (const lessonId of p.completedLessons.slice(-3)) {
+                        const lesson = lessons.find((l: any) => l.id === lessonId);
+                        if (lesson) {
+                          activities.push({
+                            type: 'lesson_completed',
+                            studentName: student.name,
+                            itemName: lesson.title,
+                            courseName: course.title,
+                            timestamp: p.lastActivityAt || p.startedAt || new Date().toISOString()
+                          });
+                        }
+                      }
+                    }
+                  } catch (err) {
+                    console.error('Error loading lessons:', err);
                   }
                 }
 
@@ -102,7 +144,7 @@ export default function AdminDashboard() {
                         type: 'reward_earned',
                         studentName: student.name,
                         itemName: reward.name,
-                        timestamp: p.startedAt || new Date().toISOString()
+                        timestamp: p.rewardEarnedAt || p.startedAt || new Date().toISOString()
                       });
                     }
                   }
@@ -214,20 +256,23 @@ export default function AdminDashboard() {
                     <div key={index} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                       <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
                         activity.type === 'course_completed' ? 'bg-green-100' :
+                        activity.type === 'course_started' ? 'bg-blue-100' :
                         activity.type === 'reward_earned' ? 'bg-amber-100' :
-                        'bg-blue-100'
+                        'bg-purple-100'
                       }`}>
                         <Icon 
                           name={
                             activity.type === 'course_completed' ? 'GraduationCap' :
+                            activity.type === 'course_started' ? 'PlayCircle' :
                             activity.type === 'reward_earned' ? 'Award' :
                             'BookCheck'
                           } 
                           size={20} 
                           className={
                             activity.type === 'course_completed' ? 'text-green-600' :
+                            activity.type === 'course_started' ? 'text-blue-600' :
                             activity.type === 'reward_earned' ? 'text-amber-600' :
-                            'text-blue-600'
+                            'text-purple-600'
                           }
                         />
                       </div>
@@ -237,8 +282,12 @@ export default function AdminDashboard() {
                         </p>
                         <p className="text-sm text-gray-600">
                           {activity.type === 'course_completed' && `завершил курс "${activity.itemName}"`}
+                          {activity.type === 'course_started' && `начал курс "${activity.itemName}"`}
                           {activity.type === 'reward_earned' && `получил награду "${activity.itemName}"`}
                           {activity.type === 'lesson_completed' && `завершил урок "${activity.itemName}"`}
+                          {activity.type === 'lesson_completed' && activity.courseName && (
+                            <span className="text-gray-500 text-xs block mt-0.5">в курсе {activity.courseName}</span>
+                          )}
                         </p>
                         <p className="text-xs text-gray-400 mt-1">
                           {new Date(activity.timestamp).toLocaleDateString('ru-RU', { 
