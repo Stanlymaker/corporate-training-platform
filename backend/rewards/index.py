@@ -17,6 +17,7 @@ class RewardUpdate(BaseModel):
     name: Optional[str] = None
     icon: Optional[str] = None
     color: Optional[str] = None
+    course_id: Optional[int] = None
     description: Optional[str] = None
     condition: Optional[str] = None
     bonuses: Optional[List[str]] = None
@@ -229,6 +230,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         if update_data.color is not None:
             updates.append("color = %s")
             values.append(update_data.color)
+        if update_data.course_id is not None:
+            updates.append("course_id = %s")
+            values.append(update_data.course_id)
         if update_data.description is not None:
             updates.append("description = %s")
             values.append(update_data.description)
