@@ -175,7 +175,55 @@ export default function LessonPage() {
   const previousLesson = currentIndex > 0 ? courseLessons[currentIndex - 1] : null;
   const nextLesson = currentIndex < courseLessons.length - 1 ? courseLessons[currentIndex + 1] : null;
 
-  const isLocked = lesson.requiresPrevious && previousLesson && !progress?.completedLessonIds.includes(previousLesson.id);
+  // Логика блокировки урока
+  const getLockStatus = () => {
+    // 1. Обычный урок с требованием завершить предыдущий
+    if (lesson.requiresPrevious && previousLesson) {
+      if (!progress?.completedLessonIds.includes(previousLesson.id)) {
+        return {
+          isLocked: true,
+          reason: 'previous',
+          message: `Чтобы открыть этот урок, необходимо завершить предыдущий урок: "${previousLesson.title}"`
+        };
+      }
+    }
+
+    // 2. Финальный тест с требованием завершить все уроки
+    if (lesson.isFinalTest && lesson.finalTestRequiresAllLessons) {
+      const nonTestLessons = courseLessons.filter(l => !l.isFinalTest);
+      const completedNonTestLessons = nonTestLessons.filter(l => 
+        progress?.completedLessonIds.includes(l.id)
+      );
+      
+      if (completedNonTestLessons.length < nonTestLessons.length) {
+        return {
+          isLocked: true,
+          reason: 'allLessons',
+          message: `Финальный тест откроется после завершения всех уроков курса (${completedNonTestLessons.length}/${nonTestLessons.length})`
+        };
+      }
+    }
+
+    // 3. Финальный тест с требованием завершить все промежуточные тесты
+    if (lesson.isFinalTest && lesson.finalTestRequiresAllTests) {
+      const testLessons = courseLessons.filter(l => l.type === 'test' && !l.isFinalTest);
+      const completedTests = testLessons.filter(l => 
+        progress?.completedLessonIds.includes(l.id)
+      );
+      
+      if (completedTests.length < testLessons.length) {
+        return {
+          isLocked: true,
+          reason: 'allTests',
+          message: `Финальный тест откроется после прохождения всех промежуточных тестов (${completedTests.length}/${testLessons.length})`
+        };
+      }
+    }
+
+    return { isLocked: false, reason: null, message: null };
+  };
+
+  const lockStatus = getLockStatus();
 
   const handleComplete = async () => {
     if (!course || !lesson) return;
@@ -344,7 +392,7 @@ export default function LessonPage() {
 
   const progressPercent = progress ? (progress.completedLessons / progress.totalLessons) * 100 : 0;
 
-  if (isLocked) {
+  if (lockStatus.isLocked) {
     return (
       <StudentLayout>
         <div className="mb-6">
@@ -364,16 +412,27 @@ export default function LessonPage() {
           <CardContent>
             <div className="max-w-md mx-auto">
               <Icon name="Lock" size={64} className="mx-auto text-gray-400 mb-4" />
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Урок заблокирован</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                {lesson.isFinalTest ? 'Финальный тест заблокирован' : 'Урок заблокирован'}
+              </h2>
               <p className="text-gray-600 mb-6">
-                Чтобы открыть этот урок, необходимо завершить предыдущий урок:
+                {lockStatus.message}
               </p>
-              <Badge variant="outline" className="text-base px-4 py-2 mb-6">
-                {previousLesson?.title}
-              </Badge>
-              <Button onClick={() => handleNavigateLesson(previousLesson!)}>
-                Перейти к предыдущему уроку
-              </Button>
+              {lockStatus.reason === 'previous' && previousLesson && (
+                <>
+                  <Badge variant="outline" className="text-base px-4 py-2 mb-6">
+                    {previousLesson.title}
+                  </Badge>
+                  <Button onClick={() => handleNavigateLesson(previousLesson)}>
+                    Перейти к предыдущему уроку
+                  </Button>
+                </>
+              )}
+              {(lockStatus.reason === 'allLessons' || lockStatus.reason === 'allTests') && (
+                <Button onClick={() => navigate(`/student/courses/${courseId}`)}>
+                  Вернуться к курсу
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>

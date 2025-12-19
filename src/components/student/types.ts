@@ -16,6 +16,9 @@ export interface Lesson {
   videoUrl?: string;
   requiresPrevious?: boolean;
   testId?: number;
+  isFinalTest?: boolean;
+  finalTestRequiresAllLessons?: boolean;
+  finalTestRequiresAllTests?: boolean;
   materials?: Array<{
     id: number;
     title: string;

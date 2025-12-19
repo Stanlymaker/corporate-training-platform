@@ -150,34 +150,56 @@ export default function CourseDetail() {
               <CardContent>
                 <div className="space-y-3">
                   {courseLessons.map((lesson, index) => {
-                    const isCompleted = index < completedLessons;
-                    const isCurrent = index === completedLessons;
+                    const isCompleted = userProgress?.completedLessonIds?.includes(lesson.id);
+                    
+                    // Проверка блокировки
+                    let isLocked = false;
+                    if (lesson.requiresPrevious && index > 0) {
+                      const prevLesson = courseLessons[index - 1];
+                      isLocked = !userProgress?.completedLessonIds?.includes(prevLesson.id);
+                    }
+                    if (lesson.isFinalTest && lesson.finalTestRequiresAllLessons) {
+                      const nonTestLessons = courseLessons.filter((l: any) => !l.isFinalTest);
+                      const completedNonTestLessons = nonTestLessons.filter((l: any) => 
+                        userProgress?.completedLessonIds?.includes(l.id)
+                      );
+                      isLocked = completedNonTestLessons.length < nonTestLessons.length;
+                    }
+                    if (lesson.isFinalTest && lesson.finalTestRequiresAllTests) {
+                      const testLessons = courseLessons.filter((l: any) => l.type === 'test' && !l.isFinalTest);
+                      const completedTests = testLessons.filter((l: any) => 
+                        userProgress?.completedLessonIds?.includes(l.id)
+                      );
+                      isLocked = completedTests.length < testLessons.length;
+                    }
                     
                     return (
                       <div
                         key={lesson.id}
                         className={`p-4 rounded-xl border-2 transition-all ${
-                          isCompleted
+                          isLocked
+                            ? 'bg-gray-50 border-gray-200 opacity-60'
+                            : isCompleted
                             ? 'bg-green-50 border-green-200'
-                            : isCurrent
-                            ? 'bg-orange-50 border-orange-300'
-                            : 'bg-gray-50 border-gray-200'
+                            : 'bg-white border-gray-200 hover:border-primary'
                         }`}
                       >
                         <div className="flex items-start gap-4">
                           <div
                             className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-                              isCompleted
+                              isLocked
+                                ? 'bg-gray-300 text-gray-500'
+                                : isCompleted
                                 ? 'bg-green-500 text-white'
-                                : isCurrent
-                                ? 'bg-orange-500 text-white'
-                                : 'bg-gray-300 text-gray-600'
+                                : 'bg-primary text-white'
                             }`}
                           >
-                            {isCompleted ? (
+                            {isLocked ? (
+                              <Icon name="Lock" size={20} />
+                            ) : isCompleted ? (
                               <Icon name="Check" size={20} />
                             ) : (
-                              <span className="font-semibold">{index + 1}</span>
+                              <span className="font-semibold">{lesson.isFinalTest ? '★' : index + 1}</span>
                             )}
                           </div>
                           
@@ -191,25 +213,19 @@ export default function CourseDetail() {
                             </div>
                             <p className="text-sm text-gray-600 mb-3">{lesson.description}</p>
                             
-                            {lesson.videoUrl && (
-                              <Button
-                                size="sm"
-                                variant={isCurrent ? "default" : "outline"}
-                                className={
-                                  isCurrent
-                                    ? 'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600'
-                                    : ''
-                                }
-                                disabled={!isCurrent && !isCompleted}
-                              >
-                                <Icon
-                                  name={isCompleted ? 'RotateCcw' : 'Play'}
-                                  className="mr-2"
-                                  size={14}
-                                />
-                                {isCompleted ? 'Повторить урок' : isCurrent ? 'Начать урок' : 'Недоступно'}
-                              </Button>
-                            )}
+                            <Button
+                              size="sm"
+                              variant={isCompleted ? "outline" : "default"}
+                              disabled={isLocked}
+                              onClick={() => navigate(ROUTES.STUDENT.LESSON(id!, String(lesson.order + 1)))}
+                            >
+                              <Icon
+                                name={isLocked ? 'Lock' : isCompleted ? 'RotateCcw' : 'Play'}
+                                className="mr-2"
+                                size={14}
+                              />
+                              {isLocked ? 'Заблокировано' : isCompleted ? 'Повторить' : lesson.isFinalTest ? 'Начать тест' : 'Начать урок'}
+                            </Button>
                           </div>
                         </div>
                       </div>
