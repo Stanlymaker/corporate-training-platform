@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import { Test } from './types';
+import { useMemo } from 'react';
 
 interface TestInterfaceProps {
   test: Test;
@@ -33,6 +34,15 @@ export default function TestInterface({
   onNextQuestion,
   onPreviousQuestion
 }: TestInterfaceProps) {
+  const currentQuestion = test.questions?.[currentQuestionIndex];
+  
+  // Запоминаем порядок правых элементов один раз для текущего вопроса
+  const shuffledRightItems = useMemo(() => {
+    if (!currentQuestion?.matchingPairs) return [];
+    return [...currentQuestion.matchingPairs]
+      .sort(() => Math.random() - 0.5)
+      .map(p => p.right);
+  }, [currentQuestion?.id]);
   if (!testStarted) {
     return (
       <div className="space-y-6">
@@ -72,7 +82,6 @@ export default function TestInterface({
   }
 
   if (!testSubmitted) {
-    const currentQuestion = test.questions?.[currentQuestionIndex];
     const isLastQuestion = currentQuestionIndex === (test.questions?.length || 0) - 1;
     const allQuestionsAnswered = Object.keys(testAnswers).length === (test.questions?.length || 0);
     
@@ -122,87 +131,81 @@ export default function TestInterface({
               className="w-full min-h-[120px] p-4 border-2 border-gray-200 rounded-lg focus:border-primary focus:outline-none resize-y"
             />
           ) : currentQuestion.type === 'matching' && currentQuestion.matchingPairs ? (
-            (() => {
-              const userMatching = (testAnswers[currentQuestion.id] as Record<string, string>) || {};
-              
-              // Перемешиваем правые элементы для отображения
-              const shuffledRightItems = [...currentQuestion.matchingPairs]
-                .sort(() => Math.random() - 0.5)
-                .map(p => p.right);
-              
-              return (
-                <div>
-                  <p className="text-sm text-gray-600 mb-4">
-                    <Icon name="Info" size={16} className="inline mr-1" />
-                    Перетащите элементы справа к соответствующим элементам слева
-                  </p>
-                  <div className="grid grid-cols-2 gap-8">
-                    {/* Левая колонка - зоны для drop */}
-                    <div className="space-y-3">
-                      {currentQuestion.matchingPairs.map((pair, leftIndex) => (
-                        <div
-                          key={`left-${leftIndex}`}
-                          onDragOver={(e) => e.preventDefault()}
-                          onDrop={(e) => {
-                            e.preventDefault();
-                            const draggedItem = e.dataTransfer.getData('text');
-                            const newMatching = { ...userMatching, [pair.left]: draggedItem };
-                            onAnswerChange(currentQuestion.id, newMatching, false);
-                          }}
-                          className={`p-4 rounded-lg border-2 border-dashed min-h-[60px] flex flex-col justify-center ${
-                            userMatching[pair.left] ? 'border-primary bg-primary/5' : 'border-gray-300 bg-gray-50'
-                          }`}
-                        >
-                          <div className="font-medium text-gray-700 mb-1">{pair.left}</div>
-                          {userMatching[pair.left] && (
-                            <div className="flex items-center justify-between">
-                              <div className="text-sm text-primary font-medium">{userMatching[pair.left]}</div>
-                              <button
-                                onClick={() => {
-                                  const newMatching = { ...userMatching };
-                                  delete newMatching[pair.left];
-                                  onAnswerChange(currentQuestion.id, newMatching, false);
-                                }}
-                                className="text-gray-400 hover:text-red-500"
-                              >
-                                <Icon name="X" size={16} />
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
+            <div>
+              <p className="text-sm text-gray-600 mb-4">
+                <Icon name="Info" size={16} className="inline mr-1" />
+                Перетащите элементы справа к соответствующим элементам слева
+              </p>
+              <div className="grid grid-cols-2 gap-8">
+                {/* Левая колонка - зоны для drop */}
+                <div className="space-y-3">
+                  {currentQuestion.matchingPairs.map((pair, leftIndex) => {
+                    const userMatching = (testAnswers[currentQuestion.id] as Record<string, string>) || {};
                     
-                    {/* Правая колонка - элементы для перетаскивания */}
-                    <div className="space-y-3">
-                      {shuffledRightItems.map((rightItem, rightIndex) => {
-                        const isUsed = Object.values(userMatching).includes(rightItem);
-                        
-                        return (
-                          <div
-                            key={`right-${rightIndex}`}
-                            draggable={!isUsed}
-                            onDragStart={(e) => {
-                              e.dataTransfer.setData('text', rightItem);
-                            }}
-                            className={`p-4 rounded-lg border-2 cursor-move transition-all ${
-                              isUsed 
-                                ? 'border-gray-200 bg-gray-100 opacity-40 cursor-not-allowed' 
-                                : 'border-primary bg-white hover:shadow-lg'
-                            }`}
-                          >
-                            <div className="flex items-center gap-2">
-                              <Icon name="GripVertical" size={16} className="text-gray-400" />
-                              <span className="font-medium">{rightItem}</span>
-                            </div>
+                    return (
+                      <div
+                        key={`left-${leftIndex}`}
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          const draggedItem = e.dataTransfer.getData('text');
+                          const newMatching = { ...userMatching, [pair.left]: draggedItem };
+                          onAnswerChange(currentQuestion.id, newMatching, false);
+                        }}
+                        className={`p-4 rounded-lg border-2 border-dashed min-h-[60px] flex flex-col justify-center ${
+                          userMatching[pair.left] ? 'border-primary bg-primary/5' : 'border-gray-300 bg-gray-50'
+                        }`}
+                      >
+                        <div className="font-medium text-gray-700 mb-1">{pair.left}</div>
+                        {userMatching[pair.left] && (
+                          <div className="flex items-center justify-between">
+                            <div className="text-sm text-primary font-medium">{userMatching[pair.left]}</div>
+                            <button
+                              onClick={() => {
+                                const newMatching = { ...userMatching };
+                                delete newMatching[pair.left];
+                                onAnswerChange(currentQuestion.id, newMatching, false);
+                              }}
+                              className="text-gray-400 hover:text-red-500"
+                            >
+                              <Icon name="X" size={16} />
+                            </button>
                           </div>
-                        );
-                      })}
-                    </div>
-                  </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
-              );
-            })()
+                
+                {/* Правая колонка - элементы для перетаскивания */}
+                <div className="space-y-3">
+                  {shuffledRightItems.map((rightItem, rightIndex) => {
+                    const userMatching = (testAnswers[currentQuestion.id] as Record<string, string>) || {};
+                    const isUsed = Object.values(userMatching).includes(rightItem);
+                    
+                    return (
+                      <div
+                        key={`right-${rightIndex}`}
+                        draggable={!isUsed}
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData('text', rightItem);
+                        }}
+                        className={`p-4 rounded-lg border-2 cursor-move transition-all ${
+                          isUsed 
+                            ? 'border-gray-200 bg-gray-100 opacity-40 cursor-not-allowed' 
+                            : 'border-primary bg-white hover:shadow-lg'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <Icon name="GripVertical" size={16} className="text-gray-400" />
+                          <span className="font-medium">{rightItem}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
           ) : (
             <div className="space-y-2">
               {currentQuestion.options?.map((option, optionIndex) => {
