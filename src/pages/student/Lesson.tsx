@@ -214,14 +214,8 @@ export default function LessonPage() {
   };
 
   const handleDownload = (url: string, filename: string) => {
-    // Используем прокси-функцию для скачивания
-    const downloadUrl = `${API_ENDPOINTS.DOWNLOAD}?url=${encodeURIComponent(url)}&filename=${encodeURIComponent(filename)}`;
-    const link = document.createElement('a');
-    link.href = downloadUrl;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // Открываем файл напрямую - браузер предложит скачать
+    window.open(url, '_blank');
   };
 
   const progressPercent = progress ? (progress.completedLessons / progress.totalLessons) * 100 : 0;

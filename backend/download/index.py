@@ -47,6 +47,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         }
     
     try:
+        # Логируем URL для отладки
+        print(f"Downloading file from: {file_url}")
+        
         # Скачиваем файл с CDN
         with urllib.request.urlopen(file_url) as response:
             file_data = response.read()
