@@ -41,6 +41,7 @@ export default function Tests() {
   const navigate = useNavigate();
   const [filter, setFilter] = useState<'all' | 'published' | 'draft'>('all');
   const [tests, setTests] = useState<Test[]>([]);
+  const [courses, setCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingTest, setDeletingTest] = useState<Test | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
@@ -52,10 +53,19 @@ export default function Tests() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const testsRes = await fetch(API_ENDPOINTS.TESTS, { headers: getAuthHeaders() });
+      const [testsRes, coursesRes] = await Promise.all([
+        fetch(API_ENDPOINTS.TESTS, { headers: getAuthHeaders() }),
+        fetch(API_ENDPOINTS.COURSES, { headers: getAuthHeaders() })
+      ]);
+      
       if (testsRes.ok) {
         const testsData = await testsRes.json();
         setTests(testsData.tests || []);
+      }
+      
+      if (coursesRes.ok) {
+        const coursesData = await coursesRes.json();
+        setCourses(coursesData.courses || []);
       }
     } catch (error) {
       console.error('Error loading data:', error);
@@ -209,66 +219,82 @@ export default function Tests() {
               <TableRow>
                 <TableHead>Название</TableHead>
                 <TableHead>Статус</TableHead>
+                <TableHead>Используется в курсах</TableHead>
                 <TableHead className="text-center">Вопросов</TableHead>
                 <TableHead className="text-right">Действия</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredTests.map((test) => (
-                <TableRow key={test.id}>
-                  <TableCell>
-                    <div className="font-medium text-gray-900">{test.title}</div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={test.status === 'published' ? 'default' : 'secondary'}>
-                      {test.status === 'published' ? 'Опубликован' : 'Черновик'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {test.questionsCount || 0}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex gap-2 justify-end">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => navigate(`/admin/tests/edit/${test.id}`)}
-                      >
-                        <Icon name="Edit" className="mr-2" size={16} />
-                        Редактировать
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => navigate(`/admin/tests/view/${test.id}`)}
-                      >
-                        <Icon name="Eye" className="mr-2" size={16} />
-                        Просмотр
-                      </Button>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="outline" size="sm" disabled={actionLoading}>
-                            <Icon name="MoreVertical" size={16} />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleCopyTest(test)}>
-                            <Icon name="Copy" className="mr-2" size={16} />
-                            Копировать
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={() => setDeletingTest(test)}
-                            className="text-red-600 focus:text-red-600"
-                          >
-                            <Icon name="Trash2" className="mr-2" size={16} />
-                            Удалить
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {filteredTests.map((test) => {
+                const usedInCourses = courses.filter(course => 
+                  course.lessons?.some((lesson: any) => lesson.testId === test.id)
+                );
+                
+                return (
+                  <TableRow 
+                    key={test.id} 
+                    className="cursor-pointer hover:bg-gray-50"
+                    onClick={() => navigate(`/admin/tests/view/${test.id}`)}
+                  >
+                    <TableCell>
+                      <div className="font-medium text-gray-900">{test.title}</div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={test.status === 'published' ? 'default' : 'secondary'}>
+                        {test.status === 'published' ? 'Опубликован' : 'Черновик'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {usedInCourses.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {usedInCourses.map(course => (
+                            <Badge key={course.id} variant="outline" className="text-xs">
+                              {course.title}
+                            </Badge>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-sm text-gray-400">Не используется</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {test.questionsCount || 0}
+                    </TableCell>
+                    <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex gap-2 justify-end">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => navigate(`/admin/tests/edit/${test.id}`)}
+                        >
+                          <Icon name="Edit" className="mr-2" size={16} />
+                          Редактировать
+                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm" disabled={actionLoading}>
+                              <Icon name="MoreVertical" size={16} />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleCopyTest(test)}>
+                              <Icon name="Copy" className="mr-2" size={16} />
+                              Копировать
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => setDeletingTest(test)}
+                              className="text-red-600 focus:text-red-600"
+                            >
+                              <Icon name="Trash2" className="mr-2" size={16} />
+                              Удалить
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </Card>
