@@ -72,7 +72,7 @@ export default function TestInterface({
               <Icon name="Target" size={20} className="text-primary" />
               <div>
                 <div className="text-sm text-gray-500">Проходной балл</div>
-                <div className="font-bold">{test.passingScore}%</div>
+                <div className="font-bold">{test.passScore}%</div>
               </div>
             </div>
           </div>
@@ -298,24 +298,24 @@ export default function TestInterface({
 
   return (
     <div className={`p-6 rounded-lg border-2 ${
-      testScore >= test.passingScore ? 'border-green-500 bg-green-50' : 'border-red-500 bg-red-50'
+      testScore >= test.passScore ? 'border-green-500 bg-green-50' : 'border-red-500 bg-red-50'
     }`}>
       <div className="text-center">
         <Icon 
-          name={testScore >= test.passingScore ? 'CheckCircle' : 'XCircle'} 
+          name={testScore >= test.passScore ? 'CheckCircle' : 'XCircle'} 
           size={64} 
-          className={`mx-auto mb-4 ${testScore >= test.passingScore ? 'text-green-500' : 'text-red-500'}`}
+          className={`mx-auto mb-4 ${testScore >= test.passScore ? 'text-green-500' : 'text-red-500'}`}
         />
         <h3 className="text-2xl font-bold mb-2">
-          {testScore >= test.passingScore ? 'Тест пройден!' : 'Тест не пройден'}
+          {testScore >= test.passScore ? 'Тест пройден!' : 'Тест не пройден'}
         </h3>
         <p className="text-xl mb-4">
           Ваш результат: <span className="font-bold">{testScore}%</span>
         </p>
         <p className="text-gray-600 mb-6">
-          Проходной балл: {test.passingScore}%
+          Проходной балл: {test.passScore}%
         </p>
-        {testScore < test.passingScore && (
+        {testScore < test.passScore && (
           <Button onClick={onRetry}>
             <Icon name="RotateCcw" size={16} className="mr-2" />
             Попробовать снова

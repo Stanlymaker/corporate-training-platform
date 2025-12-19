@@ -28,7 +28,7 @@ export interface Test {
   id: number;
   title: string;
   description: string;
-  passingScore: number;
+  passScore: number;
   timeLimit: number;
   questionsCount: number;
   questions: TestQuestion[];

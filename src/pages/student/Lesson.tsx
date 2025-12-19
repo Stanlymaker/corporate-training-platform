@@ -318,7 +318,7 @@ export default function LessonPage() {
     setTestSubmitted(true);
     
     // Если тест пройден, отмечаем урок как завершённый
-    if (score >= test.passingScore) {
+    if (score >= test.passScore) {
       handleComplete();
     }
   };
