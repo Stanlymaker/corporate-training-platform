@@ -361,8 +361,10 @@ export default function QuestionDialog({
             onClick={onSave}
             disabled={
               !question.question ||
-              (question.type !== 'text' && !hasCorrectAnswer) ||
-              (question.type === 'text' && !question.correctText)
+              (question.type === 'single' && !hasCorrectAnswer) ||
+              (question.type === 'multiple' && !hasCorrectAnswer) ||
+              (question.type === 'text' && !question.correctText) ||
+              (question.type === 'matching' && (!question.matchingPairs || question.matchingPairs.length < 2))
             }
           >
             <Icon name="Save" className="mr-2" size={16} />

@@ -191,6 +191,31 @@ export default function TestView() {
                             </div>
                           )}
 
+                          {question.type === 'text' && question.correctAnswer && (
+                            <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                              <div className="flex items-start gap-2">
+                                <Icon name="Check" size={16} className="text-green-600 mt-0.5" />
+                                <div>
+                                  <p className="text-xs text-green-700 font-medium mb-1">Правильный ответ:</p>
+                                  <p className="text-sm text-green-900 font-medium">{question.correctAnswer}</p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {question.type === 'matching' && question.matchingPairs && question.matchingPairs.length > 0 && (
+                            <div className="mt-3 space-y-2">
+                              <p className="text-xs text-gray-600 font-medium mb-2">Правильные пары:</p>
+                              {question.matchingPairs.map((pair: any, pairIndex: number) => (
+                                <div key={pairIndex} className="flex items-center gap-3 p-2 bg-green-50 border border-green-200 rounded-lg">
+                                  <span className="text-sm text-green-900 font-medium">{pair.left}</span>
+                                  <Icon name="ArrowRight" size={16} className="text-green-600" />
+                                  <span className="text-sm text-green-900 font-medium">{pair.right}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
                           <div className="flex items-center justify-between mt-3 text-sm text-gray-500">
                             <span>Баллов: {question.points}</span>
                           </div>
