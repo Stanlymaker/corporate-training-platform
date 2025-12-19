@@ -410,10 +410,30 @@ export default function UserCoursesManagement({
               Отмена
             </AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => {
-                if (revokeAssignmentId && onRemoveAssignment) {
-                  onRemoveAssignment(revokeAssignmentId);
+              onClick={async () => {
+                if (revokeAssignmentId) {
+                  // Удаляем назначение
+                  if (onRemoveAssignment) {
+                    onRemoveAssignment(revokeAssignmentId);
+                  }
+                  
+                  // Сбрасываем прогресс пользователя по курсу
+                  const assignment = userAssignments.find(a => a.id === revokeAssignmentId);
+                  if (assignment) {
+                    try {
+                      await fetch(`${API_ENDPOINTS.PROGRESS}?userId=${user.id}&courseId=${assignment.courseId}`, {
+                        method: 'DELETE',
+                        headers: getAuthHeaders(),
+                      });
+                      
+                      // Перезагружаем прогресс после удаления
+                      await loadProgress();
+                    } catch (error) {
+                      console.error('Error resetting progress:', error);
+                    }
+                  }
                 }
+                
                 setShowRevokeDialog(false);
                 setRevokeAssignmentId(null);
                 setRevokeCourseTitle('');
