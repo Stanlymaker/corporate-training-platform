@@ -87,7 +87,7 @@ export default function CreateRewardDialog({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
-        <Button className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600">
+        <Button>
           <Icon name="Plus" className="mr-2" size={18} />
           Создать награду
         </Button>
