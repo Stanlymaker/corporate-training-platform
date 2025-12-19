@@ -284,11 +284,16 @@ export default function Tests() {
                         {test.status === 'published' ? 'Опубликован' : 'Черновик'}
                       </Badge>
                     </TableCell>
-                    <TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
                       {usedInCourses.length > 0 ? (
                         <div className="flex flex-wrap gap-1">
                           {usedInCourses.map(course => (
-                            <Badge key={course.id} variant="outline" className="text-xs">
+                            <Badge 
+                              key={course.id} 
+                              variant="outline" 
+                              className="text-xs cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
+                              onClick={() => navigate(`/admin/courses/edit/${course.id}`)}
+                            >
                               {course.title}
                             </Badge>
                           ))}
