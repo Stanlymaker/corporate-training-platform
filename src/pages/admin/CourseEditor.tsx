@@ -229,8 +229,9 @@ export default function CourseEditor() {
       }
     }
     
-    // Если курс опубликован И есть изменения - показываем модалку умного сброса
-    if (formData.status === 'published' && wasEverPublished && hasUnsavedChanges) {
+    // Если курс публикуется и был ранее опубликован - показываем модалку умного сброса
+    // (независимо от hasUnsavedChanges, т.к. переключение статуса тоже изменение)
+    if (formData.status === 'published' && wasEverPublished) {
       const count = await checkStudentsProgress();
       console.log('Students with progress:', count);
       if (count > 0) {
