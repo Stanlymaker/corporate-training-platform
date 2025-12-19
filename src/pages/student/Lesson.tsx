@@ -37,6 +37,23 @@ export default function LessonPage() {
     loadLessonData();
   }, [courseId, lessonId]);
 
+  // Таймер теста
+  useEffect(() => {
+    if (!testStarted || testSubmitted || timeRemaining <= 0) return;
+    
+    const timer = setInterval(() => {
+      setTimeRemaining(prev => {
+        if (prev <= 1) {
+          handleSubmitTest();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    
+    return () => clearInterval(timer);
+  }, [testStarted, testSubmitted, timeRemaining]);
+
   const loadLessonData = async () => {
     try {
       setLoading(true);
@@ -259,23 +276,6 @@ export default function LessonPage() {
     setTestSubmitted(false);
     setTestAnswers({});
   };
-
-  // Таймер теста
-  useEffect(() => {
-    if (!testStarted || testSubmitted || timeRemaining <= 0) return;
-    
-    const timer = setInterval(() => {
-      setTimeRemaining(prev => {
-        if (prev <= 1) {
-          handleSubmitTest();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    
-    return () => clearInterval(timer);
-  }, [testStarted, testSubmitted, timeRemaining]);
 
   const progressPercent = progress ? (progress.completedLessons / progress.totalLessons) * 100 : 0;
 
