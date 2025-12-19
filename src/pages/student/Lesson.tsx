@@ -310,17 +310,23 @@ export default function LessonPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6">
+              {lesson.type === 'video' && lesson.videoUrl && (
+                <div className="mb-6 rounded-lg overflow-hidden bg-black relative w-full" style={{ paddingTop: '56.25%' }}>
+                  <div 
+                    className="absolute inset-0"
+                    dangerouslySetInnerHTML={{ 
+                      __html: lesson.videoUrl.replace(/width="\d+"/, 'width="100%"').replace(/height="\d+"/, 'height="100%"')
+                    }}
+                  />
+                </div>
+              )}
+
               <div className="prose prose-lg max-w-none">
                 {lesson.type === 'text' && (
                   <ReactMarkdown>{lesson.content}</ReactMarkdown>
                 )}
-                {lesson.type === 'video' && (
-                  <>
-                    <div className="aspect-video bg-gray-900 rounded-lg mb-6 flex items-center justify-center">
-                      <Icon name="Play" size={64} className="text-white opacity-50" />
-                    </div>
-                    <ReactMarkdown>{lesson.content}</ReactMarkdown>
-                  </>
+                {lesson.type === 'video' && lesson.content && (
+                  <ReactMarkdown>{lesson.content}</ReactMarkdown>
                 )}
               </div>
 
