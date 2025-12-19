@@ -213,6 +213,25 @@ export default function LessonPage() {
     navigate(ROUTES.STUDENT.LESSON(courseId!, String(targetLesson.order + 1)));
   };
 
+  const handleDownload = async (url: string, filename: string) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      // Fallback: открываем в новой вкладке
+      window.open(url, '_blank');
+    }
+  };
+
   const progressPercent = progress ? (progress.completedLessons / progress.totalLessons) * 100 : 0;
 
   if (isLocked) {
@@ -313,11 +332,10 @@ export default function LessonPage() {
                   <h3 className="text-xl font-bold mb-4">Материалы урока</h3>
                   <div className="space-y-2">
                     {Array.from(new Map(lesson.materials.map(m => [m.id, m])).values()).map(material => (
-                      <a
+                      <button
                         key={material.id}
-                        href={material.url}
-                        download
-                        className="flex items-center gap-3 p-4 rounded-lg border hover:border-primary hover:bg-primary/5 transition-colors"
+                        onClick={() => handleDownload(material.url, material.title)}
+                        className="w-full flex items-center gap-3 p-4 rounded-lg border hover:border-primary hover:bg-primary/5 transition-colors text-left"
                       >
                         <Icon
                           name={material.type === 'pdf' ? 'FileText' : material.type === 'video' ? 'Video' : 'File'}
@@ -326,7 +344,7 @@ export default function LessonPage() {
                         />
                         <span className="font-medium">{material.title}</span>
                         <Icon name="Download" size={16} className="ml-auto text-gray-400" />
-                      </a>
+                      </button>
                     ))}
                   </div>
                 </div>
