@@ -26,6 +26,13 @@ interface Lesson {
   order: number;
   duration: number;
   videoUrl?: string;
+  requiresPrevious?: boolean;
+  materials?: Array<{
+    id: number;
+    title: string;
+    type: string;
+    url: string;
+  }>;
 }
 
 interface CourseProgress {
@@ -298,7 +305,7 @@ export default function LessonPage() {
                 <div className="mt-8 pt-8 border-t">
                   <h3 className="text-xl font-bold mb-4">Материалы урока</h3>
                   <div className="space-y-2">
-                    {lesson.materials.map(material => (
+                    {Array.from(new Map(lesson.materials.map(m => [m.id, m])).values()).map(material => (
                       <a
                         key={material.id}
                         href={material.url}
