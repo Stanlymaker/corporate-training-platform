@@ -22,28 +22,6 @@ interface LessonBasicFieldsProps {
 }
 
 export default function LessonBasicFields({ lesson, onLessonChange }: LessonBasicFieldsProps) {
-  const handleTypeChange = (newType: 'video' | 'text' | 'test') => {
-    onLessonChange('type', newType);
-    
-    // Очищаем поля, которые не относятся к выбранному типу
-    if (newType === 'video') {
-      onLessonChange('testId', undefined);
-      onLessonChange('isFinalTest', false);
-      onLessonChange('finalTestRequiresAllLessons', false);
-      onLessonChange('finalTestRequiresAllTests', false);
-      onLessonChange('content', undefined);
-    } else if (newType === 'text') {
-      onLessonChange('testId', undefined);
-      onLessonChange('isFinalTest', false);
-      onLessonChange('finalTestRequiresAllLessons', false);
-      onLessonChange('finalTestRequiresAllTests', false);
-      onLessonChange('videoUrl', undefined);
-    } else if (newType === 'test') {
-      onLessonChange('videoUrl', undefined);
-      onLessonChange('content', undefined);
-    }
-  };
-
   return (
     <>
       <div>
@@ -79,7 +57,7 @@ export default function LessonBasicFields({ lesson, onLessonChange }: LessonBasi
           </label>
           <select
             value={lesson.type}
-            onChange={(e) => handleTypeChange(e.target.value as 'video' | 'text' | 'test')}
+            onChange={(e) => onLessonChange('type', e.target.value as 'video' | 'text' | 'test')}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
           >
             <option value="video">Видео</option>
