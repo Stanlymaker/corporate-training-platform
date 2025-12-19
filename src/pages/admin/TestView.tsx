@@ -80,6 +80,7 @@ export default function TestView() {
       case 'single': return 'Один вариант';
       case 'multiple': return 'Несколько вариантов';
       case 'text': return 'Текстовый ответ';
+      case 'matching': return 'Сопоставление';
       default: return type;
     }
   };
