@@ -1,8 +1,6 @@
 import StudentLayout from '@/components/StudentLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import Icon from '@/components/ui/icon';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
@@ -12,6 +10,9 @@ import { Course, Lesson, Test, CourseProgress } from '@/components/student/types
 import LessonContent from '@/components/student/LessonContent';
 import TestInterface from '@/components/student/TestInterface';
 import LessonSidebar from '@/components/student/LessonSidebar';
+import LessonHeader from '@/components/student/LessonHeader';
+import LessonNavigation from '@/components/student/LessonNavigation';
+import LessonLockScreen from '@/components/student/LessonLockScreen';
 
 export default function LessonPage() {
   const { courseId, lessonId } = useParams();
@@ -25,7 +26,6 @@ export default function LessonPage() {
   const [loading, setLoading] = useState(true);
   const [isCompleted, setIsCompleted] = useState(false);
   
-  // Состояния для теста
   const [test, setTest] = useState<Test | null>(null);
   const [testStarted, setTestStarted] = useState(false);
   const [testAnswers, setTestAnswers] = useState<Record<number, any>>({});
@@ -38,7 +38,6 @@ export default function LessonPage() {
     loadLessonData();
   }, [courseId, lessonId]);
 
-  // Таймер теста
   useEffect(() => {
     if (!testStarted || testSubmitted || timeRemaining <= 0) return;
     
@@ -59,7 +58,6 @@ export default function LessonPage() {
     try {
       setLoading(true);
       
-      // Загружаем курс, уроки и прогресс
       const [courseRes, lessonsRes, progressRes] = await Promise.all([
         fetch(`${API_ENDPOINTS.COURSES}?id=${courseId}`, { headers: getAuthHeaders() }),
         fetch(`${API_ENDPOINTS.LESSONS}?courseId=${courseId}`, { headers: getAuthHeaders() }),
@@ -81,11 +79,9 @@ export default function LessonPage() {
         lessonsData = data.lessons || [];
         setCourseLessons(lessonsData);
         
-        // Находим урок по order (lessonId в URL - это order+1)
         const lessonOrder = parseInt(lessonId || '0') - 1;
         foundLesson = lessonsData.find(l => l.order === lessonOrder) || null;
         
-        // Дебаг: проверяем materials
         if (foundLesson?.materials) {
           console.log('Lesson materials:', foundLesson.materials);
           console.log('Unique materials:', Array.from(new Map(foundLesson.materials.map(m => [m.id, m])).values()));
@@ -93,7 +89,6 @@ export default function LessonPage() {
         
         setLesson(foundLesson);
         
-        // Если это тест, загружаем данные теста
         if (foundLesson?.type === 'test' && foundLesson.testId) {
           const testRes = await fetch(`${API_ENDPOINTS.TESTS}?id=${foundLesson.testId}`, { 
             headers: getAuthHeaders() 
@@ -112,12 +107,10 @@ export default function LessonPage() {
         setProgress(courseProgress || null);
         setIsCompleted(courseProgress?.completedLessonIds.includes(foundLesson.id) || false);
         
-        // Автоматически отмечаем начало изучения урока (только если прогресса еще нет или это новый урок)
         if (foundLesson && courseData) {
           markLessonStarted(courseData.id, String(foundLesson.id), courseProgress);
         }
       } else if (!progressRes.ok && courseData && foundLesson) {
-        // Если прогресса вообще нет (404), создаем его
         markLessonStarted(courseData.id, String(foundLesson.id), null);
       }
     } catch (error) {
@@ -128,7 +121,6 @@ export default function LessonPage() {
   };
 
   const markLessonStarted = async (courseId: number, lessonUuid: string, currentProgress: CourseProgress | null) => {
-    // Не делаем запрос, если это уже последний открытый урок
     if (currentProgress?.lastAccessedLesson === lessonUuid) {
       return;
     }
@@ -175,9 +167,7 @@ export default function LessonPage() {
   const previousLesson = currentIndex > 0 ? courseLessons[currentIndex - 1] : null;
   const nextLesson = currentIndex < courseLessons.length - 1 ? courseLessons[currentIndex + 1] : null;
 
-  // Логика блокировки урока
   const getLockStatus = () => {
-    // 1. Обычный урок с требованием завершить предыдущий
     if (lesson.requiresPrevious && previousLesson) {
       if (!progress?.completedLessonIds.includes(previousLesson.id)) {
         return {
@@ -188,7 +178,6 @@ export default function LessonPage() {
       }
     }
 
-    // 2. Финальный тест с требованием завершить все уроки
     if (lesson.isFinalTest && lesson.finalTestRequiresAllLessons) {
       const nonTestLessons = courseLessons.filter(l => !l.isFinalTest);
       const completedNonTestLessons = nonTestLessons.filter(l => 
@@ -204,7 +193,6 @@ export default function LessonPage() {
       }
     }
 
-    // 3. Финальный тест с требованием завершить все промежуточные тесты
     if (lesson.isFinalTest && lesson.finalTestRequiresAllTests) {
       const testLessons = courseLessons.filter(l => l.type === 'test' && !l.isFinalTest);
       const completedTests = testLessons.filter(l => 
@@ -220,12 +208,15 @@ export default function LessonPage() {
       }
     }
 
-    return { isLocked: false, reason: null, message: null };
+    return { isLocked: false };
   };
 
   const lockStatus = getLockStatus();
+  const completedLessons = progress?.completedLessonIds.length || 0;
+  const totalLessons = courseLessons.length;
+  const progressPercent = Math.round((completedLessons / totalLessons) * 100);
 
-  const handleComplete = async () => {
+  const handleCompleteLesson = async () => {
     if (!course || !lesson) return;
     
     try {
@@ -239,289 +230,154 @@ export default function LessonPage() {
       });
       
       if (response.ok) {
-        const data = await response.json();
         setIsCompleted(true);
-        
-        // Обновляем только прогресс без перезагрузки всей страницы
-        const progressRes = await fetch(`${API_ENDPOINTS.PROGRESS}?userId=${userId}&courseId=${courseId}`, { 
-          headers: getAuthHeaders() 
-        });
-        
-        if (progressRes.ok) {
-          const progressData = await progressRes.json();
-          const courseProgress = progressData.progress?.find((p: CourseProgress) => p.courseId === course.id);
-          setProgress(courseProgress || null);
-        }
-        
-        // Показываем уведомление если курс завершен полностью
-        if (data.completed) {
-          alert('🎉 Поздравляем! Вы завершили весь курс!');
-        }
+        await loadLessonData();
       }
     } catch (error) {
-      console.error('Error marking lesson complete:', error);
+      console.error('Error completing lesson:', error);
     }
   };
 
-  const handleNavigateLesson = (targetLesson: Lesson) => {
-    // Используем order+1 для URL
-    navigate(ROUTES.STUDENT.LESSON(courseId!, String(targetLesson.order + 1)));
+  const handleNavigateToLesson = (lessonOrder: number) => {
+    navigate(ROUTES.STUDENT.LESSON(courseId!, String(lessonOrder + 1)));
   };
 
-  const handleDownload = async (url: string, filename: string) => {
-    try {
-      // Проверяем доступность файла
-      const response = await fetch(url, { method: 'HEAD' });
-      if (!response.ok) {
-        alert('Файл недоступен или был удалён. Пожалуйста, обратитесь к администратору.');
-        return;
-      }
-      // Открываем файл напрямую - браузер предложит скачать
-      window.open(url, '_blank');
-    } catch (error) {
-      alert('Ошибка при загрузке файла. Пожалуйста, попробуйте позже.');
-      console.error('Download error:', error);
-    }
-  };
-
-  // Функции для теста
   const handleStartTest = () => {
-    if (!test) return;
     setTestStarted(true);
-    setTimeRemaining(test.timeLimit * 60); // конвертируем в секунды
+    setTimeRemaining(test?.timeLimit ? test.timeLimit * 60 : 0);
     setTestAnswers({});
     setTestSubmitted(false);
     setCurrentQuestionIndex(0);
   };
 
-  const handleAnswerChange = (questionId: number, answerValue: any, isMultiple: boolean = false) => {
-    setTestAnswers(prev => {
-      if (typeof answerValue === 'string') {
-        // Текстовый ответ
-        return { ...prev, [questionId]: answerValue };
-      } else if (typeof answerValue === 'object' && !Array.isArray(answerValue)) {
-        // Matching ответ (объект пар)
-        return { ...prev, [questionId]: answerValue };
-      } else if (isMultiple) {
-        // Множественный выбор
-        const currentAnswers = (prev[questionId] as number[]) || [];
-        const newAnswers = currentAnswers.includes(answerValue)
-          ? currentAnswers.filter(a => a !== answerValue)
-          : [...currentAnswers, answerValue];
-        return { ...prev, [questionId]: newAnswers };
-      } else {
-        // Одиночный выбор
-        return { ...prev, [questionId]: answerValue };
-      }
-    });
-  };
-
-  const handleSubmitTest = () => {
-    if (!test) return;
+  const handleSubmitTest = async () => {
+    if (!test || !course || !lesson) return;
     
-    // Подсчитываем баллы с учетом points
-    let earnedPoints = 0;
-    let maxPoints = 0;
-    
-    test.questions.forEach(q => {
-      maxPoints += q.points;
-      const userAnswer = testAnswers[q.id];
-      const correctAnswer = q.correctAnswer;
-      
-      let isCorrect = false;
-      
-      if (q.type === 'multiple' && Array.isArray(correctAnswer) && Array.isArray(userAnswer)) {
-        // Для множественного выбора: проверяем что массивы идентичны
-        const sortedUser = [...userAnswer].sort();
-        const sortedCorrect = [...correctAnswer].sort();
-        isCorrect = JSON.stringify(sortedUser) === JSON.stringify(sortedCorrect);
-      } else if (q.type === 'matching' && q.matchingPairs) {
-        // Для сопоставления: проверяем что порядок правильный
-        const userOrder = userAnswer as string[];
-        if (Array.isArray(userOrder) && userOrder.length === q.matchingPairs.length) {
-          let allCorrect = true;
-          q.matchingPairs.forEach((pair, index) => {
-            if (userOrder[index] !== pair.right) {
-              allCorrect = false;
-            }
-          });
-          isCorrect = allCorrect;
+    let correctCount = 0;
+    test.questions.forEach((question, index) => {
+      const userAnswer = testAnswers[index];
+      if (question.type === 'single') {
+        if (userAnswer === question.correctAnswer) correctCount++;
+      } else if (question.type === 'multiple') {
+        const correctAnswers = question.correctAnswers || [];
+        const userAnswers = userAnswer || [];
+        if (JSON.stringify(correctAnswers.sort()) === JSON.stringify(userAnswers.sort())) {
+          correctCount++;
         }
-      } else if (q.type === 'text') {
-        // Текстовые вопросы с ручной проверкой не учитываем автоматически
-        isCorrect = false;
-      } else {
-        // Для одиночного выбора
-        isCorrect = userAnswer === correctAnswer;
-      }
-      
-      if (isCorrect) {
-        earnedPoints += q.points;
       }
     });
     
-    // Вычисляем процент от максимальных баллов
-    const score = maxPoints > 0 ? Math.round((earnedPoints / maxPoints) * 100) : 0;
+    const score = Math.round((correctCount / test.questions.length) * 100);
     setTestScore(score);
     setTestSubmitted(true);
     
-    // Если тест пройден, отмечаем урок как завершённый
-    if (score >= test.passScore) {
-      handleComplete();
+    const passingScore = test.passingScore || 70;
+    if (score >= passingScore) {
+      try {
+        const response = await fetch(`${API_ENDPOINTS.PROGRESS}?action=complete`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            courseId: course.id,
+            lessonId: String(lesson.id)
+          })
+        });
+        
+        if (response.ok) {
+          setIsCompleted(true);
+          await loadLessonData();
+        }
+      } catch (error) {
+        console.error('Error completing test:', error);
+      }
     }
   };
 
-  const handleRetryTest = () => {
-    setTestStarted(false);
-    setTestSubmitted(false);
-    setTestAnswers({});
-    setCurrentQuestionIndex(0);
-  };
-
-  const handleNextQuestion = () => {
-    if (test && currentQuestionIndex < test.questions.length - 1) {
-      setCurrentQuestionIndex(prev => prev + 1);
+  const getCompletedCount = () => {
+    if (lockStatus.reason === 'allLessons') {
+      const nonTestLessons = courseLessons.filter(l => !l.isFinalTest);
+      return nonTestLessons.filter(l => progress?.completedLessonIds.includes(l.id)).length;
     }
-  };
-
-  const handlePreviousQuestion = () => {
-    if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(prev => prev - 1);
+    if (lockStatus.reason === 'allTests') {
+      const testLessons = courseLessons.filter(l => l.type === 'test' && !l.isFinalTest);
+      return testLessons.filter(l => progress?.completedLessonIds.includes(l.id)).length;
     }
+    return 0;
   };
 
-  const progressPercent = progress ? (progress.completedLessons / progress.totalLessons) * 100 : 0;
-
-  if (lockStatus.isLocked) {
-    return (
-      <StudentLayout>
-        <div className="mb-6">
-          <Button
-            variant="ghost"
-            onClick={() => navigate(`/student/courses/${courseId}`)}
-            className="mb-4"
-          >
-            <Icon name="ArrowLeft" size={16} className="mr-2" />
-            Назад к курсу
-          </Button>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">{lesson.title}</h1>
-          <p className="text-gray-600">{course.title}</p>
-        </div>
-
-        <Card className="border-0 shadow-md text-center py-12">
-          <CardContent>
-            <div className="max-w-md mx-auto">
-              <Icon name="Lock" size={64} className="mx-auto text-gray-400 mb-4" />
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                {lesson.isFinalTest ? 'Финальный тест заблокирован' : 'Урок заблокирован'}
-              </h2>
-              <p className="text-gray-600 mb-6">
-                {lockStatus.message}
-              </p>
-              {lockStatus.reason === 'previous' && previousLesson && (
-                <>
-                  <Badge variant="outline" className="text-base px-4 py-2 mb-6">
-                    {previousLesson.title}
-                  </Badge>
-                  <Button onClick={() => handleNavigateLesson(previousLesson)}>
-                    Перейти к предыдущему уроку
-                  </Button>
-                </>
-              )}
-              {(lockStatus.reason === 'allLessons' || lockStatus.reason === 'allTests') && (
-                <Button onClick={() => navigate(`/student/courses/${courseId}`)}>
-                  Вернуться к курсу
-                </Button>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </StudentLayout>
-    );
-  }
+  const getTotalCount = () => {
+    if (lockStatus.reason === 'allLessons') {
+      return courseLessons.filter(l => !l.isFinalTest).length;
+    }
+    if (lockStatus.reason === 'allTests') {
+      return courseLessons.filter(l => l.type === 'test' && !l.isFinalTest).length;
+    }
+    return 0;
+  };
 
   return (
     <StudentLayout>
-      <div className="mb-6">
-        <Button
-          variant="ghost"
-          onClick={() => navigate(`/student/courses/${courseId}`)}
-          className="mb-4"
-        >
-          <Icon name="ArrowLeft" size={16} className="mr-2" />
-          Назад к курсу
-        </Button>
-        <div className="flex items-center gap-3">
-          <Progress value={progressPercent} className="flex-1" />
-          <span className="text-sm text-gray-600 whitespace-nowrap">
-            {progress?.completedLessons || 0} / {progress?.totalLessons || courseLessons.length}
-          </span>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <div className="lg:col-span-3 space-y-6">
-          <LessonContent 
-            lesson={lesson} 
-            currentIndex={currentIndex}
-            onDownload={handleDownload}
-          >
-            {lesson.type === 'test' && test && (
-              <TestInterface
-                test={test}
-                testStarted={testStarted}
-                testSubmitted={testSubmitted}
-                testAnswers={testAnswers}
-                testScore={testScore}
-                timeRemaining={timeRemaining}
-                currentQuestionIndex={currentQuestionIndex}
-                onStartTest={handleStartTest}
-                onAnswerChange={handleAnswerChange}
-                onSubmitTest={handleSubmitTest}
-                onRetry={handleRetryTest}
-                onNextQuestion={handleNextQuestion}
-                onPreviousQuestion={handlePreviousQuestion}
-              />
-            )}
-          </LessonContent>
-
-          <div className="flex items-center justify-between gap-4">
-            <Button
-              variant="outline"
-              size="lg"
-              disabled={!previousLesson}
-              onClick={() => previousLesson && handleNavigateLesson(previousLesson)}
-            >
-              <Icon name="ChevronLeft" size={20} className="mr-2" />
-              Предыдущий урок
-            </Button>
-
-            {!isCompleted && (
-              <Button size="lg" onClick={handleComplete} className="flex-1 max-w-xs">
-                <Icon name="CheckCircle" size={20} className="mr-2" />
-                Отметить как завершенный
-              </Button>
-            )}
-
-            <Button
-              size="lg"
-              disabled={!nextLesson}
-              onClick={() => nextLesson && handleNavigateLesson(nextLesson)}
-            >
-              Следующий урок
-              <Icon name="ChevronRight" size={20} className="ml-2" />
-            </Button>
-          </div>
-        </div>
-
-        <div className="lg:col-span-1">
-          <LessonSidebar
-            courseLessons={courseLessons}
-            currentLesson={lesson}
-            progress={progress}
-            onNavigateLesson={handleNavigateLesson}
+      <div className="flex gap-6">
+        <div className="flex-1">
+          <LessonHeader
+            course={course}
+            lesson={lesson}
+            isCompleted={isCompleted}
+            progressPercent={progressPercent}
           />
+
+          <LessonLockScreen
+            lockStatus={lockStatus}
+            previousLesson={previousLesson}
+            completedCount={getCompletedCount()}
+            totalCount={getTotalCount()}
+            onNavigateToPrevious={() => previousLesson && handleNavigateToLesson(previousLesson.order)}
+            onNavigateToCourse={() => navigate(ROUTES.STUDENT.COURSE_DETAIL(courseId!))}
+          />
+
+          {!lockStatus.isLocked && (
+            <>
+              <Card>
+                <CardContent className="pt-6">
+                  {lesson.type === 'test' && test ? (
+                    <TestInterface
+                      test={test}
+                      testStarted={testStarted}
+                      testAnswers={testAnswers}
+                      testSubmitted={testSubmitted}
+                      testScore={testScore}
+                      timeRemaining={timeRemaining}
+                      currentQuestionIndex={currentQuestionIndex}
+                      onStartTest={handleStartTest}
+                      onAnswerChange={setTestAnswers}
+                      onSubmitTest={handleSubmitTest}
+                      onQuestionChange={setCurrentQuestionIndex}
+                    />
+                  ) : (
+                    <LessonContent lesson={lesson} />
+                  )}
+                </CardContent>
+              </Card>
+
+              <LessonNavigation
+                courseId={courseId!}
+                previousLesson={previousLesson}
+                nextLesson={nextLesson}
+                isCompleted={isCompleted}
+                isTestPassed={testSubmitted && testScore >= (test?.passingScore || 70)}
+                onNavigate={handleNavigateToLesson}
+                onComplete={handleCompleteLesson}
+              />
+            </>
+          )}
         </div>
+
+        <LessonSidebar
+          courseLessons={courseLessons}
+          currentLessonId={lesson.id}
+          progress={progress}
+          onNavigate={handleNavigateToLesson}
+        />
       </div>
     </StudentLayout>
   );
