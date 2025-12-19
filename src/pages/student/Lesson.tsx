@@ -1,5 +1,5 @@
 import StudentLayout from '@/components/StudentLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -7,60 +7,11 @@ import Icon from '@/components/ui/icon';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { useState, useEffect } from 'react';
-import ReactMarkdown from 'react-markdown';
 import { API_ENDPOINTS, getAuthHeaders } from '@/config/api';
-
-interface Course {
-  id: number;
-  title: string;
-  description: string;
-}
-
-interface Lesson {
-  id: string;
-  courseId: number;
-  title: string;
-  description: string;
-  content: string;
-  type: string;
-  order: number;
-  duration: number;
-  videoUrl?: string;
-  requiresPrevious?: boolean;
-  testId?: number;
-  materials?: Array<{
-    id: number;
-    title: string;
-    type: string;
-    url: string;
-  }>;
-}
-
-interface Test {
-  id: number;
-  title: string;
-  description: string;
-  passingScore: number;
-  timeLimit: number;
-  questionsCount: number;
-  questions: TestQuestion[];
-}
-
-interface TestQuestion {
-  id: number;
-  question: string;
-  options: string[];
-  correctAnswer: number;
-}
-
-interface CourseProgress {
-  courseId: number;
-  userId: number;
-  completedLessons: number;
-  totalLessons: number;
-  completedLessonIds: string[];
-  lastAccessedLesson: string | null;
-}
+import { Course, Lesson, Test, CourseProgress } from '@/components/student/types';
+import LessonContent from '@/components/student/LessonContent';
+import TestInterface from '@/components/student/TestInterface';
+import LessonSidebar from '@/components/student/LessonSidebar';
 
 export default function LessonPage() {
   const { courseId, lessonId } = useParams();
@@ -303,6 +254,12 @@ export default function LessonPage() {
     }
   };
 
+  const handleRetryTest = () => {
+    setTestStarted(false);
+    setTestSubmitted(false);
+    setTestAnswers({});
+  };
+
   // Таймер теста
   useEffect(() => {
     if (!testStarted || testSubmitted || timeRemaining <= 0) return;
@@ -380,191 +337,26 @@ export default function LessonPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="lg:col-span-3 space-y-6">
-          <Card className="border-0 shadow-md">
-            <CardHeader className="border-b bg-gradient-to-r from-primary/5 to-transparent">
-              <CardTitle className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">
-                    {currentIndex + 1}
-                  </div>
-                  <div>
-                    <div className="text-lg">{lesson.title}</div>
-                    {lesson.description && (
-                      <div className="text-sm text-gray-500 font-normal">{lesson.description}</div>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <Icon name="Clock" size={16} />
-                  <span>{lesson.duration} мин</span>
-                </div>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              {lesson.type === 'video' && lesson.videoUrl && (
-                <div className="mb-6 rounded-lg overflow-hidden bg-black relative w-full" style={{ paddingTop: '56.25%' }}>
-                  <div 
-                    className="absolute inset-0"
-                    dangerouslySetInnerHTML={{ 
-                      __html: lesson.videoUrl.replace(/width="\d+"/, 'width="100%"').replace(/height="\d+"/, 'height="100%"')
-                    }}
-                  />
-                </div>
-              )}
-
-              {lesson.type === 'test' && test && (
-                <div className="space-y-6">
-                  {!testStarted ? (
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-                      <h3 className="text-xl font-bold mb-2">{test.title}</h3>
-                      <p className="text-gray-600 mb-6">{test.description}</p>
-                      <div className="grid grid-cols-3 gap-4 mb-6">
-                        <div className="flex items-center gap-2">
-                          <Icon name="HelpCircle" size={20} className="text-primary" />
-                          <div>
-                            <div className="text-sm text-gray-500">Вопросов</div>
-                            <div className="font-bold">{test.questionsCount}</div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Icon name="Clock" size={20} className="text-primary" />
-                          <div>
-                            <div className="text-sm text-gray-500">Время</div>
-                            <div className="font-bold">{test.timeLimit} мин</div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Icon name="Target" size={20} className="text-primary" />
-                          <div>
-                            <div className="text-sm text-gray-500">Проходной балл</div>
-                            <div className="font-bold">{test.passingScore}%</div>
-                          </div>
-                        </div>
-                      </div>
-                      <Button onClick={handleStartTest} className="w-full" size="lg">
-                        <Icon name="PlayCircle" size={20} className="mr-2" />
-                        Начать тестирование
-                      </Button>
-                    </div>
-                  ) : !testSubmitted ? (
-                    <div className="space-y-6">
-                      <div className="flex items-center justify-between p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                        <div className="flex items-center gap-2">
-                          <Icon name="Clock" size={20} className="text-yellow-600" />
-                          <span className="font-medium">Осталось времени:</span>
-                        </div>
-                        <span className="text-xl font-bold text-yellow-600">
-                          {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}
-                        </span>
-                      </div>
-                      
-                      {test.questions.map((question, index) => (
-                        <div key={question.id} className="p-6 border rounded-lg">
-                          <h4 className="font-bold mb-4">
-                            {index + 1}. {question.question}
-                          </h4>
-                          <div className="space-y-2">
-                            {question.options.map((option, optionIndex) => (
-                              <label
-                                key={optionIndex}
-                                className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-colors ${
-                                  testAnswers[question.id] === optionIndex
-                                    ? 'border-primary bg-primary/5'
-                                    : 'border-gray-200 hover:border-primary/50'
-                                }`}
-                              >
-                                <input
-                                  type="radio"
-                                  name={`question-${question.id}`}
-                                  checked={testAnswers[question.id] === optionIndex}
-                                  onChange={() => handleAnswerChange(question.id, optionIndex)}
-                                  className="w-4 h-4"
-                                />
-                                <span>{option}</span>
-                              </label>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                      
-                      <Button 
-                        onClick={handleSubmitTest} 
-                        className="w-full" 
-                        size="lg"
-                        disabled={Object.keys(testAnswers).length < test.questions.length}
-                      >
-                        <Icon name="CheckCircle" size={20} className="mr-2" />
-                        Завершить тестирование
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className={`p-6 rounded-lg border-2 ${
-                      testScore >= test.passingScore ? 'border-green-500 bg-green-50' : 'border-red-500 bg-red-50'
-                    }`}>
-                      <div className="text-center">
-                        <Icon 
-                          name={testScore >= test.passingScore ? 'CheckCircle' : 'XCircle'} 
-                          size={64} 
-                          className={`mx-auto mb-4 ${testScore >= test.passingScore ? 'text-green-500' : 'text-red-500'}`}
-                        />
-                        <h3 className="text-2xl font-bold mb-2">
-                          {testScore >= test.passingScore ? 'Тест пройден!' : 'Тест не пройден'}
-                        </h3>
-                        <p className="text-xl mb-4">
-                          Ваш результат: <span className="font-bold">{testScore}%</span>
-                        </p>
-                        <p className="text-gray-600 mb-6">
-                          Проходной балл: {test.passingScore}%
-                        </p>
-                        {testScore < test.passingScore && (
-                          <Button onClick={() => {
-                            setTestStarted(false);
-                            setTestSubmitted(false);
-                            setTestAnswers({});
-                          }}>
-                            <Icon name="RotateCcw" size={16} className="mr-2" />
-                            Попробовать снова
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <div className="prose prose-lg max-w-none">
-                {lesson.type === 'text' && (
-                  <ReactMarkdown>{lesson.content}</ReactMarkdown>
-                )}
-                {lesson.type === 'video' && lesson.content && (
-                  <ReactMarkdown>{lesson.content}</ReactMarkdown>
-                )}
-              </div>
-
-              {lesson.materials && lesson.materials.length > 0 && (
-                <div className="mt-8 pt-8 border-t">
-                  <h3 className="text-xl font-bold mb-4">Материалы урока</h3>
-                  <div className="space-y-2">
-                    {Array.from(new Map(lesson.materials.map(m => [m.id, m])).values()).map(material => (
-                      <button
-                        key={material.id}
-                        onClick={() => handleDownload(material.url, material.title)}
-                        className="w-full flex items-center gap-3 p-4 rounded-lg border hover:border-primary hover:bg-primary/5 transition-colors text-left"
-                      >
-                        <Icon
-                          name={material.type === 'pdf' ? 'FileText' : material.type === 'video' ? 'Video' : 'File'}
-                          size={20}
-                          className="text-primary"
-                        />
-                        <span className="font-medium">{material.title}</span>
-                        <Icon name="Download" size={16} className="ml-auto text-gray-400" />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <LessonContent 
+            lesson={lesson} 
+            currentIndex={currentIndex}
+            onDownload={handleDownload}
+          >
+            {lesson.type === 'test' && test && (
+              <TestInterface
+                test={test}
+                testStarted={testStarted}
+                testSubmitted={testSubmitted}
+                testAnswers={testAnswers}
+                testScore={testScore}
+                timeRemaining={timeRemaining}
+                onStartTest={handleStartTest}
+                onAnswerChange={handleAnswerChange}
+                onSubmitTest={handleSubmitTest}
+                onRetry={handleRetryTest}
+              />
+            )}
+          </LessonContent>
 
           <div className="flex items-center justify-between gap-4">
             <Button
@@ -596,51 +388,12 @@ export default function LessonPage() {
         </div>
 
         <div className="lg:col-span-1">
-          <Card className="border-0 shadow-md sticky top-6">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Icon name="List" size={18} />
-                Содержание курса
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-4">
-              <div className="space-y-1">
-                {courseLessons.map((l, index) => {
-                  const lessonCompleted = progress?.completedLessonIds.includes(l.id);
-                  const lessonLocked = l.requiresPrevious && index > 0 && !progress?.completedLessonIds.includes(courseLessons[index - 1].id);
-                  const isActive = l.id === lesson.id;
-
-                  return (
-                    <button
-                      key={l.id}
-                      onClick={() => !lessonLocked && handleNavigateLesson(l)}
-                      disabled={lessonLocked}
-                      className={`w-full text-left p-3 rounded-lg transition-colors ${
-                        isActive
-                          ? 'bg-primary text-primary-foreground'
-                          : lessonLocked
-                          ? 'opacity-50 cursor-not-allowed'
-                          : 'hover:bg-gray-100'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 mb-1">
-                        {lessonLocked ? (
-                          <Icon name="Lock" size={16} className="text-gray-400" />
-                        ) : lessonCompleted ? (
-                          <Icon name="CheckCircle" size={16} className="text-green-500" />
-                        ) : (
-                          <Icon name="Circle" size={16} className="text-gray-300" />
-                        )}
-                        <span className="text-xs font-medium">Урок {l.order + 1}</span>
-                        <span className="ml-auto text-xs">{l.duration} мин</span>
-                      </div>
-                      <div className="text-sm font-medium line-clamp-2">{l.title}</div>
-                    </button>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
+          <LessonSidebar
+            courseLessons={courseLessons}
+            currentLesson={lesson}
+            progress={progress}
+            onNavigateLesson={handleNavigateLesson}
+          />
         </div>
       </div>
     </StudentLayout>
