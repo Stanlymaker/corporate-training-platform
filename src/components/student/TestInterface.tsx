@@ -6,12 +6,12 @@ interface TestInterfaceProps {
   test: Test;
   testStarted: boolean;
   testSubmitted: boolean;
-  testAnswers: Record<number, number | number[] | string>;
+  testAnswers: Record<number, any>;
   testScore: number;
   timeRemaining: number;
   currentQuestionIndex: number;
   onStartTest: () => void;
-  onAnswerChange: (questionId: number, answerValue: number | string, isMultiple?: boolean) => void;
+  onAnswerChange: (questionId: number, answerValue: any, isMultiple?: boolean) => void;
   onSubmitTest: () => void;
   onRetry: () => void;
   onNextQuestion: () => void;
@@ -121,6 +121,32 @@ export default function TestInterface({
               placeholder="Введите ваш ответ..."
               className="w-full min-h-[120px] p-4 border-2 border-gray-200 rounded-lg focus:border-primary focus:outline-none resize-y"
             />
+          ) : currentQuestion.type === 'matching' && currentQuestion.matchingPairs ? (
+            <div className="space-y-3">
+              {currentQuestion.matchingPairs.map((pair, pairIndex) => {
+                const userAnswers = (testAnswers[currentQuestion.id] as Record<number, string>) || {};
+                
+                return (
+                  <div key={pairIndex} className="flex items-center gap-4 p-4 border-2 border-gray-200 rounded-lg">
+                    <div className="flex-1 font-medium">{pair.left}</div>
+                    <Icon name="MoveRight" size={20} className="text-gray-400" />
+                    <select
+                      value={userAnswers[pairIndex] || ''}
+                      onChange={(e) => {
+                        const newAnswers = { ...userAnswers, [pairIndex]: e.target.value };
+                        onAnswerChange(currentQuestion.id, newAnswers as any, false);
+                      }}
+                      className="flex-1 p-2 border border-gray-300 rounded-lg focus:border-primary focus:outline-none"
+                    >
+                      <option value="">Выберите...</option>
+                      {currentQuestion.matchingPairs.map((p, idx) => (
+                        <option key={idx} value={p.right}>{p.right}</option>
+                      ))}
+                    </select>
+                  </div>
+                );
+              })}
+            </div>
           ) : (
             <div className="space-y-2">
               {currentQuestion.options?.map((option, optionIndex) => {

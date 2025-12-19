@@ -39,8 +39,9 @@ export interface TestQuestion {
   type: string;
   question: string;
   options: string[];
-  correctAnswer: number | number[];
+  correctAnswer: number | number[] | string;
   imageUrl?: string;
+  matchingPairs?: Array<{ left: string; right: string }>;
 }
 
 export interface CourseProgress {

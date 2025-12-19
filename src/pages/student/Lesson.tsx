@@ -28,7 +28,7 @@ export default function LessonPage() {
   // Состояния для теста
   const [test, setTest] = useState<Test | null>(null);
   const [testStarted, setTestStarted] = useState(false);
-  const [testAnswers, setTestAnswers] = useState<Record<number, number | number[] | string>>({});
+  const [testAnswers, setTestAnswers] = useState<Record<number, any>>({});
   const [testSubmitted, setTestSubmitted] = useState(false);
   const [testScore, setTestScore] = useState<number>(0);
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
@@ -246,10 +246,13 @@ export default function LessonPage() {
     setCurrentQuestionIndex(0);
   };
 
-  const handleAnswerChange = (questionId: number, answerValue: number | string, isMultiple: boolean = false) => {
+  const handleAnswerChange = (questionId: number, answerValue: any, isMultiple: boolean = false) => {
     setTestAnswers(prev => {
       if (typeof answerValue === 'string') {
         // Текстовый ответ
+        return { ...prev, [questionId]: answerValue };
+      } else if (typeof answerValue === 'object' && !Array.isArray(answerValue)) {
+        // Matching ответ (объект пар)
         return { ...prev, [questionId]: answerValue };
       } else if (isMultiple) {
         // Множественный выбор
@@ -281,8 +284,20 @@ export default function LessonPage() {
         if (JSON.stringify(sortedUser) === JSON.stringify(sortedCorrect)) {
           correctCount++;
         }
+      } else if (q.type === 'matching' && q.matchingPairs) {
+        // Для сопоставления: проверяем что все пары совпадают
+        const userMatching = userAnswer as Record<number, string>;
+        let allCorrect = true;
+        q.matchingPairs.forEach((pair, index) => {
+          if (userMatching?.[index] !== pair.right) {
+            allCorrect = false;
+          }
+        });
+        if (allCorrect) {
+          correctCount++;
+        }
       } else if (userAnswer === correctAnswer) {
-        // Для одиночного выбора
+        // Для одиночного выбора и текста
         correctCount++;
       }
     });
