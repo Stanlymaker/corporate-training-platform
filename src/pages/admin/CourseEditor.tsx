@@ -9,6 +9,7 @@ import LessonDialog from '@/components/admin/LessonDialog';
 import CourseEditorHeader from '@/components/admin/course-editor/CourseEditorHeader';
 import ProgressResetDialog from '@/components/admin/course-editor/ProgressResetDialog';
 import DeleteCourseDialog from '@/components/admin/course-editor/DeleteCourseDialog';
+import DraftTestsDialog from '@/components/admin/course-editor/DraftTestsDialog';
 import { useCourseEditorActions } from '@/components/admin/course-editor/useCourseEditorActions';
 import { API_ENDPOINTS, getAuthHeaders } from '@/config/api';
 
@@ -70,6 +71,8 @@ export default function CourseEditor() {
   const [progressResetOption, setProgressResetOption] = useState<'keep' | 'reset_tests' | 'reset_all'>('reset_tests');
   const [studentsCount, setStudentsCount] = useState(0);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showDraftTestsDialog, setShowDraftTestsDialog] = useState(false);
+  const [draftTestsNames, setDraftTestsNames] = useState<string[]>([]);
 
   const {
     loading,
@@ -199,7 +202,12 @@ export default function CourseEditor() {
           });
           
           if (draftTests.length > 0) {
-            alert('Невозможно опубликовать курс: в курсе есть тесты в статусе "Черновик". Опубликуйте все тесты перед публикацией курса.');
+            const testNames = draftTests.map(lesson => {
+              const test = allTests.find((t: any) => t.id === lesson.testId);
+              return test ? test.title : lesson.title;
+            });
+            setDraftTestsNames(testNames);
+            setShowDraftTestsDialog(true);
             return;
           }
         }
@@ -322,6 +330,12 @@ export default function CourseEditor() {
         lessonsCount={formData.lessons.length}
         loading={loading}
         onConfirm={onDeleteConfirm}
+      />
+
+      <DraftTestsDialog
+        open={showDraftTestsDialog}
+        onClose={() => setShowDraftTestsDialog(false)}
+        testNames={draftTestsNames}
       />
     </AdminLayout>
   );
