@@ -70,6 +70,7 @@ export function useTestEditorActions(
             id: q.id,
             type: q.type,
             question: q.text,
+            imageUrl: q.imageUrl,
             answers: q.options ? q.options.map((opt: string, idx: number) => ({
               id: `${idx}`,
               text: opt,
@@ -156,6 +157,10 @@ export function useTestEditorActions(
             order: i,
           };
           
+          if (question.imageUrl) {
+            questionPayload.imageUrl = question.imageUrl;
+          }
+          
           if (question.type === 'matching' && question.matchingPairs) {
             questionPayload.matchingPairs = question.matchingPairs;
           }
@@ -238,6 +243,10 @@ export function useTestEditorActions(
           points: question.points,
           order: i,
         };
+        
+        if (question.imageUrl) {
+          questionPayload.imageUrl = question.imageUrl;
+        }
         
         if (question.type === 'matching' && question.matchingPairs) {
           questionPayload.matchingPairs = question.matchingPairs;
