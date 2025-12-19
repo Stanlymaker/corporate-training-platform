@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
+import { uploadImage as uploadToS3 } from '@/utils/uploadImage';
 
 interface Answer {
   id: string;
@@ -81,22 +82,12 @@ export default function QuestionDialog({
   const uploadImage = async (file: File) => {
     try {
       setUploading(true);
-      
-      // Конвертируем в base64 для отображения
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        onQuestionChange('imageUrl', base64String);
-        setUploading(false);
-      };
-      reader.onerror = () => {
-        alert('Ошибка при загрузке изображения');
-        setUploading(false);
-      };
-      reader.readAsDataURL(file);
+      const url = await uploadToS3(file);
+      onQuestionChange('imageUrl', url);
     } catch (error) {
       console.error('Upload error:', error);
       alert('Ошибка при загрузке изображения');
+    } finally {
       setUploading(false);
     }
   };
