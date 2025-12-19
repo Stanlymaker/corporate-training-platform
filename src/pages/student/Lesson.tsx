@@ -271,19 +271,22 @@ export default function LessonPage() {
   const handleSubmitTest = () => {
     if (!test) return;
     
-    // Подсчитываем баллы
-    let correctCount = 0;
+    // Подсчитываем баллы с учетом points
+    let earnedPoints = 0;
+    let maxPoints = 0;
+    
     test.questions.forEach(q => {
+      maxPoints += q.points;
       const userAnswer = testAnswers[q.id];
       const correctAnswer = q.correctAnswer;
+      
+      let isCorrect = false;
       
       if (q.type === 'multiple' && Array.isArray(correctAnswer) && Array.isArray(userAnswer)) {
         // Для множественного выбора: проверяем что массивы идентичны
         const sortedUser = [...userAnswer].sort();
         const sortedCorrect = [...correctAnswer].sort();
-        if (JSON.stringify(sortedUser) === JSON.stringify(sortedCorrect)) {
-          correctCount++;
-        }
+        isCorrect = JSON.stringify(sortedUser) === JSON.stringify(sortedCorrect);
       } else if (q.type === 'matching' && q.matchingPairs) {
         // Для сопоставления: проверяем что порядок правильный
         const userOrder = userAnswer as string[];
@@ -294,17 +297,23 @@ export default function LessonPage() {
               allCorrect = false;
             }
           });
-          if (allCorrect) {
-            correctCount++;
-          }
+          isCorrect = allCorrect;
         }
-      } else if (userAnswer === correctAnswer) {
-        // Для одиночного выбора и текста
-        correctCount++;
+      } else if (q.type === 'text') {
+        // Текстовые вопросы с ручной проверкой не учитываем автоматически
+        isCorrect = false;
+      } else {
+        // Для одиночного выбора
+        isCorrect = userAnswer === correctAnswer;
+      }
+      
+      if (isCorrect) {
+        earnedPoints += q.points;
       }
     });
     
-    const score = Math.round((correctCount / test.questions.length) * 100);
+    // Вычисляем процент от максимальных баллов
+    const score = maxPoints > 0 ? Math.round((earnedPoints / maxPoints) * 100) : 0;
     setTestScore(score);
     setTestSubmitted(true);
     

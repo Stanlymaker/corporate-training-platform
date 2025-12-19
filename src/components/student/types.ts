@@ -40,6 +40,7 @@ export interface TestQuestion {
   question: string;
   options: string[];
   correctAnswer: number | number[] | string;
+  points: number;
   imageUrl?: string;
   matchingPairs?: Array<{ left: string; right: string }>;
 }
