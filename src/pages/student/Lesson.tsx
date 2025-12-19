@@ -285,16 +285,18 @@ export default function LessonPage() {
           correctCount++;
         }
       } else if (q.type === 'matching' && q.matchingPairs) {
-        // Для сопоставления: проверяем что все пары совпадают
-        const userMatching = userAnswer as Record<string, string>;
-        let allCorrect = true;
-        q.matchingPairs.forEach(pair => {
-          if (userMatching?.[pair.left] !== pair.right) {
-            allCorrect = false;
+        // Для сопоставления: проверяем что порядок правильный
+        const userOrder = userAnswer as string[];
+        if (Array.isArray(userOrder) && userOrder.length === q.matchingPairs.length) {
+          let allCorrect = true;
+          q.matchingPairs.forEach((pair, index) => {
+            if (userOrder[index] !== pair.right) {
+              allCorrect = false;
+            }
+          });
+          if (allCorrect) {
+            correctCount++;
           }
-        });
-        if (allCorrect && Object.keys(userMatching || {}).length === q.matchingPairs.length) {
-          correctCount++;
         }
       } else if (userAnswer === correctAnswer) {
         // Для одиночного выбора и текста
