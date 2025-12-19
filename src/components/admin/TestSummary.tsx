@@ -4,7 +4,7 @@ import Icon from '@/components/ui/icon';
 
 interface Question {
   id: string;
-  type: 'single' | 'multiple' | 'text';
+  type: 'single' | 'multiple' | 'text' | 'matching';
   question: string;
   points: number;
 }
@@ -24,6 +24,7 @@ export default function TestSummary({ questions, totalPoints, formData }: TestSu
   const singleChoiceCount = questions.filter(q => q.type === 'single').length;
   const multipleChoiceCount = questions.filter(q => q.type === 'multiple').length;
   const textCount = questions.filter(q => q.type === 'text').length;
+  const matchingCount = questions.filter(q => q.type === 'matching').length;
 
   const getStatusColor = (status: string) => {
     return status === 'published' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800';
@@ -88,6 +89,13 @@ export default function TestSummary({ questions, totalPoints, formData }: TestSu
               <span className="text-sm text-gray-600">Текстовый</span>
             </div>
             <span className="font-medium">{textCount}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Icon name="GitMerge" size={16} className="text-gray-500" />
+              <span className="text-sm text-gray-600">Сопоставление</span>
+            </div>
+            <span className="font-medium">{matchingCount}</span>
           </div>
         </div>
       </div>
