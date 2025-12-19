@@ -143,14 +143,11 @@ export default function AdminLessonPage() {
             </CardHeader>
             <CardContent className="p-6">
               {lesson.type === 'video' && lesson.videoUrl && (
-                <div className="mb-6 rounded-lg overflow-hidden bg-black aspect-video">
-                  <video 
-                    controls 
+                <div className="mb-6 rounded-lg overflow-hidden bg-black aspect-video flex items-center justify-center">
+                  <div 
                     className="w-full h-full"
-                    src={lesson.videoUrl}
-                  >
-                    Ваш браузер не поддерживает воспроизведение видео.
-                  </video>
+                    dangerouslySetInnerHTML={{ __html: lesson.videoUrl }}
+                  />
                 </div>
               )}
               
