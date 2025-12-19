@@ -89,6 +89,13 @@ export default function LessonPage() {
         // Находим урок по order (lessonId в URL - это order+1)
         const lessonOrder = parseInt(lessonId || '0') - 1;
         foundLesson = lessonsData.find(l => l.order === lessonOrder) || null;
+        
+        // Дебаг: проверяем materials
+        if (foundLesson?.materials) {
+          console.log('Lesson materials:', foundLesson.materials);
+          console.log('Unique materials:', Array.from(new Map(foundLesson.materials.map(m => [m.id, m])).values()));
+        }
+        
         setLesson(foundLesson);
       }
 
