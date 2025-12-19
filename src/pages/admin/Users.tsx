@@ -338,12 +338,9 @@ export default function AdminUsers() {
       <div className="animate-fade-in">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            <h1 className="text-3xl font-bold text-gray-900">
               Управление пользователями
             </h1>
-            <p className="text-gray-600">
-              Отслеживайте прогресс и управляйте доступом
-            </p>
           </div>
           <Button onClick={() => setShowAddModal(true)}>
             <Icon name="UserPlus" className="mr-2" size={18} />
