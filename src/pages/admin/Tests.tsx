@@ -65,9 +65,27 @@ export default function Tests() {
       
       if (coursesRes.ok) {
         const coursesData = await coursesRes.json();
-        const loadedCourses = coursesData.courses || [];
-        console.log('[Tests] Loaded courses:', loadedCourses);
-        setCourses(loadedCourses);
+        const courseSummaries = coursesData.courses || [];
+        
+        // Load full course details with lessons for each course
+        const fullCoursesPromises = courseSummaries.map(async (summary: any) => {
+          try {
+            const detailRes = await fetch(`${API_ENDPOINTS.COURSES}?id=${summary.id}`, { 
+              headers: getAuthHeaders() 
+            });
+            if (detailRes.ok) {
+              const detailData = await detailRes.json();
+              return detailData.course;
+            }
+          } catch (err) {
+            console.error(`Error loading course ${summary.id}:`, err);
+          }
+          return summary;
+        });
+        
+        const fullCourses = await Promise.all(fullCoursesPromises);
+        console.log('[Tests] Loaded full courses with lessons:', fullCourses);
+        setCourses(fullCourses);
       }
     } catch (error) {
       console.error('Error loading data:', error);
