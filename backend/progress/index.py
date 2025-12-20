@@ -567,21 +567,36 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 "DELETE FROM test_attempts_v2 WHERE course_id = %s",
                 (reset_course_id,)
             )
-            # Сбрасываем test_score в прогрессе
+            # Получаем ID всех уроков типа 'test' для этого курса
             cur.execute(
-                "UPDATE course_progress_v2 SET test_score = 0 WHERE course_id = %s",
+                "SELECT id FROM lessons_v2 WHERE course_id = %s AND type = 'test'",
                 (reset_course_id,)
             )
-            # Сбрасываем статус завершения курса у всех, так как тесты нужно пересдать
+            test_lesson_ids = [str(row[0]) for row in cur.fetchall()]
+            
+            # Для каждого прогресса удаляем из completed_lesson_ids только тестовые уроки
             cur.execute(
-                "UPDATE course_progress_v2 SET completed = false WHERE course_id = %s",
+                "SELECT user_id, completed_lesson_ids FROM course_progress_v2 WHERE course_id = %s",
                 (reset_course_id,)
             )
-            # Сбрасываем награды, так как они могли быть получены за тесты
-            cur.execute(
-                "UPDATE course_progress_v2 SET earned_rewards = '[]'::jsonb WHERE course_id = %s",
-                (reset_course_id,)
-            )
+            progress_rows = cur.fetchall()
+            
+            for user_id, completed_ids in progress_rows:
+                if completed_ids:
+                    # Убираем ID тестовых уроков из массива
+                    updated_ids = [lid for lid in completed_ids if lid not in test_lesson_ids]
+                    
+                    # Обновляем прогресс
+                    cur.execute(
+                        "UPDATE course_progress_v2 SET "
+                        "completed_lesson_ids = %s, "
+                        "completed_lessons = %s, "
+                        "test_score = 0, "
+                        "completed = false, "
+                        "earned_rewards = '[]'::jsonb "
+                        "WHERE course_id = %s AND user_id = %s",
+                        (json.dumps(updated_ids), len(updated_ids), reset_course_id, user_id)
+                    )
         # Если reset_type == 'keep', ничего не делаем
         
         conn.commit()
