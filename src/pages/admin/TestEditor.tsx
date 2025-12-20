@@ -138,15 +138,27 @@ export default function TestEditor() {
   };
 
   const handleSaveWithCheck = async () => {
+    console.log('[DEBUG handleSaveWithCheck] Starting check', {
+      isEditMode,
+      testId,
+      savedStatus,
+      formDataStatus: formData.status,
+    });
+    
     if (isEditMode && testId && savedStatus === 'published' && formData.status === 'draft') {
       console.log('[DEBUG] Checking linked courses for test status change');
       const linked = await checkLinkedCourses();
       console.log('[DEBUG] Linked courses found:', linked);
       if (linked.length > 0) {
+        console.log('[DEBUG] Showing status change dialog');
         setLinkedCourses(linked);
         setShowStatusChangeDialog(true);
         return;
+      } else {
+        console.log('[DEBUG] No linked courses, proceeding with save');
       }
+    } else {
+      console.log('[DEBUG] Condition not met, proceeding with direct save');
     }
     
     await handleSaveTest();
