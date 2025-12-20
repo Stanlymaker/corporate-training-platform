@@ -160,10 +160,16 @@ export default function AdminUsers() {
     );
     const availablePublishedCourseIds = availablePublishedCourses.map(c => c.id);
     
+    console.log('[getUserProgress] userId:', userId);
+    console.log('[getUserProgress] userProgress:', userProgress);
+    console.log('[getUserProgress] availablePublishedCourseIds:', availablePublishedCourseIds);
+    
     // Считаем только прогресс по опубликованным доступным курсам
     const relevantProgress = userProgress.filter(p => 
       availablePublishedCourseIds.includes(p.courseId)
     );
+    
+    console.log('[getUserProgress] relevantProgress:', relevantProgress);
     
     // Считаем завершенные курсы (проверяем completed ИЛИ все уроки пройдены)
     const completed = relevantProgress.filter(p => 
@@ -175,6 +181,8 @@ export default function AdminUsers() {
       (p.completed === false || p.completedLessons < p.totalLessons) && 
       (p.completedLessons > 0 || p.lastAccessedLesson !== null)
     ).length;
+    
+    console.log('[getUserProgress] completed:', completed, 'inProgress:', inProgress);
     
     return { total: inProgress, completed };
   };
