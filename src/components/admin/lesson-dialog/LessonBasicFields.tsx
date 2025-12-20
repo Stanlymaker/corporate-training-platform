@@ -89,7 +89,7 @@ export default function LessonBasicFields({ lesson, onLessonChange }: LessonBasi
             className="w-4 h-4 text-orange-500 rounded focus:ring-orange-500"
           />
           <span className="text-sm text-gray-700">
-            Урок обязателен к прохождению для открытия следующих уроков
+            Для открытия этого урока требуется завершить предыдущий урок
           </span>
         </label>
       </div>
