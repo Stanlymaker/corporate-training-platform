@@ -17,7 +17,7 @@ export default function LessonContent({ lesson, currentIndex, onDownload, childr
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">
-              {currentIndex + 1}
+              {lesson.order + 1}
             </div>
             <div>
               <div className="text-lg">{lesson.title}</div>
