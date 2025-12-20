@@ -279,6 +279,20 @@ export default function LessonPage() {
     setCurrentQuestionIndex(0);
   };
 
+  const handleAnswerChange = (questionId: number, answerValue: any, isMultiple?: boolean) => {
+    if (isMultiple) {
+      setTestAnswers(prev => {
+        const currentAnswers = Array.isArray(prev[questionId]) ? prev[questionId] : [];
+        const newAnswers = currentAnswers.includes(answerValue)
+          ? currentAnswers.filter((a: any) => a !== answerValue)
+          : [...currentAnswers, answerValue];
+        return { ...prev, [questionId]: newAnswers };
+      });
+    } else {
+      setTestAnswers(prev => ({ ...prev, [questionId]: answerValue }));
+    }
+  };
+
   const handleSubmitTest = async () => {
     if (!test || !course || !lesson) return;
     
@@ -384,9 +398,11 @@ export default function LessonPage() {
                       timeRemaining={timeRemaining}
                       currentQuestionIndex={currentQuestionIndex}
                       onStartTest={handleStartTest}
-                      onAnswerChange={setTestAnswers}
+                      onAnswerChange={handleAnswerChange}
                       onSubmitTest={handleSubmitTest}
-                      onQuestionChange={setCurrentQuestionIndex}
+                      onRetry={handleStartTest}
+                      onNextQuestion={() => setCurrentQuestionIndex(prev => prev + 1)}
+                      onPreviousQuestion={() => setCurrentQuestionIndex(prev => prev - 1)}
                     />
                   ) : (
                     <LessonContent lesson={lesson} />
@@ -394,15 +410,17 @@ export default function LessonPage() {
                 </CardContent>
               </Card>
 
-              <LessonNavigation
-                courseId={courseId!}
-                previousLesson={previousLesson}
-                nextLesson={nextLesson}
-                isCompleted={isCompleted}
-                isTestPassed={testSubmitted && testScore >= (test?.passingScore || 70)}
-                onNavigate={handleNavigateToLesson}
-                onComplete={handleCompleteLesson}
-              />
+              {lesson.type !== 'test' && (
+                <LessonNavigation
+                  courseId={courseId!}
+                  previousLesson={previousLesson}
+                  nextLesson={nextLesson}
+                  isCompleted={isCompleted}
+                  isTestPassed={false}
+                  onNavigate={handleNavigateToLesson}
+                  onComplete={handleCompleteLesson}
+                />
+              )}
             </>
           )}
         </div>
@@ -412,6 +430,7 @@ export default function LessonPage() {
           currentLessonId={String(lesson.id)}
           progress={progress}
           onNavigate={handleNavigateToLesson}
+          isTestInProgress={testStarted && !testSubmitted}
         />
       </div>
     </StudentLayout>

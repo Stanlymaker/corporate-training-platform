@@ -7,9 +7,10 @@ interface LessonSidebarProps {
   currentLessonId: string;
   progress: CourseProgress | null;
   onNavigate: (lessonOrder: number) => void;
+  isTestInProgress?: boolean;
 }
 
-export default function LessonSidebar({ courseLessons, currentLessonId, progress, onNavigate }: LessonSidebarProps) {
+export default function LessonSidebar({ courseLessons, currentLessonId, progress, onNavigate, isTestInProgress = false }: LessonSidebarProps) {
   // Проверка блокировки урока
   const isLessonLocked = (lesson: Lesson, index: number): boolean => {
     // 1. Обычный урок с требованием завершить предыдущий
@@ -57,7 +58,7 @@ export default function LessonSidebar({ courseLessons, currentLessonId, progress
         <div className="space-y-1">
           {courseLessons.map((l, index) => {
             const lessonCompleted = progress?.completedLessonIds.includes(String(l.id));
-            const lessonLocked = isLessonLocked(l, index);
+            const lessonLocked = isLessonLocked(l, index) || (isTestInProgress && String(l.id) !== currentLessonId);
             const isActive = String(l.id) === currentLessonId;
 
             return (
