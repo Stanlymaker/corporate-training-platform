@@ -110,11 +110,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         test_id, course_id = lesson_data
         
-        # Получаем данные теста
-        test_id_safe = escape_sql_string(str(test_id))
-        cur.execute(f"SELECT attempts_allowed FROM tests_v2 WHERE id = '{test_id_safe}'")
-        test_data = cur.fetchone()
-        max_attempts = test_data[0] if test_data else None
+        # ВРЕМЕННО: используем неограниченные попытки (Simple Query не поддерживает доступ к tests_v2)
+        max_attempts = None
         
         cur.execute(
             f"SELECT attempts_used, max_attempts, best_score, last_attempt_at "
@@ -180,11 +177,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         test_id, course_id = lesson_data
         
-        # Получаем данные теста
-        test_id_safe = escape_sql_string(str(test_id))
-        cur.execute(f"SELECT attempts_allowed FROM tests_v2 WHERE id = '{test_id_safe}'")
-        test_data = cur.fetchone()
-        max_attempts = test_data[0] if test_data else None
+        # ВРЕМЕННО: используем неограниченные попытки (Simple Query не поддерживает доступ к tests_v2)
+        max_attempts = None
         
         cur.execute(
             f"SELECT attempts_used, max_attempts FROM test_attempts_v2 "
