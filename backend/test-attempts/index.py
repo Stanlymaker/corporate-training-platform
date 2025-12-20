@@ -47,6 +47,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     GET ?lessonId=x - получить информацию о попытках теста
     POST ?action=record - записать результат попытки
     POST ?action=start - начать новую попытку (уменьшить счетчик)
+    DELETE ?userId=x&lessonId=y - сбросить попытки пользователя (только админ)
     '''
     method: str = event.get('httpMethod', 'GET')
     
@@ -298,6 +299,50 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'statusCode': 200,
             'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
             'body': json.dumps({'success': True}, ensure_ascii=False),
+            'isBase64Encoded': False
+        }
+    
+    if method == 'DELETE':
+        # Только админ может сбрасывать попытки
+        if payload.get('role') != 'admin':
+            cur.close()
+            conn.close()
+            return {
+                'statusCode': 403,
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'Доступ запрещен'}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
+        
+        query_params = event.get('queryStringParameters', {}) or {}
+        reset_user_id = query_params.get('userId')
+        reset_lesson_id = query_params.get('lessonId')
+        
+        if not reset_user_id or not reset_lesson_id:
+            cur.close()
+            conn.close()
+            return {
+                'statusCode': 400,
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'userId и lessonId обязательны'}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
+        
+        reset_lesson_id_safe = escape_sql_string(str(reset_lesson_id))
+        
+        # Удаляем запись о попытках
+        cur.execute(
+            f"DELETE FROM test_attempts_v2 WHERE user_id = {int(reset_user_id)} AND lesson_id = '{reset_lesson_id_safe}'"
+        )
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return {
+            'statusCode': 200,
+            'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'message': 'Попытки успешно сброшены'}, ensure_ascii=False),
             'isBase64Encoded': False
         }
     

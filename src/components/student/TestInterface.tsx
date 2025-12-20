@@ -93,15 +93,35 @@ export default function TestInterface({
           </div>
           
           {attemptsInfo && !attemptsInfo.hasUnlimitedAttempts && (
-            <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+            <div className={`mb-6 p-4 rounded-lg ${
+              attemptsInfo.remainingAttempts > 0 
+                ? 'bg-orange-50 border border-orange-200' 
+                : 'bg-red-50 border border-red-200'
+            }`}>
               <div className="flex items-start gap-3">
-                <Icon name="AlertCircle" size={20} className="text-orange-600 mt-0.5" />
+                <Icon 
+                  name={attemptsInfo.remainingAttempts > 0 ? "AlertCircle" : "XCircle"} 
+                  size={20} 
+                  className={`mt-0.5 ${
+                    attemptsInfo.remainingAttempts > 0 ? 'text-orange-600' : 'text-red-600'
+                  }`} 
+                />
                 <div>
-                  <div className="font-semibold text-orange-900 mb-1">
-                    Осталось попыток: {attemptsInfo.remainingAttempts} из {attemptsInfo.maxAttempts}
+                  <div className={`font-semibold mb-1 ${
+                    attemptsInfo.remainingAttempts > 0 ? 'text-orange-900' : 'text-red-900'
+                  }`}>
+                    {attemptsInfo.remainingAttempts > 0 
+                      ? `Осталось попыток: ${attemptsInfo.remainingAttempts} из ${attemptsInfo.maxAttempts}`
+                      : 'Попытки исчерпаны'
+                    }
                   </div>
-                  <div className="text-sm text-orange-700">
-                    После начала теста покинуть страницу можно будет только с потерей попытки
+                  <div className={`text-sm ${
+                    attemptsInfo.remainingAttempts > 0 ? 'text-orange-700' : 'text-red-700'
+                  }`}>
+                    {attemptsInfo.remainingAttempts > 0 
+                      ? 'После начала теста покинуть страницу можно будет только с потерей попытки'
+                      : 'Вы использовали все доступные попытки. Обратитесь к администратору для сброса результатов.'
+                    }
                   </div>
                 </div>
               </div>
@@ -114,7 +134,12 @@ export default function TestInterface({
                 Предыдущий урок
               </Button>
             )}
-            <Button onClick={onStartTest} className="flex-1" size="lg">
+            <Button 
+              onClick={onStartTest} 
+              className="flex-1" 
+              size="lg"
+              disabled={attemptsInfo && !attemptsInfo.hasUnlimitedAttempts && attemptsInfo.remainingAttempts <= 0}
+            >
               <Icon name="PlayCircle" size={20} className="mr-2" />
               Начать тестирование
             </Button>

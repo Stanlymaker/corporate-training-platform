@@ -345,6 +345,38 @@ export default function UserCoursesManagement({
                                     {testResult.score}%
                                   </Badge>
                                 )}
+                                {lesson.type === 'test' && progress && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
+                                      if (confirm(`Сбросить попытки теста "${lesson.title}" для пользователя ${user.name}?`)) {
+                                        try {
+                                          const response = await fetch(
+                                            `${API_ENDPOINTS.TEST_ATTEMPTS}?userId=${user.id}&lessonId=${lesson.id}`,
+                                            {
+                                              method: 'DELETE',
+                                              headers: getAuthHeaders()
+                                            }
+                                          );
+                                          if (response.ok) {
+                                            alert('Попытки успешно сброшены');
+                                            await loadProgress();
+                                          } else {
+                                            alert('Ошибка при сбросе попыток');
+                                          }
+                                        } catch (error) {
+                                          console.error('Error resetting attempts:', error);
+                                          alert('Ошибка при сбросе попыток');
+                                        }
+                                      }
+                                    }}
+                                  >
+                                    <Icon name="RotateCcw" size={14} className="mr-1" />
+                                    Сбросить попытки
+                                  </Button>
+                                )}
                                 {isCompleted ? (
                                   <Badge className="bg-green-100 text-green-700">Пройден</Badge>
                                 ) : (
