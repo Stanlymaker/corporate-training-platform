@@ -73,6 +73,7 @@ export function useLessonTest({
   };
 
   const startTestExecution = async () => {
+    if (!lesson || !test) return;
 
     try {
       const response = await fetch(`${API_ENDPOINTS.TEST_ATTEMPTS}?action=start`, {
@@ -90,7 +91,7 @@ export function useLessonTest({
         } : null);
 
         setTestStarted(true);
-        setTimeRemaining(test?.timeLimit ? test.timeLimit * 60 : 0);
+        setTimeRemaining(test.timeLimit ? test.timeLimit * 60 : 0);
         setTestAnswers({});
         setTestSubmitted(false);
         setCurrentQuestionIndex(0);
@@ -104,9 +105,9 @@ export function useLessonTest({
     }
   };
 
-  const handleConfirmStart = () => {
+  const handleConfirmStart = async () => {
     setShowAttemptsWarning(false);
-    startTestExecution();
+    await startTestExecution();
   };
 
   const handleCancelStart = () => {
