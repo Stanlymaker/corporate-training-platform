@@ -15,7 +15,7 @@ export default function LessonSidebar({ courseLessons, currentLessonId, progress
     // 1. Обычный урок с требованием завершить предыдущий
     if (lesson.requiresPrevious && index > 0) {
       const prevLesson = courseLessons[index - 1];
-      if (!progress?.completedLessonIds.includes(prevLesson.id)) {
+      if (!progress?.completedLessonIds.includes(String(prevLesson.id))) {
         return true;
       }
     }
@@ -24,7 +24,7 @@ export default function LessonSidebar({ courseLessons, currentLessonId, progress
     if (lesson.isFinalTest && lesson.finalTestRequiresAllLessons) {
       const nonTestLessons = courseLessons.filter(l => !l.isFinalTest);
       const completedNonTestLessons = nonTestLessons.filter(l => 
-        progress?.completedLessonIds.includes(l.id)
+        progress?.completedLessonIds.includes(String(l.id))
       );
       if (completedNonTestLessons.length < nonTestLessons.length) {
         return true;
@@ -35,7 +35,7 @@ export default function LessonSidebar({ courseLessons, currentLessonId, progress
     if (lesson.isFinalTest && lesson.finalTestRequiresAllTests) {
       const testLessons = courseLessons.filter(l => l.type === 'test' && !l.isFinalTest);
       const completedTests = testLessons.filter(l => 
-        progress?.completedLessonIds.includes(l.id)
+        progress?.completedLessonIds.includes(String(l.id))
       );
       if (completedTests.length < testLessons.length) {
         return true;
@@ -56,9 +56,9 @@ export default function LessonSidebar({ courseLessons, currentLessonId, progress
       <CardContent className="p-3">
         <div className="space-y-1">
           {courseLessons.map((l, index) => {
-            const lessonCompleted = progress?.completedLessonIds.includes(l.id);
+            const lessonCompleted = progress?.completedLessonIds.includes(String(l.id));
             const lessonLocked = isLessonLocked(l, index);
-            const isActive = l.id === currentLessonId;
+            const isActive = String(l.id) === currentLessonId;
 
             return (
               <button
