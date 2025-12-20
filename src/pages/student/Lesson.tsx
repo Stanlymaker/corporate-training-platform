@@ -298,30 +298,47 @@ export default function LessonPage() {
     let earnedPoints = 0;
     let totalPoints = 0;
     
+    console.log('=== Начало проверки теста ===');
+    console.log('Всего вопросов:', test.questions.length);
+    console.log('Ответы пользователя:', testAnswers);
+    
     test.questions.forEach((question) => {
       const userAnswer = testAnswers[question.id];
       const questionPoints = question.points || 1;
       totalPoints += questionPoints;
       
+      console.log(`Вопрос #${question.id} (${question.type}):`, {
+        questionPoints,
+        userAnswer,
+        correctAnswer: question.correctAnswer,
+        correctAnswers: question.correctAnswers
+      });
+      
       if (question.type === 'single') {
-        if (userAnswer === question.correctAnswer) earnedPoints += questionPoints;
+        const isCorrect = userAnswer === question.correctAnswer;
+        if (isCorrect) earnedPoints += questionPoints;
+        console.log(`  Single: ${isCorrect ? '✓' : '✗'} (${userAnswer} === ${question.correctAnswer})`);
       } else if (question.type === 'multiple') {
         const correctAnswers = question.correctAnswers || [];
         const userAnswers = userAnswer || [];
-        if (JSON.stringify(correctAnswers.sort()) === JSON.stringify(userAnswers.sort())) {
-          earnedPoints += questionPoints;
-        }
+        const isCorrect = JSON.stringify(correctAnswers.sort()) === JSON.stringify(userAnswers.sort());
+        if (isCorrect) earnedPoints += questionPoints;
+        console.log(`  Multiple: ${isCorrect ? '✓' : '✗'}`, { correctAnswers, userAnswers });
       } else if (question.type === 'matching' && question.matchingPairs) {
         const userOrder = userAnswer || [];
         const correctOrder = question.matchingPairs.map((p: any) => p.right);
-        if (JSON.stringify(userOrder) === JSON.stringify(correctOrder)) {
-          earnedPoints += questionPoints;
-        }
+        const isCorrect = JSON.stringify(userOrder) === JSON.stringify(correctOrder);
+        if (isCorrect) earnedPoints += questionPoints;
+        console.log(`  Matching: ${isCorrect ? '✓' : '✗'}`, { correctOrder, userOrder });
       }
-      // text вопросы пропускаем, они проверяются вручную
     });
     
+    console.log('=== Итого ===');
+    console.log('Набрано баллов:', earnedPoints, '/', totalPoints);
+    
     const score = Math.round((earnedPoints / totalPoints) * 100);
+    console.log('Процент:', score + '%');
+    
     setTestScore(score);
     setEarnedPoints(earnedPoints);
     setTotalPoints(totalPoints);
