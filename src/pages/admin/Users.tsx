@@ -170,9 +170,13 @@ export default function AdminUsers() {
       p.completed === true || (p.completedLessons >= p.totalLessons && p.totalLessons > 0)
     ).length;
     
-    const total = availablePublishedCourses.length;
+    // Считаем курсы в процессе (начаты, но не завершены)
+    const inProgress = relevantProgress.filter(p => 
+      (p.completed === false || p.completedLessons < p.totalLessons) && 
+      (p.completedLessons > 0 || p.lastAccessedLesson !== null)
+    ).length;
     
-    return { total, completed };
+    return { total: inProgress, completed };
   };
 
   const getUserAssignments = (userId: number) => {
