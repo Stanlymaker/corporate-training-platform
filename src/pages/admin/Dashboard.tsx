@@ -15,12 +15,11 @@ interface RecentActivity {
 export default function AdminDashboard() {
   const [stats, setStats] = useState({
     totalCourses: 0,
-    publishedCourses: 0,
-    totalStudents: 0,
-    activeUsers: 0,
-    totalLessons: 0,
-    completedCourses: 0,
-    totalRewards: 0,
+    totalTests: 0,
+    totalUsers: 0,
+    avgCourseCompletionTime: 0,
+    avgRewardsPerUser: 0,
+    avgUnfinishedCoursesPerUser: 0,
   });
   const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,8 +47,8 @@ export default function AdminDashboard() {
         const courses = coursesData.courses || [];
         const rewards = rewardsData.rewards || [];
 
-        // Считаем уроки во всех курсах
-        let totalLessons = 0;
+        // Считаем общее количество тестов
+        let totalTests = 0;
         for (const course of courses) {
           try {
             const lessonsRes = await fetch(`${API_ENDPOINTS.LESSONS}?courseId=${course.id}`, {
@@ -57,7 +56,8 @@ export default function AdminDashboard() {
             });
             if (lessonsRes.ok) {
               const lessonsData = await lessonsRes.json();
-              totalLessons += (lessonsData.lessons || []).length;
+              const lessons = lessonsData.lessons || [];
+              totalTests += lessons.filter((l: any) => l.type === 'test').length;
             }
           } catch (err) {
             console.error('Error loading lessons for course:', err);
@@ -67,7 +67,11 @@ export default function AdminDashboard() {
         // Загружаем прогресс студентов и создаем активности
         const activities: RecentActivity[] = [];
         const students = users.filter((u: any) => u.role === 'student');
+        
+        const totalCompletionTime = 0;
         let completedCoursesCount = 0;
+        const totalRewardsEarned = 0;
+        const totalUnfinishedCourses = 0;
         
         for (const student of students.slice(0, 10)) {
           try {
@@ -97,12 +101,24 @@ export default function AdminDashboard() {
                 // Завершение курса
                 if (p.completed) {
                   completedCoursesCount++;
+                  
+                  // Считаем время прохождения
+                  if (p.startedAt && p.completedAt) {
+                    const startTime = new Date(p.startedAt).getTime();
+                    const endTime = new Date(p.completedAt).getTime();
+                    const daysToComplete = (endTime - startTime) / (1000 * 60 * 60 * 24);
+                    totalCompletionTime += daysToComplete;
+                  }
+                  
                   activities.push({
                     type: 'course_completed',
                     studentName: student.name,
                     itemName: course.title,
                     timestamp: p.completedAt || p.startedAt || new Date().toISOString()
                   });
+                } else if (p.startedAt) {
+                  // Курс начат, но не завершен
+                  totalUnfinishedCourses++;
                 }
 
                 // Завершенные уроки
@@ -137,6 +153,8 @@ export default function AdminDashboard() {
 
                 // Полученные награды
                 if (p.earnedRewards && p.earnedRewards.length > 0) {
+                  totalRewardsEarned += p.earnedRewards.length;
+                  
                   for (const rewardId of p.earnedRewards) {
                     const reward = rewards.find((r: any) => r.id === rewardId);
                     if (reward) {
@@ -160,15 +178,22 @@ export default function AdminDashboard() {
         activities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
         setRecentActivities(activities.slice(0, 25));
 
+        // Вычисляем средние показатели
+        const studentCount = students.length || 1;
+        const avgCompletionTime = completedCoursesCount > 0 
+          ? Math.round(totalCompletionTime / completedCoursesCount) 
+          : 0;
+        const avgRewards = (totalRewardsEarned / studentCount).toFixed(1);
+        const avgUnfinished = (totalUnfinishedCourses / studentCount).toFixed(1);
+
         // Обновляем статистику
         setStats({
           totalCourses: courses.length,
-          publishedCourses: courses.filter((c: any) => c.published).length,
-          totalStudents: users.filter((u: any) => u.role === 'student').length,
-          activeUsers: users.filter((u: any) => u.isActive).length,
-          totalLessons: totalLessons,
-          completedCourses: completedCoursesCount,
-          totalRewards: rewards.length,
+          totalTests: totalTests,
+          totalUsers: users.length,
+          avgCourseCompletionTime: avgCompletionTime,
+          avgRewardsPerUser: parseFloat(avgRewards),
+          avgUnfinishedCoursesPerUser: parseFloat(avgUnfinished),
         });
       }
     } catch (error) {
@@ -184,21 +209,18 @@ export default function AdminDashboard() {
       value: stats.totalCourses,
       icon: 'BookOpen',
       color: 'bg-orange-500',
-      trend: `${stats.publishedCourses} опубликовано`,
     },
     {
-      title: 'Обучающихся',
-      value: stats.totalStudents,
+      title: 'Всего тестов',
+      value: stats.totalTests,
+      icon: 'FileCheck',
+      color: 'bg-blue-500',
+    },
+    {
+      title: 'Всего пользователей',
+      value: stats.totalUsers,
       icon: 'Users',
-      color: 'bg-amber-500',
-      trend: `${stats.activeUsers} активных`,
-    },
-    {
-      title: 'Активных пользователей',
-      value: stats.activeUsers,
-      icon: 'CheckCircle',
       color: 'bg-green-500',
-      trend: 'Всего пользователей',
     },
   ];
 
@@ -229,8 +251,7 @@ export default function AdminDashboard() {
                   </div>
                 </div>
                 <div className="text-3xl font-bold text-gray-900 mb-1">{stat.value}</div>
-                <div className="text-sm text-gray-600 mb-1">{stat.title}</div>
-                <div className="text-xs text-gray-500">{stat.trend}</div>
+                <div className="text-sm text-gray-600">{stat.title}</div>
               </CardContent>
             </Card>
           ))}
@@ -316,28 +337,15 @@ export default function AdminDashboard() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                      <Icon name="FileText" size={20} className="text-purple-600" />
+                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <Icon name="Clock" size={20} className="text-blue-600" />
                     </div>
                     <div>
-                      <p className="font-semibold text-gray-900">Всего уроков</p>
-                      <p className="text-sm text-gray-600">В {stats.totalCourses} курсах</p>
+                      <p className="font-semibold text-gray-900">Среднее время прохождения</p>
+                      <p className="text-sm text-gray-600">курсов на пользователя</p>
                     </div>
                   </div>
-                  <div className="text-2xl font-bold text-gray-900">{stats.totalLessons}</div>
-                </div>
-
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                      <Icon name="GraduationCap" size={20} className="text-green-600" />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-gray-900">Завершено курсов</p>
-                      <p className="text-sm text-gray-600">Студентами всего</p>
-                    </div>
-                  </div>
-                  <div className="text-2xl font-bold text-gray-900">{stats.completedCourses}</div>
+                  <div className="text-2xl font-bold text-gray-900">{stats.avgCourseCompletionTime} дн.</div>
                 </div>
 
                 <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
@@ -346,11 +354,24 @@ export default function AdminDashboard() {
                       <Icon name="Award" size={20} className="text-amber-600" />
                     </div>
                     <div>
-                      <p className="font-semibold text-gray-900">Всего наград</p>
-                      <p className="text-sm text-gray-600">Доступно для получения</p>
+                      <p className="font-semibold text-gray-900">Среднее количество наград</p>
+                      <p className="text-sm text-gray-600">на пользователя</p>
                     </div>
                   </div>
-                  <div className="text-2xl font-bold text-gray-900">{stats.totalRewards}</div>
+                  <div className="text-2xl font-bold text-gray-900">{stats.avgRewardsPerUser}</div>
+                </div>
+
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                      <Icon name="BookOpen" size={20} className="text-orange-600" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-900">Среднее количество незаконченных курсов</p>
+                      <p className="text-sm text-gray-600">на пользователя</p>
+                    </div>
+                  </div>
+                  <div className="text-2xl font-bold text-gray-900">{stats.avgUnfinishedCoursesPerUser}</div>
                 </div>
               </div>
             </CardContent>
