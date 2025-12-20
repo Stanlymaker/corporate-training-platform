@@ -1,7 +1,7 @@
 import StudentLayout from '@/components/StudentLayout';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
-import { useParams, useNavigate, useBlocker } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { useEffect } from 'react';
 import { API_ENDPOINTS, getAuthHeaders } from '@/config/api';
@@ -61,11 +61,6 @@ export default function LessonPage() {
     loadLessonData,
     onNavigateToLesson: handleNavigateToLesson
   });
-
-  const blocker = useBlocker(
-    ({ currentLocation, nextLocation }) =>
-      testStarted && !testSubmitted && currentLocation.pathname !== nextLocation.pathname
-  );
 
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -171,7 +166,6 @@ export default function LessonPage() {
         handleAnswerChange={handleAnswerChange}
         handleSubmitTest={handleSubmitTest}
         setCurrentQuestionIndex={setCurrentQuestionIndex}
-        blocker={blocker}
       />
     </StudentLayout>
   );

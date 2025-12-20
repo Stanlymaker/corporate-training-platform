@@ -51,7 +51,6 @@ interface LessonPageContentProps {
   handleAnswerChange: (questionId: number, answerValue: any, isMultiple?: boolean) => void;
   handleSubmitTest: () => Promise<void>;
   setCurrentQuestionIndex: (fn: (prev: number) => number) => void;
-  blocker: any;
 }
 
 export default function LessonPageContent({
@@ -82,8 +81,7 @@ export default function LessonPageContent({
   handleStartTest,
   handleAnswerChange,
   handleSubmitTest,
-  setCurrentQuestionIndex,
-  blocker
+  setCurrentQuestionIndex
 }: LessonPageContentProps) {
   const navigate = useNavigate();
 
@@ -161,37 +159,6 @@ export default function LessonPageContent({
           isTestInProgress={testStarted && !testSubmitted}
         />
       </div>
-
-      {blocker.state === "blocked" && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md mx-4 shadow-xl">
-            <div className="flex items-start gap-4">
-              <Icon name="AlertTriangle" size={24} className="text-orange-500 mt-1 flex-shrink-0" />
-              <div className="flex-1">
-                <h3 className="text-lg font-bold mb-2">Покинуть тест?</h3>
-                <p className="text-gray-700 mb-4">
-                  Если вы покинете эту страницу сейчас, вы потеряете одну попытку прохождения теста. 
-                  Ваш прогресс не сохранится.
-                </p>
-                <div className="flex gap-3 justify-end">
-                  <Button
-                    variant="outline"
-                    onClick={() => blocker.reset()}
-                  >
-                    Остаться
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    onClick={() => blocker.proceed()}
-                  >
-                    Покинуть тест
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 }
