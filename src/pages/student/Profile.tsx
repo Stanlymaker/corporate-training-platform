@@ -134,6 +134,10 @@ export default function StudentProfile() {
   const earnedRewardIds = userProgress.flatMap(p => p.earnedRewards || [])
     .map((r: any) => Number(typeof r === 'object' ? r.id : r));
   
+  console.log('User progress data:', userProgress);
+  console.log('Earned reward IDs:', earnedRewardIds);
+  console.log('All rewards:', rewards);
+  
   const selectedRewardData = selectedReward ? rewards.find(r => String(r.id) === String(selectedReward)) : null;
   const selectedRewardCourse = selectedRewardData 
     ? (courses.find(c => c.id === selectedRewardData.courseId) || rewardCourses[selectedRewardData.courseId])
