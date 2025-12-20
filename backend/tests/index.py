@@ -47,6 +47,10 @@ class UpdateQuestionRequest(BaseModel):
     textCheckType: Optional[str] = Field(None, pattern='^(manual|automatic)$')
     imageUrl: Optional[str] = None
 
+class CheckTestRequest(BaseModel):
+    testId: int = Field(..., ge=1)
+    answers: Dict[str, Any] = Field(...)
+
 def get_db_connection():
     dsn = os.environ['DATABASE_URL']
     return psycopg2.connect(dsn)
@@ -122,6 +126,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     GET ?testId=x&action=questions - вопросы теста
     POST - создать тест (админ)
     POST ?action=question - создать вопрос (админ)
+    POST ?action=check - проверить ответы теста (студент)
     PUT ?id=x - обновить тест (админ)
     PUT ?action=question&questionId=x - обновить вопрос (админ)
     DELETE ?id=x - удалить тест и его вопросы (админ)
@@ -240,6 +245,100 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'statusCode': 200,
             'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
             'body': json.dumps({'tests': tests_list}, ensure_ascii=False),
+            'isBase64Encoded': False
+        }
+    
+    if method == 'POST' and action == 'check':
+        # Проверка ответов теста
+        body_data = json.loads(event.get('body', '{}'))
+        
+        try:
+            check_req = CheckTestRequest(**body_data)
+        except Exception as e:
+            cur.close()
+            conn.close()
+            return {
+                'statusCode': 400,
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': f'Неверные данные: {str(e)}'}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
+        
+        # Получаем вопросы теста с правильными ответами
+        cur.execute(
+            "SELECT id, test_id, type, text, options, correct_answer, points, \"order\", "
+            "matching_pairs, text_check_type, image_url FROM questions_v2 WHERE test_id = %s ORDER BY \"order\"",
+            (check_req.testId,)
+        )
+        questions = cur.fetchall()
+        
+        if not questions:
+            cur.close()
+            conn.close()
+            return {
+                'statusCode': 404,
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'Тест не найден'}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
+        
+        earned_points = 0
+        total_points = 0
+        results = []
+        
+        for q in questions:
+            question_id = str(q[0])
+            question_type = q[2]
+            correct_answer = q[5]
+            points = q[6]
+            matching_pairs = q[8]
+            
+            total_points += points
+            user_answer = check_req.answers.get(question_id)
+            is_correct = False
+            
+            if question_type == 'single':
+                # Для single choice сравниваем числовые индексы
+                is_correct = user_answer == correct_answer
+            
+            elif question_type == 'multiple':
+                # Для multiple choice сравниваем массивы
+                if isinstance(correct_answer, list) and isinstance(user_answer, list):
+                    is_correct = sorted(correct_answer) == sorted(user_answer)
+            
+            elif question_type == 'matching':
+                # Для matching проверяем порядок правых элементов
+                if matching_pairs and isinstance(user_answer, list):
+                    correct_order = [p['right'] for p in matching_pairs]
+                    is_correct = user_answer == correct_order
+            
+            elif question_type == 'text':
+                # Текстовые вопросы требуют ручной проверки
+                is_correct = False
+            
+            if is_correct:
+                earned_points += points
+            
+            results.append({
+                'questionId': question_id,
+                'isCorrect': is_correct,
+                'points': points if is_correct else 0
+            })
+        
+        score = round((earned_points / total_points * 100)) if total_points > 0 else 0
+        
+        cur.close()
+        conn.close()
+        
+        return {
+            'statusCode': 200,
+            'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({
+                'score': score,
+                'earnedPoints': earned_points,
+                'totalPoints': total_points,
+                'results': results
+            }, ensure_ascii=False),
             'isBase64Encoded': False
         }
     
