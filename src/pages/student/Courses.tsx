@@ -20,6 +20,7 @@ interface Course {
   passScore: number;
   accessType: 'open' | 'closed';
   published: boolean;
+  status: 'draft' | 'published' | 'archived';
   image?: string;
 }
 
@@ -192,14 +193,20 @@ export default function StudentCourses() {
                       </div>
                     </>
                   )}
-                  {courseProgress?.completed && (
-                    <div className="absolute top-3 right-3">
+                  <div className="absolute top-3 right-3 flex gap-2">
+                    {course.status === 'archived' && (
+                      <Badge className="bg-gray-500">
+                        <Icon name="Archive" size={12} className="mr-1" />
+                        Архивный
+                      </Badge>
+                    )}
+                    {courseProgress?.completed && (
                       <Badge className="bg-green-500">
                         <Icon name="CheckCircle" size={12} className="mr-1" />
                         Завершен
                       </Badge>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
                 <CardContent className="p-5">
                   <h3 className="font-bold text-base text-gray-900 mb-2 line-clamp-2">{course.title}</h3>

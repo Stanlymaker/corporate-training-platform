@@ -87,7 +87,7 @@ export default function CourseInfoForm({ formData, onInputChange, isEditMode = f
                 ? 'Курс виден только администраторам' 
                 : formData.status === 'published'
                 ? 'Курс доступен студентам для обучения'
-                : 'Курс перенесен в архив'}
+                : 'Курс скрыт от новых студентов, но доступен тем, кто уже начал обучение'}
             </p>
           </div>
         )}

@@ -27,6 +27,7 @@ interface Course {
   passScore: number;
   accessType: 'open' | 'closed';
   published: boolean;
+  status: 'draft' | 'published' | 'archived';
   createdAt: string;
   updatedAt: string;
   image?: string;
@@ -34,7 +35,7 @@ interface Course {
 
 export default function AdminCourses() {
   const navigate = useNavigate();
-  const [filter, setFilter] = useState<'all' | 'published' | 'draft'>('all');
+  const [filter, setFilter] = useState<'all' | 'published' | 'draft' | 'archived'>('all');
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAssignModal, setShowAssignModal] = useState(false);
@@ -128,8 +129,9 @@ export default function AdminCourses() {
   };
 
   const filteredCourses = courses.filter(course => {
-    if (filter === 'published') return course.published;
-    if (filter === 'draft') return !course.published;
+    if (filter === 'published') return course.status === 'published';
+    if (filter === 'draft') return course.status === 'draft';
+    if (filter === 'archived') return course.status === 'archived';
     return true;
   });
 
@@ -170,14 +172,21 @@ export default function AdminCourses() {
           onClick={() => setFilter('published')}
           size="sm"
         >
-          Опубликованные ({courses.filter(c => c.published).length})
+          Опубликованные ({courses.filter(c => c.status === 'published').length})
         </Button>
         <Button
           variant={filter === 'draft' ? 'default' : 'outline'}
           onClick={() => setFilter('draft')}
           size="sm"
         >
-          Черновики ({courses.filter(c => !c.published).length})
+          Черновики ({courses.filter(c => c.status === 'draft').length})
+        </Button>
+        <Button
+          variant={filter === 'archived' ? 'default' : 'outline'}
+          onClick={() => setFilter('archived')}
+          size="sm"
+        >
+          Архивные ({courses.filter(c => c.status === 'archived').length})
         </Button>
       </div>
 
@@ -273,8 +282,16 @@ export default function AdminCourses() {
                       <Icon name={course.accessType === 'open' ? 'Unlock' : 'Lock'} size={10} className="mr-1" />
                       {course.accessType === 'open' ? 'Откр.' : 'Закр.'}
                     </Badge>
-                    <Badge variant={course.published ? 'default' : 'secondary'} className="text-xs">
-                      {course.published ? 'Опубл.' : 'Черн.'}
+                    <Badge 
+                      variant={course.status === 'published' ? 'default' : 'secondary'} 
+                      className={`text-xs ${course.status === 'archived' ? 'bg-gray-500' : ''}`}
+                    >
+                      <Icon 
+                        name={course.status === 'archived' ? 'Archive' : course.status === 'published' ? 'Check' : 'FileText'} 
+                        size={10} 
+                        className="mr-1" 
+                      />
+                      {course.status === 'published' ? 'Опубл.' : course.status === 'archived' ? 'Архив' : 'Черн.'}
                     </Badge>
                   </div>
                 </div>

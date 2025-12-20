@@ -148,15 +148,17 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         else:
             user_id_int = int(payload['user_id'])
             
+            # Опубликованные открытые курсы (не архивные)
             cur.execute(
                 "SELECT c.id, c.title, c.description, c.duration, "
                 "(SELECT COUNT(*) FROM lessons_v2 WHERE course_id = c.id) as lessons_count, "
                 "c.category, c.image, c.published, c.pass_score, c.level, c.instructor, "
                 "c.status, c.start_date, c.end_date, c.access_type "
-                "FROM courses_v2 c WHERE c.published = true AND c.access_type = 'open'"
+                "FROM courses_v2 c WHERE c.published = true AND c.access_type = 'open' AND c.status != 'archived'"
             )
             open_courses = list(cur.fetchall())
             
+            # Назначенные закрытые курсы (не архивные)
             cur.execute(
                 "SELECT course_id FROM course_assignments_v2 WHERE user_id = %s",
                 (user_id_int,)
@@ -171,11 +173,31 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     f"(SELECT COUNT(*) FROM lessons_v2 WHERE course_id = c.id) as lessons_count, "
                     f"c.category, c.image, c.published, c.pass_score, c.level, c.instructor, "
                     f"c.status, c.start_date, c.end_date, c.access_type "
-                    f"FROM courses_v2 c WHERE c.published = true AND c.access_type = 'closed' AND c.id IN ({placeholders})"
+                    f"FROM courses_v2 c WHERE c.published = true AND c.access_type = 'closed' AND c.status != 'archived' AND c.id IN ({placeholders})"
                 )
                 closed_courses = list(cur.fetchall())
             
-            courses = open_courses + closed_courses
+            # Архивные курсы, где есть прогресс у пользователя
+            cur.execute(
+                "SELECT DISTINCT cp.course_id FROM t_p8600777_corporate_training_p.course_progress cp "
+                "WHERE cp.user_id = %s",
+                (user_id_int,)
+            )
+            progress_course_ids = [row[0] for row in cur.fetchall()]
+            
+            archived_courses = []
+            if progress_course_ids:
+                placeholders = ','.join(str(cid) for cid in progress_course_ids)
+                cur.execute(
+                    f"SELECT c.id, c.title, c.description, c.duration, "
+                    f"(SELECT COUNT(*) FROM lessons_v2 WHERE course_id = c.id) as lessons_count, "
+                    f"c.category, c.image, c.published, c.pass_score, c.level, c.instructor, "
+                    f"c.status, c.start_date, c.end_date, c.access_type "
+                    f"FROM courses_v2 c WHERE c.status = 'archived' AND c.id IN ({placeholders})"
+                )
+                archived_courses = list(cur.fetchall())
+            
+            courses = open_courses + closed_courses + archived_courses
             courses.sort(key=lambda x: x[0], reverse=True)
         
         courses_list = [format_course_response(course) for course in courses]

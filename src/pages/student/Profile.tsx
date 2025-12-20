@@ -1,6 +1,7 @@
 import StudentLayout from '@/components/StudentLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import Icon from '@/components/ui/icon';
 import { useNavigate } from 'react-router-dom';
@@ -287,7 +288,15 @@ export default function StudentProfile() {
                               </div>
                             )}
                             <div className="flex-1 min-w-0">
-                              <h4 className="font-semibold text-base text-gray-900 mb-1">{course.title}</h4>
+                              <div className="flex items-center gap-2 mb-1">
+                                <h4 className="font-semibold text-base text-gray-900">{course.title}</h4>
+                                {(course as any).status === 'archived' && (
+                                  <Badge className="bg-gray-500 text-white text-xs">
+                                    <Icon name="Archive" size={10} className="mr-1" />
+                                    Архивный
+                                  </Badge>
+                                )}
+                              </div>
                               <p className="text-xs text-gray-600 mb-2">
                                 {progress.totalLessons} {progress.totalLessons === 1 ? 'урок' : progress.totalLessons < 5 ? 'урока' : 'уроков'} • {course.duration} мин
                               </p>
