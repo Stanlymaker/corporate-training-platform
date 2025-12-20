@@ -181,13 +181,32 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         user_id = payload.get('user_id')
         
-        # Получаем последний результат пользователя для этого урока
+        # Получаем test_id для этого урока
+        cur.execute(
+            "SELECT test_id FROM t_p8600777_corporate_training_p.lessons_v2 WHERE id = %s LIMIT 1",
+            (lesson_id,)
+        )
+        lesson_data = cur.fetchone()
+        
+        if not lesson_data or not lesson_data[0]:
+            cur.close()
+            conn.close()
+            return {
+                'statusCode': 404,
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'Тест не найден для этого урока'}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
+        
+        test_id_val = lesson_data[0]
+        
+        # Получаем последний результат пользователя для этого теста (не урока!)
         cur.execute(
             "SELECT id, user_id, test_id, lesson_id, course_id, score, earned_points, "
             "total_points, passed, answers, results, completed_at "
-            "FROM t_p8600777_corporate_training_p.test_results WHERE user_id = %s AND lesson_id = %s "
+            "FROM t_p8600777_corporate_training_p.test_results WHERE user_id = %s AND test_id = %s "
             "ORDER BY completed_at DESC LIMIT 1",
-            (user_id, lesson_id)
+            (user_id, test_id_val)
         )
         result_row = cur.fetchone()
         
