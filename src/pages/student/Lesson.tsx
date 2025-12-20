@@ -435,6 +435,8 @@ export default function LessonPage() {
                       onRetry={handleStartTest}
                       onNextQuestion={() => setCurrentQuestionIndex(prev => prev + 1)}
                       onPreviousQuestion={() => setCurrentQuestionIndex(prev => prev - 1)}
+                      onNavigateToPreviousLesson={() => previousLesson && handleNavigateToLesson(previousLesson.order)}
+                      hasPreviousLesson={!!previousLesson}
                     />
                   ) : (
                     <LessonContent lesson={lesson} />

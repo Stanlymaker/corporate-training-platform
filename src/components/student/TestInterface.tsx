@@ -19,6 +19,8 @@ interface TestInterfaceProps {
   onRetry: () => void;
   onNextQuestion: () => void;
   onPreviousQuestion: () => void;
+  onNavigateToPreviousLesson?: () => void;
+  hasPreviousLesson?: boolean;
 }
 
 export default function TestInterface({
@@ -36,7 +38,9 @@ export default function TestInterface({
   onSubmitTest,
   onRetry,
   onNextQuestion,
-  onPreviousQuestion
+  onPreviousQuestion,
+  onNavigateToPreviousLesson,
+  hasPreviousLesson = false
 }: TestInterfaceProps) {
   const currentQuestion = test.questions?.[currentQuestionIndex];
   
@@ -80,10 +84,18 @@ export default function TestInterface({
               </div>
             </div>
           </div>
-          <Button onClick={onStartTest} className="w-full" size="lg">
-            <Icon name="PlayCircle" size={20} className="mr-2" />
-            Начать тестирование
-          </Button>
+          <div className="flex gap-3">
+            {hasPreviousLesson && (
+              <Button onClick={onNavigateToPreviousLesson} variant="outline" size="lg">
+                <Icon name="ArrowLeft" size={20} className="mr-2" />
+                Предыдущий урок
+              </Button>
+            )}
+            <Button onClick={onStartTest} className="flex-1" size="lg">
+              <Icon name="PlayCircle" size={20} className="mr-2" />
+              Начать тестирование
+            </Button>
+          </div>
         </div>
       </div>
     );
