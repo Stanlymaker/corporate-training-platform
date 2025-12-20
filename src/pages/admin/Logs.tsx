@@ -1,16 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import AdminLayout from '@/components/AdminLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
-import { mockLogs } from '@/data/mockLogs';
 import { SystemLog } from '@/types/logs';
 import LogsFilters, { LogFiltersState } from '@/components/admin/LogsFilters';
 import LogDetailsModal from '@/components/admin/LogDetailsModal';
+import { API_ENDPOINTS, getAuthHeaders } from '@/config/api';
 
 export default function AdminLogs() {
-  const [logs, setLogs] = useState<SystemLog[]>(mockLogs);
+  const [logs, setLogs] = useState<SystemLog[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<LogFiltersState>({
     level: 'all',
@@ -21,6 +22,35 @@ export default function AdminLogs() {
   });
   const [selectedLog, setSelectedLog] = useState<SystemLog | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+
+  useEffect(() => {
+    loadLogs();
+  }, [filters]);
+
+  const loadLogs = async () => {
+    try {
+      setLoading(true);
+      const params = new URLSearchParams();
+      
+      if (filters.level !== 'all') params.append('level', filters.level);
+      if (filters.action !== 'all') params.append('action', filters.action);
+      if (filters.userId) params.append('userId', filters.userId);
+      
+      const url = `${API_ENDPOINTS.LOGS}${params.toString() ? '?' + params.toString() : ''}`;
+      const response = await fetch(url, {
+        headers: getAuthHeaders(),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setLogs(data.logs || []);
+      }
+    } catch (error) {
+      console.error('Error loading logs:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredLogs = logs.filter((log) => {
     const matchesSearch =
@@ -99,6 +129,16 @@ export default function AdminLogs() {
     return logDate.toDateString() === today.toDateString();
   }).length;
 
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center h-64">
+          <Icon name="Loader2" className="animate-spin" size={32} />
+        </div>
+      </AdminLayout>
+    );
+  }
+
   return (
     <AdminLayout>
       <div className="animate-fade-in">
@@ -107,13 +147,9 @@ export default function AdminLogs() {
             <h1 className="text-3xl font-bold text-gray-900">Системные логи</h1>
           </div>
           <div className="flex gap-3">
-            <Button variant="outline">
+            <Button variant="outline" onClick={loadLogs}>
               <Icon name="RotateCw" className="mr-2" size={18} />
               Обновить
-            </Button>
-            <Button variant="outline">
-              <Icon name="Trash2" className="mr-2" size={18} />
-              Очистить старые
             </Button>
           </div>
         </div>
