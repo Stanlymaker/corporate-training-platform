@@ -51,6 +51,7 @@ def format_progress_response(progress_row: tuple) -> Dict[str, Any]:
         'completedLessonIds': progress_row[6] if progress_row[6] else [],
         'lastAccessedLesson': progress_row[7],
         'startedAt': progress_row[8].isoformat() if progress_row[8] else None,
+        'earnedRewards': progress_row[9] if len(progress_row) > 9 and progress_row[9] else [],
     }
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
@@ -113,7 +114,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 "SELECT cp.course_id, cp.user_id, cp.completed_lessons, "
                 "(SELECT COUNT(*) FROM lessons_v2 WHERE course_id = cp.course_id) as total_lessons, "
                 "cp.test_score, cp.completed, "
-                "cp.completed_lesson_ids, cp.last_accessed_lesson, cp.started_at "
+                "cp.completed_lesson_ids, cp.last_accessed_lesson, cp.started_at, cp.earned_rewards "
                 "FROM course_progress_v2 cp WHERE cp.user_id = %s AND cp.course_id = %s",
                 (int(user_id), course_id_int)
             )
@@ -165,7 +166,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 "SELECT cp.course_id, cp.user_id, cp.completed_lessons, "
                 "(SELECT COUNT(*) FROM lessons_v2 WHERE course_id = cp.course_id) as total_lessons, "
                 "cp.test_score, cp.completed, "
-                "cp.completed_lesson_ids, cp.last_accessed_lesson, cp.started_at "
+                "cp.completed_lesson_ids, cp.last_accessed_lesson, cp.started_at, cp.earned_rewards "
                 "FROM course_progress_v2 cp WHERE cp.user_id = %s ORDER BY cp.started_at DESC",
                 (int(user_id),)
             )
@@ -203,7 +204,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # GET без параметров - весь прогресс (только для админа)
         cur.execute(
             "SELECT course_id, user_id, completed_lessons, total_lessons, test_score, completed, "
-            "completed_lesson_ids, last_accessed_lesson, started_at "
+            "completed_lesson_ids, last_accessed_lesson, started_at, earned_rewards "
             "FROM course_progress_v2 ORDER BY started_at DESC"
         )
         progress_rows = cur.fetchall()
@@ -282,7 +283,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         cur.execute(
             "SELECT course_id, user_id, completed_lessons, total_lessons, test_score, completed, "
-            "completed_lesson_ids, last_accessed_lesson, started_at "
+            "completed_lesson_ids, last_accessed_lesson, started_at, earned_rewards "
             "FROM course_progress_v2 WHERE user_id = %s AND course_id = %s",
             (payload['user_id'], course_id)
         )
@@ -383,19 +384,54 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             if complete_req.lessonId not in completed_lesson_ids:
                 completed_lesson_ids.append(complete_req.lessonId)
                 
+                # Проверяем, завершен ли курс (все уроки пройдены)
+                cur.execute(
+                    "SELECT COUNT(*) FROM lessons_v2 WHERE course_id = %s",
+                    (course_id,)
+                )
+                total_lessons = cur.fetchone()[0]
+                is_course_completed = len(completed_lesson_ids) >= total_lessons
+                
                 cur.execute(
                     "UPDATE course_progress_v2 SET completed_lessons = %s, completed_lesson_ids = %s, "
-                    "last_accessed_lesson = %s, updated_at = NOW() WHERE id = %s",
+                    "last_accessed_lesson = %s, completed = %s, completed_at = %s, updated_at = NOW() WHERE id = %s",
                     (len(completed_lesson_ids), json.dumps(completed_lesson_ids), 
-                     complete_req.lessonId, progress_id)
+                     complete_req.lessonId, is_course_completed, 
+                     datetime.utcnow() if is_course_completed else None, progress_id)
                 )
+                
+                # Если курс завершен, выдаем награды
+                if is_course_completed:
+                    # Ищем награды, привязанные к этому курсу
+                    cur.execute(
+                        "SELECT id FROM rewards_v2 WHERE course_id = %s",
+                        (course_id,)
+                    )
+                    reward_ids = [row[0] for row in cur.fetchall()]
+                    
+                    if reward_ids:
+                        # Получаем текущие награды пользователя
+                        cur.execute(
+                            "SELECT earned_rewards FROM course_progress_v2 WHERE id = %s",
+                            (progress_id,)
+                        )
+                        current_rewards = cur.fetchone()[0] or []
+                        
+                        # Добавляем новые награды (избегаем дубликатов)
+                        updated_rewards = list(set(current_rewards + reward_ids))
+                        
+                        # Обновляем награды в прогрессе
+                        cur.execute(
+                            "UPDATE course_progress_v2 SET earned_rewards = %s WHERE id = %s",
+                            (json.dumps(updated_rewards), progress_id)
+                        )
         
         conn.commit()
         
         # Возвращаем обновленный прогресс
         cur.execute(
             "SELECT course_id, user_id, completed_lessons, total_lessons, test_score, completed, "
-            "completed_lesson_ids, last_accessed_lesson, started_at "
+            "completed_lesson_ids, last_accessed_lesson, started_at, earned_rewards "
             "FROM course_progress_v2 WHERE user_id = %s AND course_id = %s",
             (int(payload['user_id']), course_id)
         )

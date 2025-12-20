@@ -74,9 +74,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'isBase64Encoded': False
                 }
             
+            # Считаем сколько пользователей получили эту награду через JSONB
             cur.execute(
-                "SELECT COUNT(*) FROM user_rewards_v2 WHERE reward_id = %s",
-                (reward_id,)
+                "SELECT COUNT(*) FROM course_progress_v2 WHERE earned_rewards @> %s::jsonb",
+                (f'[{reward_id}]',)
             )
             earned_count = cur.fetchone()[0]
             
@@ -119,9 +120,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         rewards = []
         for row in rows:
+            # Считаем сколько пользователей получили эту награду через JSONB
             cur.execute(
-                "SELECT COUNT(*) FROM user_rewards_v2 WHERE reward_id = %s",
-                (row[0],)
+                "SELECT COUNT(*) FROM course_progress_v2 WHERE earned_rewards @> %s::jsonb",
+                (f'[{row[0]}]',)
             )
             earned_count = cur.fetchone()[0]
             
