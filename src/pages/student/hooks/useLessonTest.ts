@@ -138,6 +138,7 @@ export function useLessonTest({
         headers: getAuthHeaders(),
         body: JSON.stringify({
           testId: test.id,
+          lessonId: String(lesson.id),
           answers: testAnswers
         })
       });

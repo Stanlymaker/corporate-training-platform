@@ -49,6 +49,7 @@ class UpdateQuestionRequest(BaseModel):
 
 class CheckTestRequest(BaseModel):
     testId: int = Field(..., ge=1)
+    lessonId: str = Field(..., min_length=1)
     answers: Dict[str, Any] = Field(...)
 
 def get_db_connection():
@@ -181,32 +182,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         user_id = payload.get('user_id')
         
-        # Получаем test_id для этого урока
-        cur.execute(
-            "SELECT test_id FROM t_p8600777_corporate_training_p.lessons_v2 WHERE id = %s LIMIT 1",
-            (lesson_id,)
-        )
-        lesson_data = cur.fetchone()
-        
-        if not lesson_data or not lesson_data[0]:
-            cur.close()
-            conn.close()
-            return {
-                'statusCode': 404,
-                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'error': 'Тест не найден для этого урока'}, ensure_ascii=False),
-                'isBase64Encoded': False
-            }
-        
-        test_id_val = lesson_data[0]
-        
-        # Получаем последний результат пользователя для этого теста (не урока!)
+        # Получаем последний результат пользователя для этого конкретного урока
         cur.execute(
             "SELECT id, user_id, test_id, lesson_id, course_id, score, earned_points, "
             "total_points, passed, answers, results, completed_at "
-            "FROM t_p8600777_corporate_training_p.test_results WHERE user_id = %s AND test_id = %s "
+            "FROM t_p8600777_corporate_training_p.test_results WHERE user_id = %s AND lesson_id = %s "
             "ORDER BY completed_at DESC LIMIT 1",
-            (user_id, test_id_val)
+            (user_id, lesson_id)
         )
         result_row = cur.fetchone()
         
@@ -417,21 +399,24 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         score = round((earned_points / total_points * 100)) if total_points > 0 else 0
         
-        # Получаем lesson_id и course_id из таблицы lessons
+        # Используем переданный lessonId и получаем course_id из таблицы lessons
         cur.execute(
-            "SELECT test_id, id, course_id FROM t_p8600777_corporate_training_p.lessons_v2 WHERE test_id = %s LIMIT 1",
-            (check_req.testId,)
+            "SELECT course_id FROM t_p8600777_corporate_training_p.lessons_v2 WHERE id = %s LIMIT 1",
+            (check_req.lessonId,)
         )
         lesson_data = cur.fetchone()
         
-        if lesson_data:
-            test_id_val = lesson_data[0]
-            lesson_id_val = lesson_data[1]
-            course_id_val = lesson_data[2]
-        else:
-            test_id_val = check_req.testId
-            lesson_id_val = None
-            course_id_val = None
+        if not lesson_data:
+            cur.close()
+            conn.close()
+            return {
+                'statusCode': 404,
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'Урок не найден'}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
+        
+        course_id_val = lesson_data[0]
         
         # Получаем passing score из теста
         cur.execute("SELECT pass_score FROM t_p8600777_corporate_training_p.tests_v2 WHERE id = %s", (check_req.testId,))
@@ -441,15 +426,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         # Сохраняем результат теста
         user_id = payload.get('user_id')
-        if user_id and lesson_id_val and course_id_val:
+        if user_id and course_id_val:
             cur.execute(
                 "INSERT INTO t_p8600777_corporate_training_p.test_results (user_id, test_id, lesson_id, course_id, score, "
                 "earned_points, total_points, passed, answers, results, completed_at) "
                 "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())",
                 (
                     user_id,
-                    test_id_val,
-                    lesson_id_val,
+                    check_req.testId,
+                    check_req.lessonId,
                     course_id_val,
                     score,
                     earned_points,
