@@ -156,7 +156,7 @@ export default function AdminUsers() {
     
     // Доступные опубликованные курсы
     const availablePublishedCourses = courses.filter(c => 
-      c.published !== false && (c.accessType === 'open' || userAssignedClosedCourses.includes(c.id))
+      c.status === 'published' && (c.accessType === 'open' || userAssignedClosedCourses.includes(c.id))
     );
     const availablePublishedCourseIds = availablePublishedCourses.map(c => c.id);
     
