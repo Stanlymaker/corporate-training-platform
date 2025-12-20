@@ -110,8 +110,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # GET с userId и courseId - прогресс по конкретному курсу
         if user_id and course_id_int:
             cur.execute(
-                "SELECT cp.course_id, cp.user_id, "
-                "COALESCE(array_length(cp.completed_lesson_ids, 1), 0) as completed_lessons, "
+                "SELECT cp.course_id, cp.user_id, cp.completed_lessons, "
                 "(SELECT COUNT(*) FROM lessons_v2 WHERE course_id = cp.course_id) as total_lessons, "
                 "cp.test_score, cp.completed, "
                 "cp.completed_lesson_ids, cp.last_accessed_lesson, cp.started_at "
@@ -120,10 +119,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             )
             progress = cur.fetchone()
             
-            cur.close()
-            conn.close()
-            
             if not progress:
+                cur.close()
+                conn.close()
                 # Возвращаем пустой массив, а не 404
                 return {
                     'statusCode': 200,
@@ -132,7 +130,27 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'isBase64Encoded': False
                 }
             
-            progress_data = format_progress_response(progress)
+            # Пересчитываем completed_lessons из массива
+            completed_lesson_ids = progress[6] if progress[6] else []
+            actual_completed = len(completed_lesson_ids)
+            
+            # Создаем кортеж с пересчитанными значениями
+            progress_updated = (
+                progress[0], # course_id
+                progress[1], # user_id
+                actual_completed, # completed_lessons (пересчитанное)
+                progress[3], # total_lessons (из COUNT)
+                progress[4], # test_score
+                progress[5], # completed
+                progress[6], # completed_lesson_ids
+                progress[7], # last_accessed_lesson
+                progress[8], # started_at
+            )
+            
+            progress_data = format_progress_response(progress_updated)
+            
+            cur.close()
+            conn.close()
             
             return {
                 'statusCode': 200,
@@ -144,8 +162,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # GET с userId - весь прогресс пользователя
         if user_id:
             cur.execute(
-                "SELECT cp.course_id, cp.user_id, "
-                "COALESCE(array_length(cp.completed_lesson_ids, 1), 0) as completed_lessons, "
+                "SELECT cp.course_id, cp.user_id, cp.completed_lessons, "
                 "(SELECT COUNT(*) FROM lessons_v2 WHERE course_id = cp.course_id) as total_lessons, "
                 "cp.test_score, cp.completed, "
                 "cp.completed_lesson_ids, cp.last_accessed_lesson, cp.started_at "
@@ -153,7 +170,25 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 (int(user_id),)
             )
             progress_rows = cur.fetchall()
-            progress_list = [format_progress_response(p) for p in progress_rows]
+            
+            # Пересчитываем для каждой записи
+            progress_list = []
+            for p in progress_rows:
+                completed_lesson_ids = p[6] if p[6] else []
+                actual_completed = len(completed_lesson_ids)
+                
+                progress_updated = (
+                    p[0], # course_id
+                    p[1], # user_id
+                    actual_completed, # completed_lessons (пересчитанное)
+                    p[3], # total_lessons (из COUNT)
+                    p[4], # test_score
+                    p[5], # completed
+                    p[6], # completed_lesson_ids
+                    p[7], # last_accessed_lesson
+                    p[8], # started_at
+                )
+                progress_list.append(format_progress_response(progress_updated))
             
             cur.close()
             conn.close()
