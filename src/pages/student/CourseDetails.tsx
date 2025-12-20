@@ -27,13 +27,16 @@ interface Lesson {
   courseId: string;
   title: string;
   description: string;
-  type: 'video' | 'text' | 'quiz' | 'interactive';
+  type: 'video' | 'text' | 'quiz' | 'interactive' | 'test';
   order: number;
   duration: number;
   content: string;
   videoUrl?: string;
   requiresPrevious: boolean;
   published: boolean;
+  isFinalTest?: boolean;
+  finalTestRequiresAllLessons?: boolean;
+  finalTestRequiresAllTests?: boolean;
 }
 
 interface CourseProgress {
@@ -233,6 +236,7 @@ export default function CourseDetails() {
                   
                   // 1. Обычный урок с требованием завершить предыдущий
                   if (lesson.requiresPrevious && previousLesson && !progress?.completedLessonIds.includes(String(previousLesson.id))) {
+                    console.log(`Урок "${lesson.title}" заблокирован: requiresPrevious=${lesson.requiresPrevious}, previousLesson=${previousLesson?.title}, completed=${progress?.completedLessonIds.includes(String(previousLesson.id))}`);
                     isLocked = true;
                   }
                   
