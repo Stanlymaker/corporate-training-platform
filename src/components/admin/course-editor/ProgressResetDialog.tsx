@@ -69,7 +69,7 @@ export default function ProgressResetDialog({
                 <div>
                   <div className="font-medium text-gray-900">Сбросить только результаты тестов</div>
                   <div className="text-xs text-gray-600 mt-1">
-                    Если вы меняли вопросы или правильные ответы в тестах
+                    Сбросит результаты тестов, статус завершения курса и награды. Прогресс по урокам сохранится.
                   </div>
                 </div>
               </label>
