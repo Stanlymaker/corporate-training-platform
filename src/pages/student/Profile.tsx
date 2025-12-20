@@ -81,12 +81,53 @@ export default function StudentProfile() {
     }
   };
   
-  const completedCount = userProgress.filter(p => p.completed).length;
-  const inProgressCount = userProgress.filter(p => !p.completed && p.completedLessons > 0).length;
+  // Считаем завершённые курсы: когда все уроки пройдены
+  const completedCount = userProgress.filter(p => 
+    p.totalLessons > 0 && p.completedLessons === p.totalLessons
+  ).length;
   
-  const earnedRewardIds = userProgress
-    .flatMap(p => p.earnedRewards || [])
-    .filter((id, index, self) => self.indexOf(id) === index);
+  // Считаем курсы в процессе: есть прогресс, но не завершены
+  const inProgressCount = userProgress.filter(p => 
+    p.completedLessons > 0 && p.completedLessons < p.totalLessons
+  ).length;
+  
+  // Считаем завершённые тесты из всех курсов
+  const [completedTestsCount, setCompletedTestsCount] = useState(0);
+  
+  useEffect(() => {
+    loadCompletedTestsCount();
+  }, [userProgress]);
+  
+  const loadCompletedTestsCount = async () => {
+    if (!userId) return;
+    
+    try {
+      let totalTests = 0;
+      
+      // Для каждого курса загружаем уроки и проверяем тесты
+      for (const progress of userProgress) {
+        const lessonsRes = await fetch(`${API_ENDPOINTS.LESSONS}?courseId=${progress.courseId}`, {
+          headers: getAuthHeaders()
+        });
+        
+        if (lessonsRes.ok) {
+          const lessonsData = await lessonsRes.json();
+          const testLessons = (lessonsData.lessons || []).filter((l: any) => l.type === 'test');
+          
+          // Считаем завершённые тестовые уроки
+          const completedTests = testLessons.filter((lesson: any) => 
+            progress.completedLessonIds?.includes(String(lesson.id))
+          );
+          
+          totalTests += completedTests.length;
+        }
+      }
+      
+      setCompletedTestsCount(totalTests);
+    } catch (error) {
+      console.error('Error loading completed tests:', error);
+    }
+  };
   
   const selectedRewardData = selectedReward ? rewards.find(r => String(r.id) === String(selectedReward)) : null;
   const selectedRewardCourse = selectedRewardData 
@@ -183,10 +224,10 @@ export default function StudentProfile() {
           <Card className="border-0 shadow-md bg-gradient-to-br from-green-500 to-emerald-500 text-white">
             <CardContent className="p-5">
               <div className="flex items-center justify-between mb-4">
-                <Icon name="Award" size={32} />
-                <div className="text-4xl font-bold">{earnedRewardIds.length}</div>
+                <Icon name="FileCheck" size={32} />
+                <div className="text-4xl font-bold">{completedTestsCount}</div>
               </div>
-              <div className="text-sm opacity-90">Наград получено</div>
+              <div className="text-sm opacity-90">Тестов завершено</div>
             </CardContent>
           </Card>
         </div>
