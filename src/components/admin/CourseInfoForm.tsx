@@ -28,7 +28,8 @@ export default function CourseInfoForm({ formData, onInputChange, isEditMode = f
   const [uploadingImage, setUploadingImage] = useState(false);
   const actualStatus = savedStatus || formData.status;
   const isPublished = actualStatus === 'published';
-  const isDisabled = isEditMode && isPublished;
+  const isArchived = actualStatus === 'archived';
+  const isDisabled = isEditMode && (isPublished || isArchived);
 
   const handleImageUpload = async (file: File) => {
     setUploadingImage(true);
@@ -56,10 +57,10 @@ export default function CourseInfoForm({ formData, onInputChange, isEditMode = f
             <Icon name="Lock" size={20} className="text-amber-600 mt-0.5" />
             <div>
               <p className="font-semibold text-amber-900 mb-1">
-                Курс опубликован — редактирование заблокировано
+                {isArchived ? 'Курс в архиве — редактирование заблокировано' : 'Курс опубликован — редактирование заблокировано'}
               </p>
               <p className="text-sm text-amber-700">
-                Чтобы внести изменения, переведите курс в статус "Черновик". После внесения изменений опубликуйте курс заново.
+                Чтобы внести изменения, переведите курс в статус "Черновик". После внесения изменений {isArchived ? 'верните курс в архив' : 'опубликуйте курс заново'}.
               </p>
             </div>
           </div>
