@@ -1,7 +1,10 @@
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import { Course, Lesson } from '@/components/student/types';
+import { useNavigate } from 'react-router-dom';
+import { ROUTES } from '@/lib/routes';
 
 interface LessonHeaderProps {
   course: Course;
@@ -11,13 +14,26 @@ interface LessonHeaderProps {
 }
 
 export default function LessonHeader({ course, lesson, isCompleted, progressPercent }: LessonHeaderProps) {
+  const navigate = useNavigate();
+
   return (
     <div className="mb-6">
-      <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
-        <Icon name="BookOpen" size={16} />
-        <span>{course.title}</span>
-        <Icon name="ChevronRight" size={16} />
-        <span>Урок {lesson.order + 1}</span>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2 text-sm text-gray-600">
+          <Icon name="BookOpen" size={16} />
+          <span>{course.title}</span>
+          <Icon name="ChevronRight" size={16} />
+          <span>Урок {lesson.order + 1}</span>
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate(ROUTES.STUDENT.COURSES)}
+          className="gap-2"
+        >
+          <Icon name="ArrowLeft" size={16} />
+          Назад к курсам
+        </Button>
       </div>
       
       <div className="flex items-start justify-between gap-4 mb-4">
