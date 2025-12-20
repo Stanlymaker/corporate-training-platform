@@ -7,6 +7,28 @@ from datetime import datetime
 from typing import Dict, Any, Optional, List
 from pydantic import BaseModel, Field
 
+def log_action(conn, level: str, action: str, message: str, user_id: Optional[int] = None, 
+               ip_address: Optional[str] = None, user_agent: Optional[str] = None, 
+               details: Optional[Dict[str, Any]] = None) -> None:
+    try:
+        with conn.cursor() as cur:
+            cur.execute('''
+                INSERT INTO system_logs (level, action, message, user_id, ip_address, user_agent, details)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+            ''', (level, action, message, user_id, ip_address, user_agent, json.dumps(details) if details else None))
+            conn.commit()
+    except Exception as e:
+        print(f"[WARNING] Failed to create log: {e}")
+
+def get_client_ip(event: Dict[str, Any]) -> Optional[str]:
+    request_context = event.get('requestContext', {})
+    identity = request_context.get('identity', {})
+    return identity.get('sourceIp')
+
+def get_user_agent(event: Dict[str, Any]) -> Optional[str]:
+    headers = event.get('headers', {})
+    return headers.get('User-Agent') or headers.get('user-agent')
+
 JWT_SECRET = os.environ.get('JWT_SECRET', 'your-secret-key-change-in-production')
 JWT_ALGORITHM = 'HS256'
 
@@ -374,6 +396,16 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         new_course = cur.fetchone()
         conn.commit()
         
+        payload = verify_jwt_token(headers.get('X-Auth-Token') or headers.get('x-auth-token'))
+        log_action(
+            conn, 'success', 'course.create',
+            f'Создан новый курс: {new_course[1]}',
+            user_id=payload.get('user_id') if payload else None,
+            ip_address=get_client_ip(event),
+            user_agent=get_user_agent(event),
+            details={'courseId': new_course[0], 'title': new_course[1], 'status': new_course[11]}
+        )
+        
         course_data = format_course_response(new_course)
         
         cur.close()
@@ -473,6 +505,27 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'body': json.dumps({'error': 'Курс не найден'}, ensure_ascii=False),
                 'isBase64Encoded': False
             }
+        
+        payload = verify_jwt_token(headers.get('X-Auth-Token') or headers.get('x-auth-token'))
+        log_message = f'Обновлен курс: {updated_course[1]}'
+        log_level = 'success'
+        log_act = 'course.update'
+        
+        if update_req.status == 'published':
+            log_message = f'Курс опубликован: {updated_course[1]}'
+            log_act = 'course.publish'
+        elif update_req.status == 'archived':
+            log_message = f'Курс архивирован: {updated_course[1]}'
+            log_act = 'course.archive'
+        
+        log_action(
+            conn, log_level, log_act,
+            log_message,
+            user_id=payload.get('user_id') if payload else None,
+            ip_address=get_client_ip(event),
+            user_agent=get_user_agent(event),
+            details={'courseId': updated_course[0], 'title': updated_course[1], 'status': updated_course[11]}
+        )
         
         course_data = format_course_response(updated_course)
         

@@ -7,6 +7,28 @@ from datetime import datetime, timedelta
 from typing import Dict, Any, Optional
 from pydantic import BaseModel, EmailStr, Field, ValidationError
 
+def log_action(conn, level: str, action: str, message: str, user_id: Optional[int] = None, 
+               ip_address: Optional[str] = None, user_agent: Optional[str] = None, 
+               details: Optional[Dict[str, Any]] = None) -> None:
+    try:
+        with conn.cursor() as cur:
+            cur.execute('''
+                INSERT INTO system_logs (level, action, message, user_id, ip_address, user_agent, details)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+            ''', (level, action, message, user_id, ip_address, user_agent, json.dumps(details) if details else None))
+            conn.commit()
+    except Exception as e:
+        print(f"[WARNING] Failed to create log: {e}")
+
+def get_client_ip(event: Dict[str, Any]) -> Optional[str]:
+    request_context = event.get('requestContext', {})
+    identity = request_context.get('identity', {})
+    return identity.get('sourceIp')
+
+def get_user_agent(event: Dict[str, Any]) -> Optional[str]:
+    headers = event.get('headers', {})
+    return headers.get('User-Agent') or headers.get('user-agent')
+
 JWT_SECRET = os.environ.get('JWT_SECRET', 'your-secret-key-change-in-production')
 JWT_ALGORITHM = 'HS256'
 JWT_EXPIRATION_HOURS = 24
@@ -107,6 +129,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         if not user:
             print(f"[DEBUG] User not found: {login_req.email}")
+            log_action(
+                conn, 'warning', 'user.failed_login',
+                f'Неудачная попытка входа: пользователь не найден',
+                ip_address=get_client_ip(event),
+                user_agent=get_user_agent(event),
+                details={'email': login_req.email, 'reason': 'user_not_found'}
+            )
             cur.close()
             conn.close()
             return {
@@ -120,6 +149,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         if not user[8]:
             print(f"[DEBUG] User account disabled: {user[1]}")
+            log_action(
+                conn, 'warning', 'user.failed_login',
+                f'Попытка входа в отключенную учетную запись: {user[2]}',
+                user_id=user[0],
+                ip_address=get_client_ip(event),
+                user_agent=get_user_agent(event),
+                details={'email': user[1], 'reason': 'account_disabled'}
+            )
             cur.close()
             conn.close()
             return {
@@ -143,6 +180,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         if not password_match:
             print(f"[DEBUG] Password check failed for: {user[1]}")
+            log_action(
+                conn, 'warning', 'user.failed_login',
+                f'Неверный пароль для пользователя: {user[2]}',
+                user_id=user[0],
+                ip_address=get_client_ip(event),
+                user_agent=get_user_agent(event),
+                details={'email': user[1], 'reason': 'wrong_password'}
+            )
             cur.close()
             conn.close()
             return {
@@ -159,6 +204,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             (datetime.utcnow(), user[0])
         )
         conn.commit()
+        
+        log_action(
+            conn, 'success', 'user.login',
+            f'Пользователь {user[2]} успешно вошел в систему',
+            user_id=user[0],
+            ip_address=get_client_ip(event),
+            user_agent=get_user_agent(event),
+            details={'email': user[1], 'role': user[3]}
+        )
         
         token = create_jwt_token(user[0], user[1], user[3])
         user_data = format_user_response(user[:11])
