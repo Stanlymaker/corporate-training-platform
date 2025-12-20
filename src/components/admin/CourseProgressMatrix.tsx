@@ -69,8 +69,10 @@ export default function CourseProgressMatrix({
       const lessonsRes = await fetch(`${API_ENDPOINTS.LESSONS}?courseId=${courseId}`, {
         headers: getAuthHeaders(),
       });
+      
+      let lessonsData: any = null;
       if (lessonsRes.ok) {
-        const lessonsData = await lessonsRes.json();
+        lessonsData = await lessonsRes.json();
         setLessons((lessonsData.lessons || []).sort((a: Lesson, b: Lesson) => a.order - b.order));
       }
 
@@ -88,6 +90,7 @@ export default function CourseProgressMatrix({
         
         // Фильтруем только тех студентов, у кого есть прогресс по этому курсу
         const studentsWithProgress: Student[] = [];
+        const progressMap: Record<number, Progress> = {};
         
         for (const student of allStudents) {
           try {
@@ -100,6 +103,7 @@ export default function CourseProgressMatrix({
               const data = await progressRes.json();
               if (data.progress?.[0]) {
                 studentsWithProgress.push(student);
+                progressMap[student.id] = data.progress[0];
               }
             }
           } catch (error) {
@@ -110,65 +114,52 @@ export default function CourseProgressMatrix({
         const sortedStudents = studentsWithProgress.sort((a: any, b: any) => a.name.localeCompare(b.name));
         setStudents(sortedStudents);
 
-        // Загружаем прогресс для каждого студента
-        const progressMap: Record<number, Progress> = {};
+        // Загружаем результаты тестов для каждого студента
         const testResultsMap: Record<string, TestResult> = {};
 
         for (const student of sortedStudents) {
-            try {
-              const progressRes = await fetch(
-                `${API_ENDPOINTS.PROGRESS}?userId=${student.id}&courseId=${courseId}`,
-                { headers: getAuthHeaders() }
-              );
-
-              if (progressRes.ok) {
-                const data = await progressRes.json();
-                if (data.progress?.[0]) {
-                  progressMap[student.id] = data.progress[0];
-                }
-              }
-
-              // Загружаем результаты тестов для каждого урока
-              const lessonsList = lessonsData.lessons || [];
-              for (const lesson of lessonsList) {
-                if (lesson.type === 'test' && lesson.testId) {
-                  try {
-                    const testRes = await fetch(
-                      `${API_ENDPOINTS.TESTS}?action=results&lessonId=${lesson.id}`,
-                      {
-                        headers: {
-                          ...getAuthHeaders(),
-                          'X-User-Id-Override': String(student.id),
-                        },
-                      }
-                    );
-
-                    console.log('[Matrix Load] Student:', student.id, 'Lesson:', lesson.id, 'Response:', testRes.status);
-                    
-                    if (testRes.ok) {
-                      const testData = await testRes.json();
-                      console.log('[Matrix Load] TestData:', testData);
-                      
-                      if (testData.result) {
-                        const key = `${student.id}-${lesson.id}`;
-                        testResultsMap[key] = {
-                          userId: student.id,
-                          lessonId: String(lesson.id),
-                          score: testData.result.score,
-                          passed: testData.result.passed,
-                        };
-                        console.log('[Matrix Load] Added result with key:', key, testResultsMap[key]);
-                      }
+          try {
+            // Загружаем результаты тестов для каждого урока
+            const lessonsList = lessonsData?.lessons || [];
+            for (const lesson of lessonsList) {
+              if (lesson.type === 'test' && lesson.testId) {
+                try {
+                  const testRes = await fetch(
+                    `${API_ENDPOINTS.TESTS}?action=results&lessonId=${lesson.id}`,
+                    {
+                      headers: {
+                        ...getAuthHeaders(),
+                        'X-User-Id-Override': String(student.id),
+                      },
                     }
-                  } catch (err) {
-                    console.error('Error loading test result:', err);
+                  );
+
+                  console.log('[Matrix Load] Student:', student.id, 'Lesson:', lesson.id, 'Response:', testRes.status);
+                  
+                  if (testRes.ok) {
+                    const testData = await testRes.json();
+                    console.log('[Matrix Load] TestData:', testData);
+                    
+                    if (testData.result) {
+                      const key = `${student.id}-${lesson.id}`;
+                      testResultsMap[key] = {
+                        userId: student.id,
+                        lessonId: String(lesson.id),
+                        score: testData.result.score,
+                        passed: testData.result.passed,
+                      };
+                      console.log('[Matrix Load] Added result with key:', key, testResultsMap[key]);
+                    }
                   }
+                } catch (err) {
+                  console.error('Error loading test result:', err);
                 }
               }
-            } catch (error) {
-              console.error('Error loading progress:', error);
             }
+          } catch (error) {
+            console.error('Error loading progress:', error);
           }
+        }
 
         console.log('[Matrix Load] Final testResultsMap:', testResultsMap);
         setProgress(progressMap);
