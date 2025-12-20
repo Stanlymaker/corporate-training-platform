@@ -82,12 +82,15 @@ export default function CourseDetails() {
 
       if (lessonsRes.ok) {
         const lessonsData = await lessonsRes.json();
-        setLessons(lessonsData.lessons || []);
+        const lessons = lessonsData.lessons || [];
+        console.log('Загружены уроки:', lessons.map(l => ({ id: l.id, title: l.title, requiresPrevious: l.requiresPrevious, order: l.order })));
+        setLessons(lessons);
       }
 
       if (progressRes.ok) {
         const progressData = await progressRes.json();
         const courseProgress = progressData.progress?.find((p: CourseProgress) => p.courseId === Number(id));
+        console.log('Прогресс по курсу:', { courseProgress, completedLessonIds: courseProgress?.completedLessonIds });
         setProgress(courseProgress || null);
       }
     } catch (error) {
