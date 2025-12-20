@@ -409,7 +409,7 @@ export default function LessonPage() {
 
         <LessonSidebar
           courseLessons={courseLessons}
-          currentLessonId={lesson.id}
+          currentLessonId={String(lesson.id)}
           progress={progress}
           onNavigate={handleNavigateToLesson}
         />
