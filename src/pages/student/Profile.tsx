@@ -130,9 +130,9 @@ export default function StudentProfile() {
     }
   };
   
-  // Получаем список полученных наград
+  // Получаем список полученных наград (приводим к числам)
   const earnedRewardIds = userProgress.flatMap(p => p.earnedRewards || [])
-    .map((r: any) => (typeof r === 'object' ? r.id : r));
+    .map((r: any) => Number(typeof r === 'object' ? r.id : r));
   
   const selectedRewardData = selectedReward ? rewards.find(r => String(r.id) === String(selectedReward)) : null;
   const selectedRewardCourse = selectedRewardData 
@@ -337,7 +337,7 @@ export default function StudentProfile() {
               <CardContent>
                 <div className="grid grid-cols-2 gap-2">
                   {rewards.map((reward) => {
-                    const earned = earnedRewardIds.includes(reward.id);
+                    const earned = earnedRewardIds.includes(Number(reward.id));
                     return (
                       <div
                         key={reward.id}
