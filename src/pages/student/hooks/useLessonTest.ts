@@ -90,9 +90,21 @@ export function useLessonTest({
           remainingAttempts: data.remainingAttempts
         } : null);
 
+        // Инициализируем дефолтные ответы для matching вопросов
+        const initialAnswers: Record<number, any> = {};
+        test.questions?.forEach(question => {
+          if (question.type === 'matching' && question.matchingPairs) {
+            // Перемешиваем правые элементы и сохраняем как начальный ответ
+            const shuffled = [...question.matchingPairs]
+              .sort(() => Math.random() - 0.5)
+              .map(p => p.right);
+            initialAnswers[question.id] = shuffled;
+          }
+        });
+
         setTestStarted(true);
         setTimeRemaining(test.timeLimit ? test.timeLimit * 60 : 0);
-        setTestAnswers({});
+        setTestAnswers(initialAnswers);
         setTestSubmitted(false);
         setCurrentQuestionIndex(0);
       } else {

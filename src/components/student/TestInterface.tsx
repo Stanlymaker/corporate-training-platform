@@ -55,13 +55,19 @@ export default function TestInterface({
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
   
-  // Запоминаем порядок правых элементов один раз для текущего вопроса
+  // Берём порядок правых элементов из testAnswers (уже перемешан при старте теста)
   const shuffledRightItems = useMemo(() => {
     if (!currentQuestion?.matchingPairs) return [];
-    return [...currentQuestion.matchingPairs]
-      .sort(() => Math.random() - 0.5)
-      .map(p => p.right);
-  }, [currentQuestion?.id]);
+    
+    // Если ответ уже есть в testAnswers, используем его
+    const savedAnswer = testAnswers[currentQuestion.id];
+    if (Array.isArray(savedAnswer) && savedAnswer.length > 0) {
+      return savedAnswer;
+    }
+    
+    // Иначе (не должно происходить, но на всякий случай) возвращаем оригинальный порядок
+    return currentQuestion.matchingPairs.map(p => p.right);
+  }, [currentQuestion?.id, testAnswers]);
   if (!testStarted) {
     return (
       <div className="space-y-6">
