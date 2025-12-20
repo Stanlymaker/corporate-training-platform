@@ -18,7 +18,11 @@ class RecordAttemptRequest(BaseModel):
 
 def get_db_connection():
     dsn = os.environ['DATABASE_URL']
-    return psycopg2.connect(dsn)
+    conn = psycopg2.connect(dsn)
+    cur = conn.cursor()
+    cur.execute("SET search_path TO t_p8600777_corporate_training_p, public")
+    cur.close()
+    return conn
 
 def verify_jwt_token(token: str) -> Optional[Dict[str, Any]]:
     try:
