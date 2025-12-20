@@ -124,6 +124,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     Управление тестами и вопросами
     GET ?id=x - один тест
     GET ?testId=x&action=questions - вопросы теста
+    GET ?action=results&lessonId=x - результаты теста пользователя
     POST - создать тест (админ)
     POST ?action=question - создать вопрос (админ)
     POST ?action=check - проверить ответы теста (студент)
@@ -165,6 +166,65 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     
     conn = get_db_connection()
     cur = conn.cursor()
+    
+    if method == 'GET' and action == 'results':
+        lesson_id = query_params.get('lessonId')
+        if not lesson_id:
+            cur.close()
+            conn.close()
+            return {
+                'statusCode': 400,
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'lessonId обязателен'}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
+        
+        user_id = payload.get('user_id')
+        
+        # Получаем последний результат пользователя для этого урока
+        cur.execute(
+            "SELECT id, user_id, test_id, lesson_id, course_id, score, earned_points, "
+            "total_points, passed, answers, results, completed_at "
+            "FROM test_results WHERE user_id = %s AND lesson_id = %s "
+            "ORDER BY completed_at DESC LIMIT 1",
+            (user_id, lesson_id)
+        )
+        result_row = cur.fetchone()
+        
+        if not result_row:
+            cur.close()
+            conn.close()
+            return {
+                'statusCode': 404,
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'Результаты не найдены'}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
+        
+        result_data = {
+            'id': result_row[0],
+            'userId': result_row[1],
+            'testId': result_row[2],
+            'lessonId': result_row[3],
+            'courseId': result_row[4],
+            'score': result_row[5],
+            'earnedPoints': result_row[6],
+            'totalPoints': result_row[7],
+            'passed': result_row[8],
+            'answers': result_row[9],
+            'results': result_row[10],
+            'completedAt': result_row[11].isoformat() if result_row[11] else None
+        }
+        
+        cur.close()
+        conn.close()
+        
+        return {
+            'statusCode': 200,
+            'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'result': result_data}, ensure_ascii=False),
+            'isBase64Encoded': False
+        }
     
     if method == 'GET' and action == 'questions' and test_id_param:
         test_id_int = int(test_id_param)
@@ -321,8 +381,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     is_correct = user_answer == correct_order
             
             elif question_type == 'text':
-                # Текстовые вопросы требуют ручной проверки
-                is_correct = False
+                # Для текстовых вопросов сравниваем с правильным ответом (если задан)
+                if isinstance(correct_answer, str) and isinstance(user_answer, str):
+                    is_correct = user_answer.strip().lower() == correct_answer.strip().lower()
+                else:
+                    is_correct = False
             
             if is_correct:
                 earned_points += points
@@ -334,6 +397,50 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             })
         
         score = round((earned_points / total_points * 100)) if total_points > 0 else 0
+        
+        # Получаем test_id из первого вопроса
+        cur.execute(
+            "SELECT test_id, lesson_id, course_id FROM lessons_v2 WHERE test_id = %s LIMIT 1",
+            (check_req.testId,)
+        )
+        lesson_data = cur.fetchone()
+        
+        if lesson_data:
+            test_id_val = lesson_data[0]
+            lesson_id_val = lesson_data[1]
+            course_id_val = lesson_data[2]
+        else:
+            test_id_val = check_req.testId
+            lesson_id_val = None
+            course_id_val = None
+        
+        # Получаем passing score из теста
+        cur.execute("SELECT pass_score FROM tests_v2 WHERE id = %s", (check_req.testId,))
+        test_info = cur.fetchone()
+        passing_score = test_info[0] if test_info else 70
+        passed = score >= passing_score
+        
+        # Сохраняем результат теста
+        user_id = payload.get('user_id')
+        if user_id and lesson_id_val and course_id_val:
+            cur.execute(
+                "INSERT INTO test_results (user_id, test_id, lesson_id, course_id, score, "
+                "earned_points, total_points, passed, answers, results, completed_at) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())",
+                (
+                    user_id,
+                    test_id_val,
+                    lesson_id_val,
+                    course_id_val,
+                    score,
+                    earned_points,
+                    total_points,
+                    passed,
+                    json.dumps(check_req.answers),
+                    json.dumps(results)
+                )
+            )
+            conn.commit()
         
         cur.close()
         conn.close()

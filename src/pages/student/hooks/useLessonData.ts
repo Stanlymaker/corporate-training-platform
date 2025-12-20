@@ -22,6 +22,7 @@ export function useLessonData({ courseId, lessonId, userId }: UseLessonDataProps
     maxAttempts: number | null;
     hasUnlimitedAttempts: boolean;
   } | null>(null);
+  const [testResult, setTestResult] = useState<any>(null);
 
   const loadLessonData = async () => {
     try {
@@ -80,6 +81,14 @@ export function useLessonData({ courseId, lessonId, userId }: UseLessonDataProps
           if (attemptsRes.ok) {
             const attemptsData = await attemptsRes.json();
             setAttemptsInfo(attemptsData);
+          }
+
+          const resultsRes = await fetch(`${API_ENDPOINTS.TESTS}?action=results&lessonId=${foundLesson.id}`, {
+            headers: getAuthHeaders()
+          });
+          if (resultsRes.ok) {
+            const resultsData = await resultsRes.json();
+            setTestResult(resultsData.result);
           }
         }
       }
@@ -142,6 +151,7 @@ export function useLessonData({ courseId, lessonId, userId }: UseLessonDataProps
     test,
     attemptsInfo,
     setAttemptsInfo,
+    testResult,
     loadLessonData
   };
 }

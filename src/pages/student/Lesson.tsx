@@ -26,6 +26,7 @@ export default function LessonPage() {
     test,
     attemptsInfo,
     setAttemptsInfo,
+    testResult,
     loadLessonData
   } = useLessonData({ courseId, lessonId, userId });
 
@@ -156,6 +157,7 @@ export default function LessonPage() {
         timeRemaining={timeRemaining}
         currentQuestionIndex={currentQuestionIndex}
         attemptsInfo={attemptsInfo}
+        testResult={testResult}
         lockStatus={lockStatus}
         previousLesson={previousLesson}
         nextLesson={nextLesson}

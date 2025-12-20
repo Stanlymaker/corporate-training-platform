@@ -6,6 +6,7 @@ import { ROUTES } from '@/constants/routes';
 import { Course, Lesson, Test, CourseProgress } from '@/components/student/types';
 import LessonContent from '@/components/student/LessonContent';
 import TestInterface from '@/components/student/TestInterface';
+import TestResults from '@/components/student/TestResults';
 import LessonSidebar from '@/components/student/LessonSidebar';
 import LessonHeader from '@/components/student/LessonHeader';
 import LessonNavigation from '@/components/student/LessonNavigation';
@@ -38,6 +39,7 @@ interface LessonPageContentProps {
     maxAttempts: number | null;
     hasUnlimitedAttempts: boolean;
   } | null;
+  testResult: any;
   lockStatus: LockStatus;
   previousLesson: Lesson | null;
   nextLesson: Lesson | null;
@@ -72,6 +74,7 @@ export default function LessonPageContent({
   timeRemaining,
   currentQuestionIndex,
   attemptsInfo,
+  testResult,
   lockStatus,
   previousLesson,
   nextLesson,
@@ -157,26 +160,36 @@ export default function LessonPageContent({
               <Card>
                 <CardContent className="pt-6">
                   {lesson.type === 'test' && test ? (
-                    <TestInterface
-                      test={test}
-                      testStarted={testStarted}
-                      testAnswers={testAnswers}
-                      testSubmitted={testSubmitted}
-                      testScore={testScore}
-                      earnedPoints={earnedPoints}
-                      totalPoints={totalPoints}
-                      timeRemaining={timeRemaining}
-                      currentQuestionIndex={currentQuestionIndex}
-                      onStartTest={handleStartTest}
-                      onAnswerChange={handleAnswerChange}
-                      onSubmitTest={handleSubmitTest}
-                      onRetry={handleStartTest}
-                      onNextQuestion={() => setCurrentQuestionIndex(prev => prev + 1)}
-                      onPreviousQuestion={() => setCurrentQuestionIndex(prev => prev - 1)}
-                      onNavigateToPreviousLesson={() => previousLesson && handleNavigateToLesson(previousLesson.order)}
-                      hasPreviousLesson={!!previousLesson}
-                      attemptsInfo={attemptsInfo}
-                    />
+                    <>
+                      {testResult && !testStarted && !testSubmitted ? (
+                        <TestResults
+                          test={test}
+                          result={testResult}
+                          onRetry={handleStartTest}
+                        />
+                      ) : (
+                        <TestInterface
+                          test={test}
+                          testStarted={testStarted}
+                          testAnswers={testAnswers}
+                          testSubmitted={testSubmitted}
+                          testScore={testScore}
+                          earnedPoints={earnedPoints}
+                          totalPoints={totalPoints}
+                          timeRemaining={timeRemaining}
+                          currentQuestionIndex={currentQuestionIndex}
+                          onStartTest={handleStartTest}
+                          onAnswerChange={handleAnswerChange}
+                          onSubmitTest={handleSubmitTest}
+                          onRetry={handleStartTest}
+                          onNextQuestion={() => setCurrentQuestionIndex(prev => prev + 1)}
+                          onPreviousQuestion={() => setCurrentQuestionIndex(prev => prev - 1)}
+                          onNavigateToPreviousLesson={() => previousLesson && handleNavigateToLesson(previousLesson.order)}
+                          hasPreviousLesson={!!previousLesson}
+                          attemptsInfo={attemptsInfo}
+                        />
+                      )}
+                    </>
                   ) : (
                     <LessonContent lesson={lesson} />
                   )}
