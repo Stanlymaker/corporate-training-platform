@@ -38,6 +38,7 @@ export function useLessonTest({
   const [totalPoints, setTotalPoints] = useState<number>(0);
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [showAttemptsWarning, setShowAttemptsWarning] = useState(false);
 
   useEffect(() => {
     if (!testStarted || testSubmitted || timeRemaining <= 0) return;
@@ -64,14 +65,14 @@ export function useLessonTest({
     }
 
     if (!attemptsInfo.hasUnlimitedAttempts) {
-      const confirmStart = window.confirm(
-        `У вас осталось попыток: ${attemptsInfo.remainingAttempts}.\n\n` +
-        `Если вы начнёте тест и покинете эту страницу до завершения, попытка будет потеряна.\n\n` +
-        `Начать тестирование?`
-      );
-
-      if (!confirmStart) return;
+      setShowAttemptsWarning(true);
+      return;
     }
+
+    startTestExecution();
+  };
+
+  const startTestExecution = async () => {
 
     try {
       const response = await fetch(`${API_ENDPOINTS.TEST_ATTEMPTS}?action=start`, {
@@ -101,6 +102,15 @@ export function useLessonTest({
       console.error('Error starting test:', error);
       alert('Произошла ошибка при начале тестирования');
     }
+  };
+
+  const handleConfirmStart = () => {
+    setShowAttemptsWarning(false);
+    startTestExecution();
+  };
+
+  const handleCancelStart = () => {
+    setShowAttemptsWarning(false);
   };
 
   const handleAnswerChange = (questionId: number, answerValue: any, isMultiple?: boolean) => {
@@ -209,6 +219,9 @@ export function useLessonTest({
     setCurrentQuestionIndex,
     handleStartTest,
     handleAnswerChange,
-    handleSubmitTest
+    handleSubmitTest,
+    showAttemptsWarning,
+    handleConfirmStart,
+    handleCancelStart
   };
 }

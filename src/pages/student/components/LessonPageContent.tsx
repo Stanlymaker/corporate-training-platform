@@ -51,6 +51,9 @@ interface LessonPageContentProps {
   handleAnswerChange: (questionId: number, answerValue: any, isMultiple?: boolean) => void;
   handleSubmitTest: () => Promise<void>;
   setCurrentQuestionIndex: (fn: (prev: number) => number) => void;
+  showAttemptsWarning: boolean;
+  handleConfirmStart: () => void;
+  handleCancelStart: () => void;
 }
 
 export default function LessonPageContent({
@@ -81,12 +84,56 @@ export default function LessonPageContent({
   handleStartTest,
   handleAnswerChange,
   handleSubmitTest,
-  setCurrentQuestionIndex
+  setCurrentQuestionIndex,
+  showAttemptsWarning,
+  handleConfirmStart,
+  handleCancelStart
 }: LessonPageContentProps) {
   const navigate = useNavigate();
 
   return (
     <>
+      {showAttemptsWarning && attemptsInfo && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <Card className="max-w-md w-full mx-4">
+            <CardContent className="pt-6">
+              <div className="text-center space-y-4">
+                <div className="flex justify-center">
+                  <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
+                    <Icon name="AlertTriangle" size={24} className="text-yellow-600" />
+                  </div>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Подтвердите начало тестирования
+                </h3>
+                <div className="text-gray-600 space-y-2">
+                  <p className="font-medium">
+                    У вас осталось попыток: {attemptsInfo.remainingAttempts}
+                  </p>
+                  <p className="text-sm">
+                    Если вы начнёте тест и покинете эту страницу до завершения, попытка будет потеряна.
+                  </p>
+                </div>
+                <div className="flex gap-3 pt-2">
+                  <Button
+                    variant="outline"
+                    onClick={handleCancelStart}
+                    className="flex-1"
+                  >
+                    Отмена
+                  </Button>
+                  <Button
+                    onClick={handleConfirmStart}
+                    className="flex-1"
+                  >
+                    Начать тест
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
       <div className="flex gap-6">
         <div className="flex-1">
           <LessonHeader

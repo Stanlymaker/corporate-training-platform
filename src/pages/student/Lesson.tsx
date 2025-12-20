@@ -49,7 +49,10 @@ export default function LessonPage() {
     setCurrentQuestionIndex,
     handleStartTest,
     handleAnswerChange,
-    handleSubmitTest
+    handleSubmitTest,
+    showAttemptsWarning,
+    handleConfirmStart,
+    handleCancelStart
   } = useLessonTest({
     lesson,
     test,
@@ -166,6 +169,9 @@ export default function LessonPage() {
         handleAnswerChange={handleAnswerChange}
         handleSubmitTest={handleSubmitTest}
         setCurrentQuestionIndex={setCurrentQuestionIndex}
+        showAttemptsWarning={showAttemptsWarning}
+        handleConfirmStart={handleConfirmStart}
+        handleCancelStart={handleCancelStart}
       />
     </StudentLayout>
   );
