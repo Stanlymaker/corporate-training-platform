@@ -85,11 +85,31 @@ export default function UserCoursesManagement({
     if (testResults[courseId]) return;
     
     try {
-      const response = await fetch(`${API_ENDPOINTS.TESTS}?action=results&courseId=${courseId}&userId=${user.id}`, { headers: getAuthHeaders() });
-      if (response.ok) {
-        const data = await response.json();
-        setTestResults(prev => ({ ...prev, [courseId]: data.results || [] }));
+      const lessons = lessonsData[courseId] || [];
+      const results: TestResult[] = [];
+      
+      for (const lesson of lessons) {
+        if (lesson.type === 'test' && lesson.testId) {
+          try {
+            const response = await fetch(`${API_ENDPOINTS.TESTS}?action=results&lessonId=${lesson.id}`, { 
+              headers: {
+                ...getAuthHeaders(),
+                'X-User-Id-Override': String(user.id)
+              }
+            });
+            if (response.ok) {
+              const data = await response.json();
+              if (data.result) {
+                results.push(data.result);
+              }
+            }
+          } catch (err) {
+            console.error(`Error loading test result for lesson ${lesson.id}:`, err);
+          }
+        }
       }
+      
+      setTestResults(prev => ({ ...prev, [courseId]: results }));
     } catch (error) {
       console.error('Error loading test results:', error);
     }
@@ -131,7 +151,9 @@ export default function UserCoursesManagement({
       setExpandedCourseId(null);
     } else {
       setExpandedCourseId(courseId);
-      await loadCourseLessons(courseId);
+      if (!lessonsData[courseId]) {
+        await loadCourseLessons(courseId);
+      }
       await loadTestResults(courseId);
     }
   };

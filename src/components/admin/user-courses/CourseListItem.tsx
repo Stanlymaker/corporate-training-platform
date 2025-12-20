@@ -105,7 +105,7 @@ export default function CourseListItem({
             ) : (
               lessons.map((lesson) => {
                 const isCompleted = progress?.completedLessonIds?.includes(String(lesson.id)) || false;
-                const testResult = testResults.find(tr => tr.testId === lesson.testId);
+                const testResult = testResults.find(tr => tr.lessonId === String(lesson.id));
                 
                 return (
                   <LessonListItem
