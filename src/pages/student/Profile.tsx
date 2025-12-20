@@ -219,6 +219,12 @@ export default function StudentProfile() {
                       const course = courses.find(c => Number(c.id) === Number(progress.courseId));
                       if (!course) return null;
                       
+                      console.log('Отображаем курс в профиле:', {
+                        id: course.id,
+                        title: course.title,
+                        coverImage: course.coverImage
+                      });
+                      
                       const progressPercent = (progress.completedLessons / progress.totalLessons) * 100;
 
                       return (
