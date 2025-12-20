@@ -485,8 +485,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         try:
             body = json.loads(event.get('body', '{}'))
+            print(f"[UPDATE LESSON] Received body: {json.dumps(body)}")
             update_req = UpdateLessonRequest(**body)
+            print(f"[UPDATE LESSON] Validated request: requiresPrevious={update_req.requiresPrevious}")
         except Exception as e:
+            print(f"[UPDATE LESSON ERROR] Validation failed: {str(e)}")
             cur.close()
             conn.close()
             return {
