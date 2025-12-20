@@ -59,6 +59,13 @@ export function useCourseEditorActions(
         const lessonsRes = await fetch(`${API_ENDPOINTS.LESSONS}?courseId=${courseData.course.id}`, { headers: getAuthHeaders() });
         const lessonsData = lessonsRes.ok ? await lessonsRes.json() : { lessons: [] };
         
+        console.log('Загруженные уроки из API:', lessonsData.lessons?.map((l: any) => ({
+          id: l.id,
+          title: l.title,
+          requiresPrevious: l.requiresPrevious,
+          order: l.order
+        })));
+        
         setFormData({
           title: courseData.course.title || '',
           description: courseData.course.description || '',
