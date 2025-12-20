@@ -82,6 +82,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     
     if method == 'GET':
         lesson_id = query_params.get('lessonId')
+        print(f"GET request with lessonId: {lesson_id}")
         if not lesson_id:
             cur.close()
             conn.close()
@@ -93,11 +94,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             }
         
         lesson_id_safe = escape_sql_string(str(lesson_id))
+        sql_query = f"SELECT l.test_id, l.course_id, t.attempts_allowed FROM t_p8600777_corporate_training_p.lessons_v2 l LEFT JOIN t_p8600777_corporate_training_p.tests_v2 t ON l.test_id = t.id WHERE l.id = '{lesson_id_safe}'"
+        print(f"Executing SQL: {sql_query}")
         
-        cur.execute(
-            f"SELECT l.test_id, l.course_id, t.attempts_allowed FROM t_p8600777_corporate_training_p.lessons_v2 l "
-            f"LEFT JOIN t_p8600777_corporate_training_p.tests_v2 t ON l.test_id = t.id WHERE l.id = '{lesson_id_safe}'"
-        )
+        cur.execute(sql_query)
         lesson_data = cur.fetchone()
         
         if not lesson_data or not lesson_data[0]:
