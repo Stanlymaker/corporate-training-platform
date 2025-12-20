@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import { Course, Lesson } from '@/components/student/types';
 import { useNavigate } from 'react-router-dom';
-import { ROUTES } from '@/lib/routes';
+import { ROUTES } from '@/constants/routes';
 
 interface LessonHeaderProps {
   course: Course;
