@@ -39,6 +39,9 @@ export default function UserCoursesManagement({
   const [revokeAssignmentId, setRevokeAssignmentId] = useState<number | null>(null);
   const [revokeCourseTitle, setRevokeCourseTitle] = useState<string>('');
   const [revokeHasProgress, setRevokeHasProgress] = useState(false);
+  const [showTestResultsDialog, setShowTestResultsDialog] = useState(false);
+  const [selectedTestResult, setSelectedTestResult] = useState<any>(null);
+  const [selectedTest, setSelectedTest] = useState<any>(null);
 
   useEffect(() => {
     loadCourses();
@@ -97,6 +100,39 @@ export default function UserCoursesManagement({
       }
     } catch (error) {
       console.error('Error loading test results:', error);
+    }
+  };
+
+  const viewTestResults = async (lessonId: string, testId: number) => {
+    try {
+      // Загружаем тест с вопросами
+      const testResponse = await fetch(`${API_ENDPOINTS.TESTS}?id=${testId}`, { headers: getAuthHeaders() });
+      if (!testResponse.ok) {
+        alert('Не удалось загрузить тест');
+        return;
+      }
+      const testData = await testResponse.json();
+      setSelectedTest(testData.test);
+
+      // Загружаем результат теста для этого урока
+      const resultResponse = await fetch(`${API_ENDPOINTS.TESTS}?action=results&lessonId=${lessonId}`, { 
+        headers: {
+          ...getAuthHeaders(),
+          'X-User-Id-Override': String(user.id) // Передаем ID пользователя для просмотра админом
+        }
+      });
+      
+      if (!resultResponse.ok) {
+        alert('Результаты теста не найдены');
+        return;
+      }
+      
+      const resultData = await resultResponse.json();
+      setSelectedTestResult(resultData.result);
+      setShowTestResultsDialog(true);
+    } catch (error) {
+      console.error('Error loading test results:', error);
+      alert('Ошибка при загрузке результатов теста');
     }
   };
 
@@ -341,9 +377,22 @@ export default function UserCoursesManagement({
                               </div>
                               <div className="flex items-center gap-2">
                                 {lesson.type === 'test' && testResult && (
-                                  <Badge className={testResult.passed ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}>
-                                    {testResult.score}%
-                                  </Badge>
+                                  <>
+                                    <Badge className={testResult.passed ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}>
+                                      {testResult.score}%
+                                    </Badge>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        viewTestResults(String(lesson.id), lesson.testId!);
+                                      }}
+                                    >
+                                      <Icon name="Eye" size={14} className="mr-1" />
+                                      Результаты
+                                    </Button>
+                                  </>
                                 )}
                                 {lesson.type === 'test' && progress && (
                                   <Button
@@ -476,6 +525,196 @@ export default function UserCoursesManagement({
               <Icon name="Trash2" size={14} className="mr-2" />
               Отозвать и сбросить прогресс
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showTestResultsDialog} onOpenChange={setShowTestResultsDialog}>
+        <AlertDialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Icon name="FileText" size={24} className="text-blue-500" />
+              Результаты тестирования — {user.name}
+            </AlertDialogTitle>
+          </AlertDialogHeader>
+          {selectedTest && selectedTestResult && (
+            <div className="space-y-6 py-4">
+              <div className={`p-6 rounded-lg border-2 ${
+                selectedTestResult.passed ? 'border-green-500 bg-green-50' : 'border-red-500 bg-red-50'
+              }`}>
+                <div className="text-center mb-4">
+                  <Icon 
+                    name={selectedTestResult.passed ? 'CheckCircle' : 'XCircle'} 
+                    size={48} 
+                    className={`mx-auto mb-3 ${selectedTestResult.passed ? 'text-green-500' : 'text-red-500'}`}
+                  />
+                  <h3 className="text-xl font-bold mb-2">
+                    {selectedTestResult.passed ? 'Тест пройден!' : 'Тест не пройден'}
+                  </h3>
+                  <p className="text-lg mb-1">
+                    Результат: <span className="font-bold">{selectedTestResult.score}%</span>
+                  </p>
+                  <p className="text-gray-600 mb-1">
+                    Баллы: <span className="font-semibold">{selectedTestResult.earnedPoints} из {selectedTestResult.totalPoints}</span>
+                  </p>
+                  <p className="text-gray-600 mb-2">
+                    Проходной балл: <span className="font-semibold">{selectedTest.passScore}%</span>
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Завершено: {new Date(selectedTestResult.completedAt).toLocaleString('ru-RU')}
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-white border rounded-lg p-6">
+                <h4 className="text-lg font-bold mb-4 flex items-center gap-2">
+                  <Icon name="List" size={20} />
+                  Детальные результаты
+                </h4>
+                
+                <div className="space-y-4">
+                  {selectedTest.questions?.map((question: any, idx: number) => {
+                    const questionResult = selectedTestResult.results.find((r: any) => r.questionId === String(question.id));
+                    const userAnswer = selectedTestResult.answers[String(question.id)];
+                    
+                    return (
+                      <div 
+                        key={question.id} 
+                        className={`p-4 rounded-lg border-2 ${
+                          questionResult?.isCorrect 
+                            ? 'border-green-200 bg-green-50' 
+                            : 'border-red-200 bg-red-50'
+                        }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <Icon 
+                            name={questionResult?.isCorrect ? 'CheckCircle' : 'XCircle'} 
+                            size={20} 
+                            className={questionResult?.isCorrect ? 'text-green-600 mt-1' : 'text-red-600 mt-1'} 
+                          />
+                          <div className="flex-1">
+                            <div className="font-semibold mb-2">
+                              Вопрос {idx + 1}: {question.question}
+                            </div>
+                            
+                            {question.imageUrl && (
+                              <img 
+                                src={question.imageUrl} 
+                                alt="Вопрос" 
+                                className="w-full max-h-48 object-contain rounded-lg mb-3"
+                              />
+                            )}
+                            
+                            <div className="text-sm space-y-2">
+                              {question.type === 'single' && (
+                                <>
+                                  <div>
+                                    <span className="font-medium">Ответ: </span>
+                                    <span className={questionResult?.isCorrect ? 'text-green-700' : 'text-red-700'}>
+                                      {question.options?.[userAnswer as number]}
+                                    </span>
+                                  </div>
+                                  {!questionResult?.isCorrect && question.correctAnswer !== undefined && (
+                                    <div>
+                                      <span className="font-medium">Правильный: </span>
+                                      <span className="text-green-700">
+                                        {question.options?.[question.correctAnswer as number]}
+                                      </span>
+                                    </div>
+                                  )}
+                                </>
+                              )}
+                              
+                              {question.type === 'multiple' && (
+                                <>
+                                  <div>
+                                    <span className="font-medium">Ответы: </span>
+                                    <span className={questionResult?.isCorrect ? 'text-green-700' : 'text-red-700'}>
+                                      {Array.isArray(userAnswer) 
+                                        ? userAnswer.map((idx: number) => question.options?.[idx]).join(', ')
+                                        : 'Не отвечено'
+                                      }
+                                    </span>
+                                  </div>
+                                  {!questionResult?.isCorrect && Array.isArray(question.correctAnswer) && (
+                                    <div>
+                                      <span className="font-medium">Правильные: </span>
+                                      <span className="text-green-700">
+                                        {question.correctAnswer.map((idx: number) => question.options?.[idx]).join(', ')}
+                                      </span>
+                                    </div>
+                                  )}
+                                </>
+                              )}
+                              
+                              {question.type === 'text' && (
+                                <>
+                                  <div>
+                                    <span className="font-medium">Ответ: </span>
+                                    <span className={questionResult?.isCorrect ? 'text-green-700' : 'text-red-700'}>
+                                      {userAnswer as string || 'Не отвечено'}
+                                    </span>
+                                  </div>
+                                  {!questionResult?.isCorrect && question.correctAnswer && (
+                                    <div>
+                                      <span className="font-medium">Правильный: </span>
+                                      <span className="text-green-700">{question.correctAnswer as string}</span>
+                                    </div>
+                                  )}
+                                </>
+                              )}
+                              
+                              {question.type === 'matching' && (
+                                <>
+                                  <div>
+                                    <span className="font-medium">Порядок: </span>
+                                    <div className={`mt-1 ${questionResult?.isCorrect ? 'text-green-700' : 'text-red-700'}`}>
+                                      {Array.isArray(userAnswer) 
+                                        ? userAnswer.map((item: any, i: number) => (
+                                            <div key={i}>
+                                              {question.matchingPairs?.[i]?.left} → {item}
+                                            </div>
+                                          ))
+                                        : 'Не отвечено'
+                                      }
+                                    </div>
+                                  </div>
+                                  {!questionResult?.isCorrect && question.matchingPairs && (
+                                    <div>
+                                      <span className="font-medium">Правильный: </span>
+                                      <div className="text-green-700 mt-1">
+                                        {question.matchingPairs.map((pair: any, i: number) => (
+                                          <div key={i}>
+                                            {pair.left} → {pair.right}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                            
+                            <div className="mt-2 text-sm font-medium">
+                              Баллы: {questionResult?.points || 0} / {question.points}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setShowTestResultsDialog(false);
+              setSelectedTest(null);
+              setSelectedTestResult(null);
+            }}>
+              Закрыть
+            </AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

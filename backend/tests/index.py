@@ -142,7 +142,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'headers': {
                 'Access-Control-Allow-Origin': '*',
                 'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type, X-Auth-Token',
+                'Access-Control-Allow-Headers': 'Content-Type, X-Auth-Token, X-User-Id-Override',
                 'Access-Control-Max-Age': '86400'
             },
             'body': '',
@@ -180,7 +180,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'isBase64Encoded': False
             }
         
-        user_id = payload.get('user_id')
+        # Для админов разрешаем просмотр результатов других пользователей
+        user_id_override = headers.get('X-User-Id-Override') or headers.get('x-user-id-override')
+        if user_id_override and payload.get('role') == 'admin':
+            user_id = int(user_id_override)
+        else:
+            user_id = payload.get('user_id')
         
         # Получаем последний результат пользователя для этого конкретного урока
         cur.execute(
