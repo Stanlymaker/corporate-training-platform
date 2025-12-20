@@ -129,6 +129,10 @@ export default function StudentProfile() {
     }
   };
   
+  // Получаем список полученных наград
+  const earnedRewardIds = userProgress.flatMap(p => p.earnedRewards || [])
+    .map((r: any) => (typeof r === 'object' ? r.id : r));
+  
   const selectedRewardData = selectedReward ? rewards.find(r => String(r.id) === String(selectedReward)) : null;
   const selectedRewardCourse = selectedRewardData 
     ? (courses.find(c => c.id === selectedRewardData.courseId) || rewardCourses[selectedRewardData.courseId])
