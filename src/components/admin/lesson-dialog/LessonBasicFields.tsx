@@ -80,19 +80,21 @@ export default function LessonBasicFields({ lesson, onLessonChange }: LessonBasi
         </div>
       </div>
 
-      <div>
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={lesson.requiresPrevious || false}
-            onChange={(e) => onLessonChange('requiresPrevious', e.target.checked)}
-            className="w-4 h-4 text-orange-500 rounded focus:ring-orange-500"
-          />
-          <span className="text-sm text-gray-700">
-            Для открытия этого урока требуется завершить предыдущий урок
-          </span>
-        </label>
-      </div>
+      {lesson.order > 0 && (
+        <div>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={lesson.requiresPrevious || false}
+              onChange={(e) => onLessonChange('requiresPrevious', e.target.checked)}
+              className="w-4 h-4 text-orange-500 rounded focus:ring-orange-500"
+            />
+            <span className="text-sm text-gray-700">
+              Для открытия этого урока требуется завершить предыдущий урок
+            </span>
+          </label>
+        </div>
+      )}
     </>
   );
 }
