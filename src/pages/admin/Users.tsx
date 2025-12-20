@@ -177,10 +177,12 @@ export default function AdminUsers() {
     ).length;
     
     // Считаем курсы в процессе (начаты, но не завершены)
-    const inProgress = relevantProgress.filter(p => 
-      (p.completed === false || p.completedLessons < p.totalLessons) && 
-      (p.completedLessons > 0 || p.lastAccessedLesson !== null)
-    ).length;
+    // ВАЖНО: курс в процессе только если НЕ завершен
+    const inProgress = relevantProgress.filter(p => {
+      const isCompleted = p.completed === true || (p.completedLessons >= p.totalLessons && p.totalLessons > 0);
+      const isStarted = p.completedLessons > 0 || p.lastAccessedLesson !== null;
+      return !isCompleted && isStarted;
+    }).length;
     
     console.log('[getUserProgress] completed:', completed, 'inProgress:', inProgress);
     
