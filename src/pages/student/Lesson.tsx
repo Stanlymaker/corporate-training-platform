@@ -256,12 +256,9 @@ export default function LessonPage() {
       
       if (response.ok) {
         setIsCompleted(true);
-        await loadLessonData();
         
         if (nextLesson) {
-          setTimeout(() => {
-            handleNavigateToLesson(nextLesson.order);
-          }, 500);
+          handleNavigateToLesson(nextLesson.order);
         }
       }
     } catch (error) {
