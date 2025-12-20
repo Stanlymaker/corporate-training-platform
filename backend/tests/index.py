@@ -286,6 +286,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         total_points = 0
         results = []
         
+        print(f'=== DEBUG: Проверка теста {check_req.testId} ===')
+        print(f'Ответы пользователя: {check_req.answers}')
+        
         for q in questions:
             question_id = str(q[0])
             question_type = q[2]
@@ -296,6 +299,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             total_points += points
             user_answer = check_req.answers.get(question_id)
             is_correct = False
+            
+            print(f'Вопрос {question_id} ({question_type}):')
+            print(f'  Ответ пользователя: {user_answer} (тип: {type(user_answer).__name__})')
+            print(f'  Правильный ответ: {correct_answer} (тип: {type(correct_answer).__name__})')
+            print(f'  Баллы: {points}')
             
             if question_type == 'single':
                 # Для single choice сравниваем числовые индексы
