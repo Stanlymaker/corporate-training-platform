@@ -8,6 +8,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API_ENDPOINTS, getAuthHeaders } from '@/config/api';
 import AssignStudentsModal from '@/components/admin/AssignStudentsModal';
+import CourseProgressMatrix from '@/components/admin/CourseProgressMatrix';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,6 +38,7 @@ export default function AdminCourses() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAssignModal, setShowAssignModal] = useState(false);
+  const [showProgressMatrix, setShowProgressMatrix] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
 
   useEffect(() => {
@@ -73,6 +75,16 @@ export default function AdminCourses() {
 
   const handleAssignmentComplete = () => {
     loadCourses();
+  };
+
+  const handleShowProgress = (course: Course) => {
+    setSelectedCourse(course);
+    setShowProgressMatrix(true);
+  };
+
+  const handleCloseProgressMatrix = () => {
+    setShowProgressMatrix(false);
+    setSelectedCourse(null);
   };
 
   const handleCopyCourse = async (courseId: number) => {
@@ -205,6 +217,10 @@ export default function AdminCourses() {
                         <Icon name="UserPlus" size={14} className="mr-2" />
                         Назначить
                       </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleShowProgress(course)}>
+                        <Icon name="BarChart3" size={14} className="mr-2" />
+                        Прогресс
+                      </DropdownMenuItem>
                       <DropdownMenuSeparator />
                     </>
                   )}
@@ -292,13 +308,21 @@ export default function AdminCourses() {
       )}
 
       {selectedCourse && (
-        <AssignStudentsModal
-          show={showAssignModal}
-          courseId={selectedCourse.id}
-          courseTitle={selectedCourse.title}
-          onClose={handleCloseAssignModal}
-          onAssigned={handleAssignmentComplete}
-        />
+        <>
+          <AssignStudentsModal
+            show={showAssignModal}
+            courseId={selectedCourse.id}
+            courseTitle={selectedCourse.title}
+            onClose={handleCloseAssignModal}
+            onAssigned={handleAssignmentComplete}
+          />
+          <CourseProgressMatrix
+            show={showProgressMatrix}
+            courseId={selectedCourse.id}
+            courseTitle={selectedCourse.title}
+            onClose={handleCloseProgressMatrix}
+          />
+        </>
       )}
     </AdminLayout>
   );
