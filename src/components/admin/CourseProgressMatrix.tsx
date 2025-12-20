@@ -67,33 +67,47 @@ export default function CourseProgressMatrix({
         setLessons((lessonsData.lessons || []).sort((a: Lesson, b: Lesson) => a.order - b.order));
       }
 
-      // Загружаем назначения курса
-      const assignmentsRes = await fetch(`${API_ENDPOINTS.ASSIGNMENTS}?courseId=${courseId}`, {
+      // Загружаем студентов
+      const usersRes = await fetch(API_ENDPOINTS.USERS, {
         headers: getAuthHeaders(),
       });
-      
-      if (assignmentsRes.ok) {
-        const assignmentsData = await assignmentsRes.json();
-        const assignedUserIds = (assignmentsData.assignments || []).map((a: any) => a.userId);
 
-        // Загружаем студентов
-        const usersRes = await fetch(API_ENDPOINTS.USERS, {
-          headers: getAuthHeaders(),
-        });
+      if (usersRes.ok) {
+        const usersData = await usersRes.json();
+        
+        // Загружаем прогресс по курсу для всех студентов
+        const allStudents = (usersData.users || [])
+          .filter((u: any) => u.role === 'student' && u.isActive);
+        
+        // Фильтруем только тех студентов, у кого есть прогресс по этому курсу
+        const studentsWithProgress: Student[] = [];
+        
+        for (const student of allStudents) {
+          try {
+            const progressRes = await fetch(
+              `${API_ENDPOINTS.PROGRESS}?userId=${student.id}&courseId=${courseId}`,
+              { headers: getAuthHeaders() }
+            );
 
-        if (usersRes.ok) {
-          const usersData = await usersRes.json();
-          const assignedStudents = (usersData.users || [])
-            .filter((u: any) => u.role === 'student' && assignedUserIds.includes(u.id))
-            .sort((a: any, b: any) => a.name.localeCompare(b.name));
-          
-          setStudents(assignedStudents);
+            if (progressRes.ok) {
+              const data = await progressRes.json();
+              if (data.progress?.[0]) {
+                studentsWithProgress.push(student);
+              }
+            }
+          } catch (error) {
+            console.error('Error checking progress:', error);
+          }
+        }
+        
+        const sortedStudents = studentsWithProgress.sort((a: any, b: any) => a.name.localeCompare(b.name));
+        setStudents(sortedStudents);
 
-          // Загружаем прогресс для каждого студента
-          const progressMap: Record<number, Progress> = {};
-          const testResultsMap: Record<string, TestResult> = {};
+        // Загружаем прогресс для каждого студента
+        const progressMap: Record<number, Progress> = {};
+        const testResultsMap: Record<string, TestResult> = {};
 
-          for (const student of assignedStudents) {
+        for (const student of sortedStudents) {
             try {
               const progressRes = await fetch(
                 `${API_ENDPOINTS.PROGRESS}?userId=${student.id}&courseId=${courseId}`,
@@ -144,9 +158,8 @@ export default function CourseProgressMatrix({
             }
           }
 
-          setProgress(progressMap);
-          setTestResults(testResultsMap);
-        }
+        setProgress(progressMap);
+        setTestResults(testResultsMap);
       }
     } catch (error) {
       console.error('Error loading data:', error);

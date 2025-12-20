@@ -217,13 +217,13 @@ export default function AdminCourses() {
                         <Icon name="UserPlus" size={14} className="mr-2" />
                         Назначить
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleShowProgress(course)}>
-                        <Icon name="BarChart3" size={14} className="mr-2" />
-                        Прогресс
-                      </DropdownMenuItem>
                       <DropdownMenuSeparator />
                     </>
                   )}
+                  <DropdownMenuItem onClick={() => handleShowProgress(course)}>
+                    <Icon name="BarChart3" size={14} className="mr-2" />
+                    Прогресс
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => handleCopyCourse(course.id)}>
                     <Icon name="Copy" size={14} className="mr-2" />
                     Копировать
