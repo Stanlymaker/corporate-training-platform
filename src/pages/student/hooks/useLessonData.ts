@@ -89,6 +89,8 @@ export function useLessonData({ courseId, lessonId, userId }: UseLessonDataProps
           if (resultsRes.ok) {
             const resultsData = await resultsRes.json();
             setTestResult(resultsData.result);
+          } else {
+            setTestResult(null);
           }
         }
       }
