@@ -438,12 +438,12 @@ export default function AdminUsers() {
                               <div
                                 className="bg-primary h-2 rounded-full"
                                 style={{
-                                  width: `${progress.total > 0 ? (progress.completed / progress.total) * 100 : 0}%`,
+                                  width: `${(progress.total + progress.completed) > 0 ? (progress.completed / (progress.total + progress.completed)) * 100 : 0}%`,
                                 }}
                               />
                             </div>
                             <span className="text-sm text-gray-600 whitespace-nowrap">
-                              {progress.completed}/{progress.total}
+                              {progress.completed}/{progress.total + progress.completed}
                             </span>
                           </div>
                         ) : (
