@@ -1,0 +1,10 @@
+{
+  "tests": [
+    {
+      "name": "GET без токена - должен вернуть 401",
+      "method": "GET",
+      "path": "/?lessonId=test",
+      "expectedStatus": 401
+    }
+  ]
+}

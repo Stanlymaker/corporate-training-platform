@@ -2,7 +2,7 @@ import StudentLayout from '@/components/StudentLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useBlocker } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { useState, useEffect } from 'react';
 import { API_ENDPOINTS, getAuthHeaders } from '@/config/api';
@@ -35,6 +35,18 @@ export default function LessonPage() {
   const [totalPoints, setTotalPoints] = useState<number>(0);
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+
+  const [attemptsInfo, setAttemptsInfo] = useState<{
+    attemptsUsed: number;
+    remainingAttempts: number;
+    maxAttempts: number | null;
+    hasUnlimitedAttempts: boolean;
+  } | null>(null);
+
+  const blocker = useBlocker(
+    ({ currentLocation, nextLocation }) =>
+      testStarted && !testSubmitted && currentLocation.pathname !== nextLocation.pathname
+  );
 
   useEffect(() => {
     loadLessonData();
@@ -106,6 +118,14 @@ export default function LessonPage() {
             console.log('Test data from backend:', testData);
             setTest(testData.test || testData);
           }
+
+          const attemptsRes = await fetch(`${API_ENDPOINTS.TEST_ATTEMPTS}?lessonId=${foundLesson.id}`, {
+            headers: getAuthHeaders()
+          });
+          if (attemptsRes.ok) {
+            const attemptsData = await attemptsRes.json();
+            setAttemptsInfo(attemptsData);
+          }
         }
       }
 
@@ -151,6 +171,18 @@ export default function LessonPage() {
       console.error('Error marking lesson started:', error);
     }
   };
+
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (testStarted && !testSubmitted) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [testStarted, testSubmitted]);
 
   if (loading) {
     return (
@@ -270,12 +302,52 @@ export default function LessonPage() {
     navigate(ROUTES.STUDENT.LESSON(courseId!, String(lessonOrder + 1)));
   };
 
-  const handleStartTest = () => {
-    setTestStarted(true);
-    setTimeRemaining(test?.timeLimit ? test.timeLimit * 60 : 0);
-    setTestAnswers({});
-    setTestSubmitted(false);
-    setCurrentQuestionIndex(0);
+  const handleStartTest = async () => {
+    if (!lesson || !attemptsInfo) return;
+
+    if (!attemptsInfo.hasUnlimitedAttempts && attemptsInfo.remainingAttempts <= 0) {
+      alert('У вас закончились попытки прохождения этого теста');
+      return;
+    }
+
+    if (!attemptsInfo.hasUnlimitedAttempts) {
+      const confirmStart = window.confirm(
+        `У вас осталось попыток: ${attemptsInfo.remainingAttempts}.\n\n` +
+        `Если вы начнёте тест и покинете эту страницу до завершения, попытка будет потеряна.\n\n` +
+        `Начать тестирование?`
+      );
+
+      if (!confirmStart) return;
+    }
+
+    try {
+      const response = await fetch(`${API_ENDPOINTS.TEST_ATTEMPTS}?action=start`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ lessonId: lesson.id })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setAttemptsInfo(prev => prev ? {
+          ...prev,
+          attemptsUsed: data.attemptsUsed,
+          remainingAttempts: data.remainingAttempts
+        } : null);
+
+        setTestStarted(true);
+        setTimeRemaining(test?.timeLimit ? test.timeLimit * 60 : 0);
+        setTestAnswers({});
+        setTestSubmitted(false);
+        setCurrentQuestionIndex(0);
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Не удалось начать тест');
+      }
+    } catch (error) {
+      console.error('Error starting test:', error);
+      alert('Произошла ошибка при начале тестирования');
+    }
   };
 
   const handleAnswerChange = (questionId: number, answerValue: any, isMultiple?: boolean) => {
@@ -437,6 +509,7 @@ export default function LessonPage() {
                       onPreviousQuestion={() => setCurrentQuestionIndex(prev => prev - 1)}
                       onNavigateToPreviousLesson={() => previousLesson && handleNavigateToLesson(previousLesson.order)}
                       hasPreviousLesson={!!previousLesson}
+                      attemptsInfo={attemptsInfo}
                     />
                   ) : (
                     <LessonContent lesson={lesson} />
@@ -467,6 +540,37 @@ export default function LessonPage() {
           isTestInProgress={testStarted && !testSubmitted}
         />
       </div>
+
+      {blocker.state === "blocked" && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md mx-4 shadow-xl">
+            <div className="flex items-start gap-4">
+              <Icon name="AlertTriangle" size={24} className="text-orange-500 mt-1 flex-shrink-0" />
+              <div className="flex-1">
+                <h3 className="text-lg font-bold mb-2">Покинуть тест?</h3>
+                <p className="text-gray-700 mb-4">
+                  Если вы покинете эту страницу сейчас, вы потеряете одну попытку прохождения теста. 
+                  Ваш прогресс не сохранится.
+                </p>
+                <div className="flex gap-3 justify-end">
+                  <Button
+                    variant="outline"
+                    onClick={() => blocker.reset()}
+                  >
+                    Остаться
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={() => blocker.proceed()}
+                  >
+                    Покинуть тест
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </StudentLayout>
   );
 }

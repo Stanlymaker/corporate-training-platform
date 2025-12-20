@@ -9,6 +9,7 @@ export const API_ENDPOINTS = {
   REWARDS: 'https://functions.poehali.dev/161ddb07-9094-4922-acf0-386282c693d4',
   UPLOAD: 'https://functions.poehali.dev/a4988ecb-07df-4550-8fd6-25c3210700f7',
   DOWNLOAD: 'https://functions.poehali.dev/e3dd14e5-9268-4f78-a43d-0d6b2ce4af75',
+  TEST_ATTEMPTS: 'https://functions.poehali.dev/a3793fd9-2ec5-4c75-9bb1-5fae66bed227',
 };
 
 export function getAuthToken(): string | null {

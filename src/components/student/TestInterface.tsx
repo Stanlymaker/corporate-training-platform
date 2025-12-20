@@ -21,6 +21,12 @@ interface TestInterfaceProps {
   onPreviousQuestion: () => void;
   onNavigateToPreviousLesson?: () => void;
   hasPreviousLesson?: boolean;
+  attemptsInfo?: {
+    attemptsUsed: number;
+    remainingAttempts: number;
+    maxAttempts: number | null;
+    hasUnlimitedAttempts: boolean;
+  } | null;
 }
 
 export default function TestInterface({
@@ -40,7 +46,8 @@ export default function TestInterface({
   onNextQuestion,
   onPreviousQuestion,
   onNavigateToPreviousLesson,
-  hasPreviousLesson = false
+  hasPreviousLesson = false,
+  attemptsInfo = null
 }: TestInterfaceProps) {
   const currentQuestion = test.questions?.[currentQuestionIndex];
   
@@ -61,7 +68,7 @@ export default function TestInterface({
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
           <h3 className="text-xl font-bold mb-2">{test.title}</h3>
           <p className="text-gray-600 mb-6">{test.description}</p>
-          <div className="grid grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-3 gap-4 mb-4">
             <div className="flex items-center gap-2">
               <Icon name="HelpCircle" size={20} className="text-primary" />
               <div>
@@ -84,6 +91,22 @@ export default function TestInterface({
               </div>
             </div>
           </div>
+          
+          {attemptsInfo && !attemptsInfo.hasUnlimitedAttempts && (
+            <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+              <div className="flex items-start gap-3">
+                <Icon name="AlertCircle" size={20} className="text-orange-600 mt-0.5" />
+                <div>
+                  <div className="font-semibold text-orange-900 mb-1">
+                    Осталось попыток: {attemptsInfo.remainingAttempts} из {attemptsInfo.maxAttempts}
+                  </div>
+                  <div className="text-sm text-orange-700">
+                    После начала теста покинуть страницу можно будет только с потерей попытки
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
           <div className="flex gap-3">
             {hasPreviousLesson && (
               <Button onClick={onNavigateToPreviousLesson} variant="outline" size="lg">
