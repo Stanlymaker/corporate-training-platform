@@ -20,7 +20,7 @@ class CreateLessonRequest(BaseModel):
     videoUrl: Optional[str] = None
     description: Optional[str] = None
     requiresPrevious: bool = Field(default=False)
-    testId: Optional[str] = None
+    testId: Optional[int] = None
     isFinalTest: bool = Field(default=False)
     finalTestRequiresAllLessons: bool = Field(default=False)
     finalTestRequiresAllTests: bool = Field(default=False)
@@ -35,7 +35,7 @@ class UpdateLessonRequest(BaseModel):
     videoUrl: Optional[str] = None
     description: Optional[str] = None
     requiresPrevious: Optional[bool] = None
-    testId: Optional[str] = None
+    testId: Optional[int] = None
     isFinalTest: Optional[bool] = None
     finalTestRequiresAllLessons: Optional[bool] = None
     finalTestRequiresAllTests: Optional[bool] = None
