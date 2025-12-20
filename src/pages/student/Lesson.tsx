@@ -116,7 +116,7 @@ export default function LessonPage() {
           currentLessonId: foundLesson.id
         });
         setProgress(courseProgress || null);
-        setIsCompleted(courseProgress?.completedLessonIds.includes(foundLesson.id) || false);
+        setIsCompleted(courseProgress?.completedLessonIds.includes(String(foundLesson.id)) || false);
         
         if (foundLesson && courseData) {
           markLessonStarted(courseData.id, String(foundLesson.id), courseProgress);
@@ -188,7 +188,7 @@ export default function LessonPage() {
     });
 
     if (lesson.requiresPrevious && previousLesson) {
-      const isPrevCompleted = progress?.completedLessonIds.includes(previousLesson.id);
+      const isPrevCompleted = progress?.completedLessonIds.includes(String(previousLesson.id));
       console.log('Previous lesson check:', previousLesson.title, 'completed:', isPrevCompleted);
       if (!isPrevCompleted) {
         return {
@@ -202,7 +202,7 @@ export default function LessonPage() {
     if (lesson.isFinalTest && lesson.finalTestRequiresAllLessons) {
       const nonTestLessons = courseLessons.filter(l => !l.isFinalTest);
       const completedNonTestLessons = nonTestLessons.filter(l => 
-        progress?.completedLessonIds.includes(l.id)
+        progress?.completedLessonIds.includes(String(l.id))
       );
       console.log('All lessons check:', completedNonTestLessons.length, '/', nonTestLessons.length);
       
@@ -218,7 +218,7 @@ export default function LessonPage() {
     if (lesson.isFinalTest && lesson.finalTestRequiresAllTests) {
       const testLessons = courseLessons.filter(l => l.type === 'test' && !l.isFinalTest);
       const completedTests = testLessons.filter(l => 
-        progress?.completedLessonIds.includes(l.id)
+        progress?.completedLessonIds.includes(String(l.id))
       );
       console.log('All tests check:', completedTests.length, '/', testLessons.length);
       
