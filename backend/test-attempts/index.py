@@ -82,7 +82,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     
     if method == 'GET':
         lesson_id = query_params.get('lessonId')
-        print(f"GET request with lessonId: {lesson_id}")
         if not lesson_id:
             cur.close()
             conn.close()
@@ -94,10 +93,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             }
         
         lesson_id_safe = escape_sql_string(str(lesson_id))
-        sql_query = f"SELECT l.test_id, l.course_id, t.attempts_allowed FROM t_p8600777_corporate_training_p.lessons_v2 AS l LEFT JOIN t_p8600777_corporate_training_p.tests_v2 AS t ON l.test_id = t.id WHERE l.id = '{lesson_id_safe}'"
-        print(f"Executing SQL: {sql_query}")
         
-        cur.execute(sql_query)
+        # Получаем данные урока
+        cur.execute(f"SELECT test_id, course_id FROM lessons_v2 WHERE id = '{lesson_id_safe}'")
         lesson_data = cur.fetchone()
         
         if not lesson_data or not lesson_data[0]:
@@ -110,7 +108,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'isBase64Encoded': False
             }
         
-        test_id, course_id, max_attempts = lesson_data
+        test_id, course_id = lesson_data
+        
+        # Получаем данные теста
+        test_id_safe = escape_sql_string(str(test_id))
+        cur.execute(f"SELECT attempts_allowed FROM tests_v2 WHERE id = '{test_id_safe}'")
+        test_data = cur.fetchone()
+        max_attempts = test_data[0] if test_data else None
         
         cur.execute(
             f"SELECT attempts_used, max_attempts, best_score, last_attempt_at "
@@ -160,10 +164,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         lesson_id_safe = escape_sql_string(str(lesson_id))
         
-        cur.execute(
-            f"SELECT l.test_id, l.course_id, t.attempts_allowed FROM t_p8600777_corporate_training_p.lessons_v2 AS l "
-            f"LEFT JOIN t_p8600777_corporate_training_p.tests_v2 AS t ON l.test_id = t.id WHERE l.id = '{lesson_id_safe}'"
-        )
+        # Получаем данные урока
+        cur.execute(f"SELECT test_id, course_id FROM lessons_v2 WHERE id = '{lesson_id_safe}'")
         lesson_data = cur.fetchone()
         
         if not lesson_data:
@@ -176,7 +178,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'isBase64Encoded': False
             }
         
-        test_id, course_id, max_attempts = lesson_data
+        test_id, course_id = lesson_data
+        
+        # Получаем данные теста
+        test_id_safe = escape_sql_string(str(test_id))
+        cur.execute(f"SELECT attempts_allowed FROM tests_v2 WHERE id = '{test_id_safe}'")
+        test_data = cur.fetchone()
+        max_attempts = test_data[0] if test_data else None
         
         cur.execute(
             f"SELECT attempts_used, max_attempts FROM test_attempts_v2 "
