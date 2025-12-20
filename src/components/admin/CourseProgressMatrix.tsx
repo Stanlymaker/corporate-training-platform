@@ -3,6 +3,8 @@ import Icon from '@/components/ui/icon';
 import { useState, useEffect } from 'react';
 import { API_ENDPOINTS, getAuthHeaders } from '@/config/api';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import TestResultsDialog from './user-courses/TestResultsDialog';
 
 interface CourseProgressMatrixProps {
   show: boolean;
@@ -22,6 +24,7 @@ interface Lesson {
   title: string;
   type: string;
   order: number;
+  testId?: number;
 }
 
 interface Progress {
@@ -48,6 +51,10 @@ export default function CourseProgressMatrix({
   const [progress, setProgress] = useState<Record<number, Progress>>({});
   const [testResults, setTestResults] = useState<Record<string, TestResult>>({});
   const [loading, setLoading] = useState(false);
+  const [showTestResultsDialog, setShowTestResultsDialog] = useState(false);
+  const [selectedTestResult, setSelectedTestResult] = useState<any>(null);
+  const [selectedTest, setSelectedTest] = useState<any>(null);
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
 
   useEffect(() => {
     if (show) {
@@ -188,6 +195,54 @@ export default function CourseProgressMatrix({
     return testResults[key];
   };
 
+  const viewTestResults = async (student: Student, lesson: Lesson) => {
+    if (!lesson.testId) return;
+    
+    try {
+      const testResponse = await fetch(`${API_ENDPOINTS.TESTS}?id=${lesson.testId}`, { 
+        headers: getAuthHeaders() 
+      });
+      
+      if (!testResponse.ok) {
+        alert('Не удалось загрузить тест');
+        return;
+      }
+      
+      const testData = await testResponse.json();
+      setSelectedTest(testData.test);
+
+      const resultResponse = await fetch(
+        `${API_ENDPOINTS.TESTS}?action=results&lessonId=${lesson.id}`,
+        {
+          headers: {
+            ...getAuthHeaders(),
+            'X-User-Id-Override': String(student.id)
+          }
+        }
+      );
+      
+      if (!resultResponse.ok) {
+        alert('Результаты теста не найдены');
+        return;
+      }
+      
+      const resultData = await resultResponse.json();
+      setSelectedTestResult(resultData.result);
+      setSelectedStudent(student);
+      setShowTestResultsDialog(true);
+    } catch (error) {
+      console.error('Error loading test results:', error);
+      alert('Ошибка при загрузке результатов теста');
+    }
+  };
+
+  const closeTestResults = () => {
+    setShowTestResultsDialog(false);
+    setSelectedTest(null);
+    setSelectedTestResult(null);
+    setSelectedStudent(null);
+  };
+
   return (
     <Dialog open={show} onOpenChange={onClose}>
       <DialogContent className="max-w-7xl max-h-[90vh] flex flex-col">
@@ -257,17 +312,30 @@ export default function CourseProgressMatrix({
                               <Icon name="Circle" size={20} className="text-gray-300" />
                             )}
                             {testResult && (
-                              <Badge
-                                className={`text-xs ${
-                                  testResult.passed
-                                    ? 'bg-green-100 text-green-700'
-                                    : 'bg-red-100 text-red-700'
-                                }`}
-                              >
-                                {testResult.score}%
-                              </Badge>
+                              <>
+                                <Badge
+                                  className={`text-xs ${
+                                    testResult.passed
+                                      ? 'bg-green-100 text-green-700'
+                                      : 'bg-red-100 text-red-700'
+                                  }`}
+                                >
+                                  {testResult.score}%
+                                </Badge>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-6 px-2 text-xs"
+                                  onClick={() => viewTestResults(student, lesson)}
+                                >
+                                  <Icon name="Eye" size={12} className="mr-1" />
+                                  Просмотр
+                                </Button>
+                              </>
                             )}
-                            <span className="text-xs text-gray-500">{status.label}</span>
+                            {!testResult && (
+                              <span className="text-xs text-gray-500">{status.label}</span>
+                            )}
                           </div>
                         </td>
                       );
@@ -296,6 +364,15 @@ export default function CourseProgressMatrix({
           </div>
         </div>
       </DialogContent>
+
+      <TestResultsDialog
+        open={showTestResultsDialog}
+        onOpenChange={setShowTestResultsDialog}
+        userName={selectedStudent?.name || ''}
+        test={selectedTest}
+        result={selectedTestResult}
+        onClose={closeTestResults}
+      />
     </Dialog>
   );
 }
