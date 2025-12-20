@@ -36,7 +36,7 @@ interface TestFormData {
   passScore: number;
   timeLimit: number;
   attempts: number;
-  status: 'draft' | 'published';
+  status: 'draft' | 'published' | 'archived';
   questions: Question[];
 }
 
@@ -55,7 +55,7 @@ export default function TestEditor() {
   const isEditMode = !!testId;
 
   const [formData, setFormData] = useState<TestFormData>(initialFormData);
-  const [savedStatus, setSavedStatus] = useState<'draft' | 'published'>('draft');
+  const [savedStatus, setSavedStatus] = useState<'draft' | 'published' | 'archived'>('draft');
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   const [showQuestionDialog, setShowQuestionDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);

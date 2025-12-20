@@ -26,7 +26,7 @@ interface TestFormData {
   passScore: number;
   timeLimit: number;
   attempts: number;
-  status: 'draft' | 'published';
+  status: 'draft' | 'published' | 'archived';
   questions: Question[];
 }
 
@@ -41,7 +41,7 @@ export function useTestEditorActions(
   const [loadingTest, setLoadingTest] = useState(isEditMode);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
-  const loadTest = async (id: string): Promise<'draft' | 'published' | null> => {
+  const loadTest = async (id: string): Promise<'draft' | 'published' | 'archived' | null> => {
     setLoadingTest(true);
     try {
       const testRes = await fetch(`${API_ENDPOINTS.TESTS}?id=${id}`, { headers: getAuthHeaders() });
