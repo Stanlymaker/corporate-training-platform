@@ -18,11 +18,7 @@ class RecordAttemptRequest(BaseModel):
 
 def get_db_connection():
     dsn = os.environ['DATABASE_URL']
-    conn = psycopg2.connect(dsn)
-    cur = conn.cursor()
-    cur.execute("SET search_path TO t_p8600777_corporate_training_p, public")
-    cur.close()
-    return conn
+    return psycopg2.connect(dsn)
 
 def verify_jwt_token(token: str) -> Optional[Dict[str, Any]]:
     try:
@@ -99,8 +95,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         lesson_id_safe = escape_sql_string(str(lesson_id))
         
         cur.execute(
-            f"SELECT l.test_id, l.course_id, t.attempts_allowed FROM lessons_v2 l "
-            f"LEFT JOIN tests_v2 t ON l.test_id = t.id WHERE l.id = '{lesson_id_safe}'"
+            f"SELECT l.test_id, l.course_id, t.attempts_allowed FROM t_p8600777_corporate_training_p.lessons_v2 l "
+            f"LEFT JOIN t_p8600777_corporate_training_p.tests_v2 t ON l.test_id = t.id WHERE l.id = '{lesson_id_safe}'"
         )
         lesson_data = cur.fetchone()
         
@@ -118,7 +114,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         cur.execute(
             f"SELECT attempts_used, max_attempts, best_score, last_attempt_at "
-            f"FROM test_attempts_v2 WHERE user_id = {user_id} AND lesson_id = '{lesson_id_safe}'"
+            f"FROM t_p8600777_corporate_training_p.test_attempts_v2 WHERE user_id = {user_id} AND lesson_id = '{lesson_id_safe}'"
         )
         attempts_data = cur.fetchone()
         
@@ -165,8 +161,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         lesson_id_safe = escape_sql_string(str(lesson_id))
         
         cur.execute(
-            f"SELECT l.test_id, l.course_id, t.attempts_allowed FROM lessons_v2 l "
-            f"LEFT JOIN tests_v2 t ON l.test_id = t.id WHERE l.id = '{lesson_id_safe}'"
+            f"SELECT l.test_id, l.course_id, t.attempts_allowed FROM t_p8600777_corporate_training_p.lessons_v2 l "
+            f"LEFT JOIN t_p8600777_corporate_training_p.tests_v2 t ON l.test_id = t.id WHERE l.id = '{lesson_id_safe}'"
         )
         lesson_data = cur.fetchone()
         
@@ -201,14 +197,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 }
             
             cur.execute(
-                f"UPDATE test_attempts_v2 SET attempts_used = attempts_used + 1, "
+                f"UPDATE t_p8600777_corporate_training_p.test_attempts_v2 SET attempts_used = attempts_used + 1, "
                 f"last_attempt_at = NOW() WHERE user_id = {user_id} AND lesson_id = '{lesson_id_safe}' "
                 f"RETURNING attempts_used, max_attempts"
             )
         else:
             max_attempts_value = max_attempts if max_attempts else 0
             cur.execute(
-                f"INSERT INTO test_attempts_v2 (user_id, test_id, lesson_id, course_id, "
+                f"INSERT INTO t_p8600777_corporate_training_p.test_attempts_v2 (user_id, test_id, lesson_id, course_id, "
                 f"attempts_used, max_attempts, created_at, last_attempt_at) "
                 f"VALUES ({user_id}, {test_id}, '{lesson_id_safe}', {course_id}, 1, {max_attempts_value}, NOW(), NOW()) "
                 f"RETURNING attempts_used, max_attempts"
@@ -267,20 +263,20 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             new_best = max(current_best, record_req.score)
             
             cur.execute(
-                f"UPDATE test_attempts_v2 SET best_score = {new_best}, "
+                f"UPDATE t_p8600777_corporate_training_p.test_attempts_v2 SET best_score = {new_best}, "
                 f"last_attempt_at = NOW() WHERE user_id = {user_id} AND lesson_id = '{lesson_id_safe}'"
             )
         else:
             max_attempts_val = 0
             cur.execute(
-                f"SELECT attempts_allowed FROM tests_v2 WHERE id = {record_req.testId}"
+                f"SELECT attempts_allowed FROM t_p8600777_corporate_training_p.tests_v2 WHERE id = {record_req.testId}"
             )
             test_data = cur.fetchone()
             if test_data and test_data[0]:
                 max_attempts_val = test_data[0]
             
             cur.execute(
-                f"INSERT INTO test_attempts_v2 (user_id, test_id, lesson_id, course_id, "
+                f"INSERT INTO t_p8600777_corporate_training_p.test_attempts_v2 (user_id, test_id, lesson_id, course_id, "
                 f"attempts_used, max_attempts, best_score, created_at, last_attempt_at) "
                 f"VALUES ({user_id}, {record_req.testId}, '{lesson_id_safe}', {record_req.courseId}, "
                 f"1, {max_attempts_val}, {record_req.score}, NOW(), NOW())"
