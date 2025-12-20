@@ -179,7 +179,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             # Архивные курсы, где есть прогресс у пользователя
             cur.execute(
-                "SELECT DISTINCT cp.course_id FROM t_p8600777_corporate_training_p.course_progress cp "
+                "SELECT DISTINCT cp.course_id FROM course_progress_v2 cp "
                 "WHERE cp.user_id = %s",
                 (user_id_int,)
             )
