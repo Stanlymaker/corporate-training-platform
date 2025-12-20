@@ -210,9 +210,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 f"RETURNING attempts_used, max_attempts"
             )
         else:
-            max_attempts_value = max_attempts if max_attempts else 0
+            max_attempts_value = max_attempts if max_attempts and max_attempts > 0 else 0
             cur.execute(
-                f"INSERT INTO t_p8600777_corporate_training_p.test_attempts_v2 (user_id, test_id, lesson_id, course_id, "
+                f"INSERT INTO test_attempts_v2 (user_id, test_id, lesson_id, course_id, "
                 f"attempts_used, max_attempts, created_at, last_attempt_at) "
                 f"VALUES ({user_id}, {test_id}, '{lesson_id_safe}', {course_id}, 1, {max_attempts_value}, NOW(), NOW()) "
                 f"RETURNING attempts_used, max_attempts"

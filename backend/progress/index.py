@@ -511,11 +511,21 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 "(SELECT test_id FROM lessons_v2 WHERE course_id = %s AND test_id IS NOT NULL)",
                 (reset_course_id,)
             )
+            # Удаляем все попытки тестов по курсу
+            cur.execute(
+                "DELETE FROM test_attempts_v2 WHERE course_id = %s",
+                (reset_course_id,)
+            )
         elif reset_type == 'reset_tests':
             # Удаляем только результаты тестов
             cur.execute(
                 "DELETE FROM test_results_v2 WHERE test_id IN "
                 "(SELECT test_id FROM lessons_v2 WHERE course_id = %s AND test_id IS NOT NULL)",
+                (reset_course_id,)
+            )
+            # Удаляем все попытки тестов по курсу
+            cur.execute(
+                "DELETE FROM test_attempts_v2 WHERE course_id = %s",
                 (reset_course_id,)
             )
             # Сбрасываем test_score в прогрессе
