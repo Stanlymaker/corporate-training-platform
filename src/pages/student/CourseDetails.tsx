@@ -227,7 +227,37 @@ export default function CourseDetails() {
                 {lessons.map((lesson, index) => {
                   const isCompleted = progress?.completedLessonIds.includes(String(lesson.id));
                   const previousLesson = index > 0 ? lessons[index - 1] : null;
-                  const isLocked = lesson.requiresPrevious && previousLesson && !progress?.completedLessonIds.includes(String(previousLesson.id));
+                  
+                  // Проверка блокировки урока
+                  let isLocked = false;
+                  
+                  // 1. Обычный урок с требованием завершить предыдущий
+                  if (lesson.requiresPrevious && previousLesson && !progress?.completedLessonIds.includes(String(previousLesson.id))) {
+                    isLocked = true;
+                  }
+                  
+                  // 2. Финальный тест с требованием завершить все уроки
+                  if (lesson.isFinalTest && lesson.finalTestRequiresAllLessons) {
+                    const nonTestLessons = lessons.filter(l => !l.isFinalTest);
+                    const completedNonTestLessons = nonTestLessons.filter(l => 
+                      progress?.completedLessonIds.includes(String(l.id))
+                    );
+                    if (completedNonTestLessons.length < nonTestLessons.length) {
+                      isLocked = true;
+                    }
+                  }
+                  
+                  // 3. Финальный тест с требованием завершить все промежуточные тесты
+                  if (lesson.isFinalTest && lesson.finalTestRequiresAllTests) {
+                    const testLessons = lessons.filter(l => l.type === 'test' && !l.isFinalTest);
+                    const completedTests = testLessons.filter(l => 
+                      progress?.completedLessonIds.includes(String(l.id))
+                    );
+                    if (completedTests.length < testLessons.length) {
+                      isLocked = true;
+                    }
+                  }
+                  
                   const isLastAccessed = progress?.lastAccessedLesson === lesson.id;
 
                   return (
