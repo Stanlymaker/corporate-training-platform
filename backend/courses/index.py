@@ -77,6 +77,7 @@ def format_course_response(course_row: tuple) -> Dict[str, Any]:
         'lessonsCount': course_row[4],
         'category': course_row[5],
         'image': course_row[6],
+        'coverImage': course_row[6],  # Дублируем для совместимости с фронтендом
         'published': course_row[7],
         'passScore': course_row[8],
         'level': course_row[9],
