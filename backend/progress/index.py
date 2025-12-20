@@ -110,9 +110,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # GET с userId и courseId - прогресс по конкретному курсу
         if user_id and course_id_int:
             cur.execute(
-                "SELECT course_id, user_id, completed_lessons, total_lessons, test_score, completed, "
-                "completed_lesson_ids, last_accessed_lesson, started_at "
-                "FROM course_progress_v2 WHERE user_id = %s AND course_id = %s",
+                "SELECT cp.course_id, cp.user_id, "
+                "COALESCE(array_length(cp.completed_lesson_ids, 1), 0) as completed_lessons, "
+                "(SELECT COUNT(*) FROM lessons_v2 WHERE course_id = cp.course_id) as total_lessons, "
+                "cp.test_score, cp.completed, "
+                "cp.completed_lesson_ids, cp.last_accessed_lesson, cp.started_at "
+                "FROM course_progress_v2 cp WHERE cp.user_id = %s AND cp.course_id = %s",
                 (int(user_id), course_id_int)
             )
             progress = cur.fetchone()
@@ -141,9 +144,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # GET с userId - весь прогресс пользователя
         if user_id:
             cur.execute(
-                "SELECT course_id, user_id, completed_lessons, total_lessons, test_score, completed, "
-                "completed_lesson_ids, last_accessed_lesson, started_at "
-                "FROM course_progress_v2 WHERE user_id = %s ORDER BY started_at DESC",
+                "SELECT cp.course_id, cp.user_id, "
+                "COALESCE(array_length(cp.completed_lesson_ids, 1), 0) as completed_lessons, "
+                "(SELECT COUNT(*) FROM lessons_v2 WHERE course_id = cp.course_id) as total_lessons, "
+                "cp.test_score, cp.completed, "
+                "cp.completed_lesson_ids, cp.last_accessed_lesson, cp.started_at "
+                "FROM course_progress_v2 cp WHERE cp.user_id = %s ORDER BY cp.started_at DESC",
                 (int(user_id),)
             )
             progress_rows = cur.fetchall()
