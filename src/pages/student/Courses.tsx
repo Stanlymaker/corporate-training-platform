@@ -96,14 +96,14 @@ export default function StudentCourses() {
   const notStartedCount = courses.filter(c => !progressMap.has(c.id)).length;
   const inProgressCount = courses.filter(c => {
     const p = progressMap.get(c.id);
-    return p && !p.completed && p.completedLessons > 0;
+    return p && !p.completed; // Курс начат, если есть запись прогресса и не завершен
   }).length;
   const completedCount = courses.filter(c => progressMap.get(c.id)?.completed).length;
 
   const filteredCourses = courses.filter(course => {
     const courseProgress = progressMap.get(course.id);
     if (filter === 'notStarted') return !courseProgress;
-    if (filter === 'inProgress') return courseProgress && !courseProgress.completed && courseProgress.completedLessons > 0;
+    if (filter === 'inProgress') return courseProgress && !courseProgress.completed; // Курс начат = есть прогресс
     if (filter === 'completed') return courseProgress?.completed;
     return true;
   });
