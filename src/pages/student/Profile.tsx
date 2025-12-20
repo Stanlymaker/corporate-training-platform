@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import Icon from '@/components/ui/icon';
-import { getCategoryIcon, getCategoryGradient } from '@/utils/categoryIcons';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { useState, useEffect } from 'react';
@@ -225,12 +224,22 @@ export default function StudentProfile() {
                       return (
                         <div key={course.id} className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer" onClick={() => navigate(`/student/courses/${course.id}`)}>
                           <div className="flex items-start gap-3 mb-3">
-                            <div className={`w-16 h-16 rounded-lg bg-gradient-to-br ${getCategoryGradient(course.category)} flex items-center justify-center shadow-md flex-shrink-0`}>
-                              <Icon name={getCategoryIcon(course.category) as any} size={32} className="text-white" />
-                            </div>
+                            {course.coverImage ? (
+                              <img 
+                                src={course.coverImage} 
+                                alt={course.title}
+                                className="w-16 h-16 rounded-lg object-cover shadow-md flex-shrink-0"
+                              />
+                            ) : (
+                              <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-md flex-shrink-0">
+                                <Icon name="BookOpen" size={32} className="text-white" />
+                              </div>
+                            )}
                             <div className="flex-1 min-w-0">
                               <h4 className="font-semibold text-base text-gray-900 mb-1">{course.title}</h4>
-                              <p className="text-xs text-gray-600 mb-2">{course.category} • {course.duration} мин</p>
+                              <p className="text-xs text-gray-600 mb-2">
+                                {progress.totalLessons} {progress.totalLessons === 1 ? 'урок' : progress.totalLessons < 5 ? 'урока' : 'уроков'} • {course.duration} мин
+                              </p>
                               <div className="flex items-center gap-3">
                                 <Progress value={progressPercent} className="flex-1" />
                                 <span className="text-xs font-medium text-gray-700">{Math.round(progressPercent)}%</span>
