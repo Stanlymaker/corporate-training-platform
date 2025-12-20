@@ -277,17 +277,19 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             now = datetime.utcnow()
             new_title = f"{original_course[1]} (копия)"
             
+            # Create new course WITHOUT image (user needs to upload new one)
             cur.execute(
                 "INSERT INTO courses_v2 (title, description, duration, lessons_count, category, image, "
                 "published, pass_score, level, instructor, status, access_type, created_at, updated_at) "
                 "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) "
                 "RETURNING id",
                 (new_title, original_course[2], original_course[3], 0,
-                 original_course[5], original_course[6], False, original_course[8], original_course[9],
+                 original_course[5], None, False, original_course[8], original_course[9],
                  original_course[10], 'draft', original_course[14], now, now)
             )
             new_course_id = cur.fetchone()[0]
             
+            # Copy lessons WITHOUT materials (user needs to upload new ones)
             cur.execute(
                 "SELECT id, title, content, type, duration, \"order\", video_url, test_id "
                 "FROM lessons_v2 WHERE course_id = %s ORDER BY \"order\"",
@@ -297,6 +299,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             lesson_map = {}
             for lesson in lessons:
+                # Insert lesson without materials field (it will be NULL/empty)
                 cur.execute(
                     "INSERT INTO lessons_v2 (course_id, title, content, type, duration, \"order\", video_url, test_id) "
                     "VALUES (%s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
