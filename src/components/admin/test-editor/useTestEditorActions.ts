@@ -300,8 +300,8 @@ export function useTestEditorActions(
       setTimeout(() => setSaveSuccess(false), 3000);
       
       // Перезагружаем данные теста из БД после сохранения
-      if (isEditMode && savedTestId) {
-        await loadTest(savedTestId.toString());
+      if (isEditMode && testId) {
+        await loadTest(testId);
       }
       
       // Don't navigate - stay on the page after save
