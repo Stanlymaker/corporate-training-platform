@@ -59,15 +59,11 @@ export function useTestEditorActions(
       
       if (questionsRes.ok) {
         const questionsData = await questionsRes.json();
+        console.log('[DEBUG loadTest] Raw questions from API:', questionsData.questions);
         
-        setFormData({
-          title: testData.test.title || '',
-          description: testData.test.description || '',
-          passScore: testData.test.passScore || 70,
-          timeLimit: testData.test.timeLimit || 30,
-          attempts: testData.test.attempts || 3,
-          status: testStatus,
-          questions: (questionsData.questions || []).map((q: any) => ({
+        const mappedQuestions = (questionsData.questions || []).map((q: any) => {
+          console.log('[DEBUG loadTest] Mapping question:', { id: q.id, text: q.text, type: q.type });
+          return {
             id: q.id,
             type: q.type,
             question: q.text,
@@ -81,7 +77,19 @@ export function useTestEditorActions(
             points: q.points,
             matchingPairs: q.matchingPairs || undefined,
             textCheckType: q.textCheckType,
-          })),
+          };
+        });
+        
+        console.log('[DEBUG loadTest] Mapped questions:', mappedQuestions);
+        
+        setFormData({
+          title: testData.test.title || '',
+          description: testData.test.description || '',
+          passScore: testData.test.passScore || 70,
+          timeLimit: testData.test.timeLimit || 30,
+          attempts: testData.test.attempts || 3,
+          status: testStatus,
+          questions: mappedQuestions,
         });
       }
       return testStatus;
