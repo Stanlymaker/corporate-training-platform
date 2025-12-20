@@ -502,35 +502,33 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         if reset_type == 'reset_all':
             # Удаляем весь прогресс по курсу
             cur.execute(
-                "DELETE FROM course_progress_v2 WHERE course_id = %s",
+                "DELETE FROM t_p8600777_corporate_training_p.course_progress_v2 WHERE course_id = %s",
                 (reset_course_id,)
             )
-            # Удаляем все результаты тестов по курсу
+            # Удаляем все результаты тестов по курсу (по course_id)
             cur.execute(
-                "DELETE FROM test_results_v2 WHERE test_id IN "
-                "(SELECT test_id FROM lessons_v2 WHERE course_id = %s AND test_id IS NOT NULL)",
+                "DELETE FROM t_p8600777_corporate_training_p.test_results WHERE course_id = %s",
                 (reset_course_id,)
             )
             # Удаляем все попытки тестов по курсу
             cur.execute(
-                "DELETE FROM test_attempts_v2 WHERE course_id = %s",
+                "DELETE FROM t_p8600777_corporate_training_p.test_attempts_v2 WHERE course_id = %s",
                 (reset_course_id,)
             )
         elif reset_type == 'reset_tests':
-            # Удаляем только результаты тестов
+            # Удаляем только результаты тестов (по course_id)
             cur.execute(
-                "DELETE FROM test_results_v2 WHERE test_id IN "
-                "(SELECT test_id FROM lessons_v2 WHERE course_id = %s AND test_id IS NOT NULL)",
+                "DELETE FROM t_p8600777_corporate_training_p.test_results WHERE course_id = %s",
                 (reset_course_id,)
             )
             # Удаляем все попытки тестов по курсу
             cur.execute(
-                "DELETE FROM test_attempts_v2 WHERE course_id = %s",
+                "DELETE FROM t_p8600777_corporate_training_p.test_attempts_v2 WHERE course_id = %s",
                 (reset_course_id,)
             )
             # Сбрасываем test_score в прогрессе
             cur.execute(
-                "UPDATE course_progress_v2 SET test_score = 0 WHERE course_id = %s",
+                "UPDATE t_p8600777_corporate_training_p.course_progress_v2 SET test_score = 0 WHERE course_id = %s",
                 (reset_course_id,)
             )
         # Если reset_type == 'keep', ничего не делаем
