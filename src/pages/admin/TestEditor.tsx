@@ -61,6 +61,10 @@ export default function TestEditor() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showStatusChangeDialog, setShowStatusChangeDialog] = useState(false);
   const [linkedCourses, setLinkedCourses] = useState<any[]>([]);
+  const [showProgressResetDialog, setShowProgressResetDialog] = useState(false);
+  const [progressResetOption, setProgressResetOption] = useState<'keep' | 'reset'>('reset');
+  const [studentsCount, setStudentsCount] = useState(0);
+  const [wasEverPublished, setWasEverPublished] = useState(false);
 
   const {
     loading,
@@ -77,6 +81,9 @@ export default function TestEditor() {
       loadTest(testId).then((status) => {
         if (status) {
           setSavedStatus(status);
+          if (status === 'published') {
+            setWasEverPublished(true);
+          }
         }
       });
     }
@@ -125,7 +132,7 @@ export default function TestEditor() {
         
         console.log(`[DEBUG checkLinkedCourses] Course "${course.title}" (id=${course.id}): hasTest=${hasTest}, isPublished=${isPublished}, status=${course.status}`);
         
-        // Показываем только опубликованные курсы
+        // Показываем только опубликованные курсы (архивные не трогаем)
         return hasTest && isPublished;
       });
 
@@ -134,6 +141,32 @@ export default function TestEditor() {
     } catch (error) {
       console.error('Error checking linked courses:', error);
       return [];
+    }
+  };
+
+  const checkStudentsProgress = async () => {
+    try {
+      const progressRes = await fetch(`${API_ENDPOINTS.USER_PROGRESS}`, { headers: getAuthHeaders() });
+      if (!progressRes.ok) return 0;
+      
+      const progressData = await progressRes.json();
+      const allProgress = progressData.progress || [];
+      
+      const uniqueStudents = new Set();
+      allProgress.forEach((p: any) => {
+        if (p.testResults && Array.isArray(p.testResults)) {
+          p.testResults.forEach((tr: any) => {
+            if (tr.testId === Number(testId)) {
+              uniqueStudents.add(p.userId);
+            }
+          });
+        }
+      });
+      
+      return uniqueStudents.size;
+    } catch (error) {
+      console.error('Error checking students progress:', error);
+      return 0;
     }
   };
 
@@ -148,6 +181,20 @@ export default function TestEditor() {
         return;
       }
     }
+    
+    if (isEditMode && testId && formData.status === 'published' && wasEverPublished && savedStatus === 'draft') {
+      console.log('[DEBUG] Checking students progress for republishing test');
+      const count = await checkStudentsProgress();
+      const linked = await checkLinkedCourses();
+      console.log('[DEBUG] Students with progress:', count);
+      if (count > 0) {
+        setStudentsCount(count);
+        setLinkedCourses(linked);
+        setShowProgressResetDialog(true);
+        return;
+      }
+    }
+    
     await handleSaveTest();
     setSavedStatus(formData.status);
   };
@@ -162,6 +209,47 @@ export default function TestEditor() {
   const cancelStatusChange = () => {
     setShowStatusChangeDialog(false);
     setLinkedCourses([]);
+  };
+
+  const handleConfirmProgressReset = async () => {
+    setShowProgressResetDialog(false);
+    
+    if (progressResetOption === 'reset') {
+      try {
+        const progressRes = await fetch(`${API_ENDPOINTS.USER_PROGRESS}`, { headers: getAuthHeaders() });
+        if (progressRes.ok) {
+          const progressData = await progressRes.json();
+          const allProgress = progressData.progress || [];
+          
+          for (const p of allProgress) {
+            if (p.testResults && Array.isArray(p.testResults)) {
+              const updatedTestResults = p.testResults.filter((tr: any) => tr.testId !== Number(testId));
+              
+              if (updatedTestResults.length !== p.testResults.length) {
+                await fetch(`${API_ENDPOINTS.USER_PROGRESS}?userId=${p.userId}`, {
+                  method: 'PUT',
+                  headers: getAuthHeaders(),
+                  body: JSON.stringify({ ...p, testResults: updatedTestResults }),
+                });
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error resetting test progress:', error);
+      }
+    }
+    
+    await handleSaveTest();
+    setSavedStatus(formData.status);
+    setLinkedCourses([]);
+    setStudentsCount(0);
+  };
+
+  const handleCancelProgressReset = () => {
+    setShowProgressResetDialog(false);
+    setLinkedCourses([]);
+    setStudentsCount(0);
   };
 
   const handleAddQuestion = () => {

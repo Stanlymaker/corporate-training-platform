@@ -299,6 +299,11 @@ export function useTestEditorActions(
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
       
+      // Перезагружаем данные теста из БД после сохранения
+      if (isEditMode && savedTestId) {
+        await loadTest(savedTestId.toString());
+      }
+      
       // Don't navigate - stay on the page after save
       // navigate(ROUTES.ADMIN.TESTS);
     } catch (error) {
