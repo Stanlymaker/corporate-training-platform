@@ -94,7 +94,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             }
         
         lesson_id_safe = escape_sql_string(str(lesson_id))
-        sql_query = f"SELECT l.test_id, l.course_id, t.attempts_allowed FROM t_p8600777_corporate_training_p.lessons_v2 l LEFT JOIN t_p8600777_corporate_training_p.tests_v2 t ON l.test_id = t.id WHERE l.id = '{lesson_id_safe}'"
+        sql_query = f"SELECT l.test_id, l.course_id, t.attempts_allowed FROM t_p8600777_corporate_training_p.lessons_v2 AS l LEFT JOIN t_p8600777_corporate_training_p.tests_v2 AS t ON l.test_id = t.id WHERE l.id = '{lesson_id_safe}'"
         print(f"Executing SQL: {sql_query}")
         
         cur.execute(sql_query)
@@ -161,8 +161,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         lesson_id_safe = escape_sql_string(str(lesson_id))
         
         cur.execute(
-            f"SELECT l.test_id, l.course_id, t.attempts_allowed FROM t_p8600777_corporate_training_p.lessons_v2 l "
-            f"LEFT JOIN t_p8600777_corporate_training_p.tests_v2 t ON l.test_id = t.id WHERE l.id = '{lesson_id_safe}'"
+            f"SELECT l.test_id, l.course_id, t.attempts_allowed FROM t_p8600777_corporate_training_p.lessons_v2 AS l "
+            f"LEFT JOIN t_p8600777_corporate_training_p.tests_v2 AS t ON l.test_id = t.id WHERE l.id = '{lesson_id_safe}'"
         )
         lesson_data = cur.fetchone()
         
