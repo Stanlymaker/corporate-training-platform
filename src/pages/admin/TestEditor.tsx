@@ -107,7 +107,13 @@ export default function TestEditor() {
         fetch(`${API_ENDPOINTS.LESSONS}`, { headers: getAuthHeaders() }),
       ]);
 
-      if (!coursesRes.ok || !lessonsRes.ok) return [];
+      console.log('[DEBUG checkLinkedCourses] Courses response status:', coursesRes.status);
+      console.log('[DEBUG checkLinkedCourses] Lessons response status:', lessonsRes.status);
+
+      if (!coursesRes.ok || !lessonsRes.ok) {
+        console.log('[DEBUG checkLinkedCourses] One of requests failed, returning empty array');
+        return [];
+      }
 
       const coursesData = await coursesRes.json();
       const lessonsData = await lessonsRes.json();
