@@ -87,7 +87,25 @@ export default function TestInterface({
 
   if (!testSubmitted) {
     const isLastQuestion = currentQuestionIndex === (test.questions?.length || 0) - 1;
-    const allQuestionsAnswered = test.questions?.every(q => q.id in testAnswers) || false;
+    
+    // Проверка что все вопросы отвечены (для matching считается сразу отвеченным)
+    const allQuestionsAnswered = test.questions?.every(q => {
+      if (q.type === 'matching') return true; // matching всегда считается отвеченным
+      const answer = testAnswers[q.id];
+      if (q.type === 'text') return answer && String(answer).trim().length > 0;
+      if (q.type === 'multiple') return Array.isArray(answer) && answer.length > 0;
+      return answer !== undefined && answer !== null;
+    }) || false;
+    
+    // Проверка что текущий вопрос отвечен
+    const currentQuestionAnswered = (() => {
+      if (!currentQuestion) return false;
+      if (currentQuestion.type === 'matching') return true; // matching всегда активен
+      const answer = testAnswers[currentQuestion.id];
+      if (currentQuestion.type === 'text') return answer && String(answer).trim().length > 0;
+      if (currentQuestion.type === 'multiple') return Array.isArray(answer) && answer.length > 0;
+      return answer !== undefined && answer !== null;
+    })();
     
     if (!currentQuestion) return null;
     
@@ -285,6 +303,7 @@ export default function TestInterface({
           ) : (
             <Button 
               onClick={onNextQuestion}
+              disabled={!currentQuestionAnswered}
               className="flex-1"
             >
               Далее
