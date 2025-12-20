@@ -13,7 +13,7 @@ interface TestSummaryProps {
   questions: Question[];
   totalPoints: number;
   formData: {
-    status: 'draft' | 'published' | 'archived';
+    status: 'draft' | 'published';
     passScore: number;
     timeLimit: number;
     attempts: number;
@@ -27,9 +27,7 @@ export default function TestSummary({ questions, totalPoints, formData }: TestSu
   const matchingCount = questions.filter(q => q.type === 'matching').length;
 
   const getStatusColor = (status: string) => {
-    if (status === 'published') return 'bg-green-100 text-green-800';
-    if (status === 'archived') return 'bg-gray-100 text-gray-800';
-    return 'bg-yellow-100 text-yellow-800';
+    return status === 'published' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800';
   };
 
   return (
@@ -43,7 +41,7 @@ export default function TestSummary({ questions, totalPoints, formData }: TestSu
         <div className="flex items-center justify-between">
           <span className="text-gray-600">Статус:</span>
           <Badge className={getStatusColor(formData.status)}>
-            {formData.status === 'published' ? 'Опубликован' : formData.status === 'archived' ? 'Архивирован' : 'Черновик'}
+            {formData.status === 'published' ? 'Опубликован' : 'Черновик'}
           </Badge>
         </div>
 

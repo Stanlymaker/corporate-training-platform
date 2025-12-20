@@ -7,14 +7,14 @@ interface TestFormData {
   passScore: number;
   timeLimit: number;
   attempts: number;
-  status: 'draft' | 'published' | 'archived';
+  status: 'draft' | 'published';
 }
 
 interface TestInfoFormProps {
   formData: TestFormData;
   onInputChange: (field: keyof TestFormData, value: string | number) => void;
   isEditMode?: boolean;
-  savedStatus?: 'draft' | 'published' | 'archived';
+  savedStatus?: 'draft' | 'published';
 }
 
 export default function TestInfoForm({ formData, onInputChange, isEditMode = false, savedStatus }: TestInfoFormProps) {
@@ -67,7 +67,6 @@ export default function TestInfoForm({ formData, onInputChange, isEditMode = fal
             >
               <option value="draft">📝 Черновик</option>
               <option value="published">✅ Опубликован</option>
-              <option value="archived">📦 Архивирован</option>
             </select>
             <p className="text-xs text-gray-600 mt-2">
               {formData.status === 'draft' 

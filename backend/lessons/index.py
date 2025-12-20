@@ -292,7 +292,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         cur.execute(
             "SELECT id, course_id, title, content, type, \"order\", duration, video_url, "
             "description, requires_previous, test_id, is_final_test, "
-            "final_test_requires_all_lessons, final_test_requires_all_tests "
+            "final_test_requires_all_lessons, final_test_requires_all_tests, image_url "
             "FROM lessons_v2 ORDER BY course_id, \"order\""
         )
         lessons = cur.fetchall()
