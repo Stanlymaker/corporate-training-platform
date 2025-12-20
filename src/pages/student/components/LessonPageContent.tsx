@@ -161,7 +161,7 @@ export default function LessonPageContent({
                 <CardContent className="pt-6">
                   {lesson.type === 'test' && test ? (
                     <>
-                      {testResult && !testStarted && !testSubmitted ? (
+                      {testResult && !testStarted ? (
                         <TestResults
                           test={test}
                           result={testResult}
