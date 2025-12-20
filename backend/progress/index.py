@@ -146,6 +146,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 progress[6], # completed_lesson_ids
                 progress[7], # last_accessed_lesson
                 progress[8], # started_at
+                progress[9] if len(progress) > 9 else [], # earned_rewards
             )
             
             progress_data = format_progress_response(progress_updated)
@@ -188,6 +189,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     p[6], # completed_lesson_ids
                     p[7], # last_accessed_lesson
                     p[8], # started_at
+                    p[9] if len(p) > 9 else [], # earned_rewards
                 )
                 progress_list.append(format_progress_response(progress_updated))
             
