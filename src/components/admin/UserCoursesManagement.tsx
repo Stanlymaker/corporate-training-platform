@@ -40,6 +40,12 @@ export default function UserCoursesManagement({
     loadProgress();
   }, []);
 
+  useEffect(() => {
+    if (expandedCourseId && lessonsData[expandedCourseId]) {
+      loadTestResults(expandedCourseId);
+    }
+  }, [expandedCourseId, lessonsData]);
+
   const loadCourses = async () => {
     try {
       setLoading(true);
@@ -86,9 +92,11 @@ export default function UserCoursesManagement({
     
     try {
       const lessons = lessonsData[courseId] || [];
+      console.log('[UserCoursesManagement] Loading test results for course', courseId, 'lessons:', lessons);
       const results: TestResult[] = [];
       
       for (const lesson of lessons) {
+        console.log('[UserCoursesManagement] Checking lesson', lesson.id, 'type:', lesson.type, 'testId:', lesson.testId);
         if (lesson.type === 'test' && lesson.testId) {
           try {
             const response = await fetch(`${API_ENDPOINTS.TESTS}?action=results&lessonId=${lesson.id}`, { 
@@ -97,8 +105,10 @@ export default function UserCoursesManagement({
                 'X-User-Id-Override': String(user.id)
               }
             });
+            console.log('[UserCoursesManagement] Response for lesson', lesson.id, ':', response.status);
             if (response.ok) {
               const data = await response.json();
+              console.log('[UserCoursesManagement] Data for lesson', lesson.id, ':', data);
               if (data.result) {
                 results.push(data.result);
               }
@@ -109,6 +119,7 @@ export default function UserCoursesManagement({
         }
       }
       
+      console.log('[UserCoursesManagement] Final results for course', courseId, ':', results);
       setTestResults(prev => ({ ...prev, [courseId]: results }));
     } catch (error) {
       console.error('Error loading test results:', error);
@@ -154,7 +165,6 @@ export default function UserCoursesManagement({
       if (!lessonsData[courseId]) {
         await loadCourseLessons(courseId);
       }
-      await loadTestResults(courseId);
     }
   };
 
