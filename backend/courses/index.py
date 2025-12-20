@@ -253,6 +253,84 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'isBase64Encoded': False
             }
         
+        action = query_params.get('action', '')
+        
+        if action == 'copy' and course_id:
+            cur.execute(
+                "SELECT id, title, description, duration, lessons_count, category, image, published, "
+                "pass_score, level, instructor, status, start_date, end_date, access_type "
+                "FROM courses_v2 WHERE id = %s",
+                (course_id,)
+            )
+            original_course = cur.fetchone()
+            
+            if not original_course:
+                cur.close()
+                conn.close()
+                return {
+                    'statusCode': 404,
+                    'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'error': 'Курс не найден'}, ensure_ascii=False),
+                    'isBase64Encoded': False
+                }
+            
+            now = datetime.utcnow()
+            new_title = f"{original_course[1]} (копия)"
+            
+            cur.execute(
+                "INSERT INTO courses_v2 (title, description, duration, lessons_count, category, image, "
+                "published, pass_score, level, instructor, status, access_type, created_at, updated_at) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) "
+                "RETURNING id",
+                (new_title, original_course[2], original_course[3], 0,
+                 original_course[5], original_course[6], False, original_course[8], original_course[9],
+                 original_course[10], 'draft', original_course[14], now, now)
+            )
+            new_course_id = cur.fetchone()[0]
+            
+            cur.execute(
+                "SELECT id, title, content, type, duration, \"order\", video_url, test_id "
+                "FROM lessons_v2 WHERE course_id = %s ORDER BY \"order\"",
+                (course_id,)
+            )
+            lessons = cur.fetchall()
+            
+            lesson_map = {}
+            for lesson in lessons:
+                cur.execute(
+                    "INSERT INTO lessons_v2 (course_id, title, content, type, duration, \"order\", video_url, test_id) "
+                    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
+                    (new_course_id, lesson[1], lesson[2], lesson[3], lesson[4], lesson[5], lesson[6], lesson[7])
+                )
+                new_lesson_id = cur.fetchone()[0]
+                lesson_map[lesson[0]] = new_lesson_id
+            
+            cur.execute(
+                "UPDATE courses_v2 SET lessons_count = %s WHERE id = %s",
+                (len(lessons), new_course_id)
+            )
+            
+            conn.commit()
+            
+            cur.execute(
+                "SELECT id, title, description, duration, lessons_count, category, image, published, "
+                "pass_score, level, instructor, status, start_date, end_date, access_type "
+                "FROM courses_v2 WHERE id = %s",
+                (new_course_id,)
+            )
+            new_course = cur.fetchone()
+            course_data = format_course_response(new_course)
+            
+            cur.close()
+            conn.close()
+            
+            return {
+                'statusCode': 201,
+                'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'course': course_data}, ensure_ascii=False),
+                'isBase64Encoded': False
+            }
+        
         body_data = json.loads(event.get('body', '{}'))
         create_req = CreateCourseRequest(**body_data)
         

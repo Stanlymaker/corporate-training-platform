@@ -75,6 +75,29 @@ export default function AdminCourses() {
     loadCourses();
   };
 
+  const handleCopyCourse = async (courseId: number) => {
+    if (!confirm('Создать копию этого курса?')) return;
+    
+    try {
+      const response = await fetch(`${API_ENDPOINTS.COURSES}?action=copy&id=${courseId}`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        alert('Курс успешно скопирован!');
+        loadCourses();
+        navigate(`/admin/courses/edit/${data.course.id}`);
+      } else {
+        alert('Ошибка при копировании курса');
+      }
+    } catch (error) {
+      console.error('Error copying course:', error);
+      alert('Ошибка при копировании курса');
+    }
+  };
+
   const handleDeleteCourse = async (courseId: number) => {
     if (!confirm('Вы уверены, что хотите удалить этот курс?')) return;
     
@@ -185,6 +208,11 @@ export default function AdminCourses() {
                       <DropdownMenuSeparator />
                     </>
                   )}
+                  <DropdownMenuItem onClick={() => handleCopyCourse(course.id)}>
+                    <Icon name="Copy" size={14} className="mr-2" />
+                    Копировать
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem 
                     onClick={() => handleDeleteCourse(course.id)}
                     className="text-red-600 focus:text-red-600"
