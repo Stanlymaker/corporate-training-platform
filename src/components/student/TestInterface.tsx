@@ -87,7 +87,7 @@ export default function TestInterface({
 
   if (!testSubmitted) {
     const isLastQuestion = currentQuestionIndex === (test.questions?.length || 0) - 1;
-    const allQuestionsAnswered = Object.keys(testAnswers).length === (test.questions?.length || 0);
+    const allQuestionsAnswered = test.questions?.every(q => q.id in testAnswers) || false;
     
     if (!currentQuestion) return null;
     
