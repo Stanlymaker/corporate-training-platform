@@ -62,11 +62,11 @@ export function useTestEditorActions(
         console.log('[DEBUG loadTest] Raw questions from API:', questionsData.questions);
         
         const mappedQuestions = (questionsData.questions || []).map((q: any) => {
-          console.log('[DEBUG loadTest] Mapping question:', { id: q.id, text: q.text, type: q.type });
+          console.log('[DEBUG loadTest] Mapping question:', { id: q.id, question: q.question, type: q.type });
           return {
             id: q.id,
             type: q.type,
-            question: q.text,
+            question: q.question,
             imageUrl: q.imageUrl,
             answers: q.options ? q.options.map((opt: string, idx: number) => ({
               id: `${idx}`,
