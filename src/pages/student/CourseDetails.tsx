@@ -327,10 +327,18 @@ export default function CourseDetails() {
                         </div>
                       </div>
 
-                      {isLocked && previousLesson && (
+                      {isLocked && (
                         <div className="mt-2 pl-14 text-xs text-gray-500 flex items-center gap-1">
                           <Icon name="Info" size={12} />
-                          Завершите урок "{previousLesson.title}" для разблокировки
+                          {lesson.isFinalTest && (lesson.finalTestRequiresAllLessons || lesson.finalTestRequiresAllTests) ? (
+                            lesson.finalTestRequiresAllLessons 
+                              ? 'Завершите все уроки для разблокировки финального теста'
+                              : 'Завершите все промежуточные тесты для разблокировки финального теста'
+                          ) : previousLesson ? (
+                            `Завершите урок "${previousLesson.title}" для разблокировки`
+                          ) : (
+                            'Урок заблокирован'
+                          )}
                         </div>
                       )}
                     </button>
