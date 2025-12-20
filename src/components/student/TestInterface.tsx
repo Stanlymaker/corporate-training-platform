@@ -9,6 +9,8 @@ interface TestInterfaceProps {
   testSubmitted: boolean;
   testAnswers: Record<number, any>;
   testScore: number;
+  earnedPoints?: number;
+  totalPoints?: number;
   timeRemaining: number;
   currentQuestionIndex: number;
   onStartTest: () => void;
@@ -25,6 +27,8 @@ export default function TestInterface({
   testSubmitted,
   testAnswers,
   testScore,
+  earnedPoints = 0,
+  totalPoints = 0,
   timeRemaining,
   currentQuestionIndex,
   onStartTest,
@@ -328,11 +332,14 @@ export default function TestInterface({
         <h3 className="text-2xl font-bold mb-2">
           {testScore >= test.passScore ? 'Тест пройден!' : 'Тест не пройден'}
         </h3>
-        <p className="text-xl mb-4">
+        <p className="text-xl mb-2">
           Ваш результат: <span className="font-bold">{testScore}%</span>
         </p>
+        <p className="text-gray-600 mb-2">
+          Набрано баллов: <span className="font-semibold">{earnedPoints} из {totalPoints}</span>
+        </p>
         <p className="text-gray-600 mb-6">
-          Проходной балл: {test.passScore}%
+          Проходной балл: <span className="font-semibold">{test.passScore}%</span> ({Math.ceil(totalPoints * test.passScore / 100)} из {totalPoints} баллов)
         </p>
         {testScore < test.passScore && (
           <Button onClick={onRetry}>

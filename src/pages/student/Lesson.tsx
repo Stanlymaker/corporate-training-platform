@@ -31,6 +31,8 @@ export default function LessonPage() {
   const [testAnswers, setTestAnswers] = useState<Record<number, any>>({});
   const [testSubmitted, setTestSubmitted] = useState(false);
   const [testScore, setTestScore] = useState<number>(0);
+  const [earnedPoints, setEarnedPoints] = useState<number>(0);
+  const [totalPoints, setTotalPoints] = useState<number>(0);
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
 
@@ -296,22 +298,36 @@ export default function LessonPage() {
   const handleSubmitTest = async () => {
     if (!test || !course || !lesson) return;
     
-    let correctCount = 0;
-    test.questions.forEach((question, index) => {
-      const userAnswer = testAnswers[index];
+    let earnedPoints = 0;
+    let totalPoints = 0;
+    
+    test.questions.forEach((question) => {
+      const userAnswer = testAnswers[question.id];
+      const questionPoints = question.points || 1;
+      totalPoints += questionPoints;
+      
       if (question.type === 'single') {
-        if (userAnswer === question.correctAnswer) correctCount++;
+        if (userAnswer === question.correctAnswer) earnedPoints += questionPoints;
       } else if (question.type === 'multiple') {
         const correctAnswers = question.correctAnswers || [];
         const userAnswers = userAnswer || [];
         if (JSON.stringify(correctAnswers.sort()) === JSON.stringify(userAnswers.sort())) {
-          correctCount++;
+          earnedPoints += questionPoints;
+        }
+      } else if (question.type === 'matching' && question.matchingPairs) {
+        const userOrder = userAnswer || [];
+        const correctOrder = question.matchingPairs.map((p: any) => p.right);
+        if (JSON.stringify(userOrder) === JSON.stringify(correctOrder)) {
+          earnedPoints += questionPoints;
         }
       }
+      // text вопросы пропускаем, они проверяются вручную
     });
     
-    const score = Math.round((correctCount / test.questions.length) * 100);
+    const score = Math.round((earnedPoints / totalPoints) * 100);
     setTestScore(score);
+    setEarnedPoints(earnedPoints);
+    setTotalPoints(totalPoints);
     setTestSubmitted(true);
     
     const passingScore = test.passingScore || 70;
@@ -395,6 +411,8 @@ export default function LessonPage() {
                       testAnswers={testAnswers}
                       testSubmitted={testSubmitted}
                       testScore={testScore}
+                      earnedPoints={earnedPoints}
+                      totalPoints={totalPoints}
                       timeRemaining={timeRemaining}
                       currentQuestionIndex={currentQuestionIndex}
                       onStartTest={handleStartTest}
