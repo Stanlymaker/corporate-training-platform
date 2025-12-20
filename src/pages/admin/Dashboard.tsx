@@ -68,10 +68,10 @@ export default function AdminDashboard() {
         const activities: RecentActivity[] = [];
         const students = users.filter((u: any) => u.role === 'student');
         
-        const totalCompletionTime = 0;
+        let totalCompletionTime = 0;
         let completedCoursesCount = 0;
-        const totalRewardsEarned = 0;
-        const totalUnfinishedCourses = 0;
+        let totalRewardsEarned = 0;
+        let totalUnfinishedCourses = 0;
         
         for (const student of students.slice(0, 10)) {
           try {
