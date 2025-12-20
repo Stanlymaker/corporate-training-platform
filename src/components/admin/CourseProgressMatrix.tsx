@@ -143,8 +143,12 @@ export default function CourseProgressMatrix({
                       }
                     );
 
+                    console.log('[Matrix Load] Student:', student.id, 'Lesson:', lesson.id, 'Response:', testRes.status);
+                    
                     if (testRes.ok) {
                       const testData = await testRes.json();
+                      console.log('[Matrix Load] TestData:', testData);
+                      
                       if (testData.result) {
                         const key = `${student.id}-${lesson.id}`;
                         testResultsMap[key] = {
@@ -153,6 +157,7 @@ export default function CourseProgressMatrix({
                           score: testData.result.score,
                           passed: testData.result.passed,
                         };
+                        console.log('[Matrix Load] Added result with key:', key, testResultsMap[key]);
                       }
                     }
                   } catch (err) {
@@ -165,6 +170,7 @@ export default function CourseProgressMatrix({
             }
           }
 
+        console.log('[Matrix Load] Final testResultsMap:', testResultsMap);
         setProgress(progressMap);
         setTestResults(testResultsMap);
       }
@@ -302,6 +308,8 @@ export default function CourseProgressMatrix({
                     {lessons.map((lesson) => {
                       const status = getLessonStatus(student.id, lesson.id);
                       const testResult = lesson.type === 'test' ? getTestResult(student.id, lesson.id) : null;
+                      
+                      console.log('[Matrix] Student:', student.id, 'Lesson:', lesson.id, 'Type:', lesson.type, 'TestResult:', testResult);
 
                       return (
                         <td key={lesson.id} className="border border-gray-300 p-2 text-center">
