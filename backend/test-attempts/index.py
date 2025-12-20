@@ -38,6 +38,9 @@ def require_auth(headers: Dict[str, Any]) -> tuple[Optional[Dict[str, Any]], Opt
     
     return payload, None
 
+def escape_sql_string(value: str) -> str:
+    return value.replace("'", "''")
+
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     '''
     API для работы с попытками тестов:
@@ -89,11 +92,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'isBase64Encoded': False
             }
         
-        # Получаем информацию об уроке (тесте) и его максимальном количестве попыток
+        lesson_id_safe = escape_sql_string(str(lesson_id))
+        
         cur.execute(
-            "SELECT l.test_id, l.course_id, t.attempts_allowed FROM lessons_v2 l "
-            "LEFT JOIN tests_v2 t ON l.test_id = t.id WHERE l.id = %s",
-            (lesson_id,)
+            f"SELECT l.test_id, l.course_id, t.attempts_allowed FROM lessons_v2 l "
+            f"LEFT JOIN tests_v2 t ON l.test_id = t.id WHERE l.id = '{lesson_id_safe}'"
         )
         lesson_data = cur.fetchone()
         
@@ -109,11 +112,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         test_id, course_id, max_attempts = lesson_data
         
-        # Получаем информацию о попытках пользователя
         cur.execute(
-            "SELECT attempts_used, max_attempts, best_score, last_attempt_at "
-            "FROM test_attempts_v2 WHERE user_id = %s AND lesson_id = %s",
-            (user_id, lesson_id)
+            f"SELECT attempts_used, max_attempts, best_score, last_attempt_at "
+            f"FROM test_attempts_v2 WHERE user_id = {user_id} AND lesson_id = '{lesson_id_safe}'"
         )
         attempts_data = cur.fetchone()
         
@@ -121,7 +122,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             attempts_used, stored_max, best_score, last_attempt = attempts_data
             remaining_attempts = stored_max - attempts_used
         else:
-            # Первый раз пользователь заходит на тест
             attempts_used = 0
             remaining_attempts = max_attempts if max_attempts else 999
             best_score = 0
@@ -158,11 +158,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'isBase64Encoded': False
             }
         
-        # Получаем данные о тесте
+        lesson_id_safe = escape_sql_string(str(lesson_id))
+        
         cur.execute(
-            "SELECT l.test_id, l.course_id, t.attempts_allowed FROM lessons_v2 l "
-            "LEFT JOIN tests_v2 t ON l.test_id = t.id WHERE l.id = %s",
-            (lesson_id,)
+            f"SELECT l.test_id, l.course_id, t.attempts_allowed FROM lessons_v2 l "
+            f"LEFT JOIN tests_v2 t ON l.test_id = t.id WHERE l.id = '{lesson_id_safe}'"
         )
         lesson_data = cur.fetchone()
         
@@ -178,17 +178,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         test_id, course_id, max_attempts = lesson_data
         
-        # Проверяем есть ли уже запись о попытках
         cur.execute(
-            "SELECT attempts_used, max_attempts FROM test_attempts_v2 "
-            "WHERE user_id = %s AND lesson_id = %s",
-            (user_id, lesson_id)
+            f"SELECT attempts_used, max_attempts FROM test_attempts_v2 "
+            f"WHERE user_id = {user_id} AND lesson_id = '{lesson_id_safe}'"
         )
         existing = cur.fetchone()
         
         if existing:
             attempts_used, stored_max = existing
-            # Проверяем не исчерпаны ли попытки
             if max_attempts and max_attempts > 0 and attempts_used >= max_attempts:
                 cur.close()
                 conn.close()
@@ -199,25 +196,30 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'isBase64Encoded': False
                 }
             
-            # Увеличиваем счетчик попыток
             cur.execute(
-                "UPDATE test_attempts_v2 SET attempts_used = attempts_used + 1, "
-                "last_attempt_at = NOW() WHERE user_id = %s AND lesson_id = %s "
-                "RETURNING attempts_used, max_attempts",
-                (user_id, lesson_id)
+                f"UPDATE test_attempts_v2 SET attempts_used = attempts_used + 1, "
+                f"last_attempt_at = NOW() WHERE user_id = {user_id} AND lesson_id = '{lesson_id_safe}' "
+                f"RETURNING attempts_used, max_attempts"
             )
         else:
-            # Создаем новую запись с первой попыткой
+            max_attempts_value = max_attempts if max_attempts else 0
             cur.execute(
-                "INSERT INTO test_attempts_v2 (user_id, test_id, lesson_id, course_id, "
-                "attempts_used, max_attempts, created_at, last_attempt_at) "
-                "VALUES (%s, %s, %s, %s, 1, %s, NOW(), NOW()) "
-                "RETURNING attempts_used, max_attempts",
-                (user_id, test_id, lesson_id, course_id, max_attempts if max_attempts else 0)
+                f"INSERT INTO test_attempts_v2 (user_id, test_id, lesson_id, course_id, "
+                f"attempts_used, max_attempts, created_at, last_attempt_at) "
+                f"VALUES ({user_id}, {test_id}, '{lesson_id_safe}', {course_id}, 1, {max_attempts_value}, NOW(), NOW()) "
+                f"RETURNING attempts_used, max_attempts"
             )
         
-        result = cur.fetchone()
         conn.commit()
+        result = cur.fetchone()
+        
+        if result:
+            new_attempts_used, stored_max = result
+            remaining = stored_max - new_attempts_used
+        else:
+            new_attempts_used = 1
+            remaining = (max_attempts - 1) if max_attempts else 999
+        
         cur.close()
         conn.close()
         
@@ -225,9 +227,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'statusCode': 200,
             'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
             'body': json.dumps({
-                'attemptsUsed': result[0],
-                'remainingAttempts': result[1] - result[0] if result[1] > 0 else 999,
-                'maxAttempts': result[1] if result[1] > 0 else None
+                'attemptsUsed': new_attempts_used,
+                'remainingAttempts': remaining,
+                'maxAttempts': max_attempts if max_attempts else None,
+                'hasUnlimitedAttempts': max_attempts is None or max_attempts == 0
             }, ensure_ascii=False),
             'isBase64Encoded': False
         }
@@ -243,16 +246,41 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             return {
                 'statusCode': 400,
                 'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'error': f'Некорректные данные: {str(e)}'}, ensure_ascii=False),
+                'body': json.dumps({'error': f'Неверные данные: {str(e)}'}, ensure_ascii=False),
                 'isBase64Encoded': False
             }
         
-        # Обновляем лучший результат если новый результат лучше
+        lesson_id_safe = escape_sql_string(str(record_req.lessonId))
+        
         cur.execute(
-            "UPDATE test_attempts_v2 SET best_score = GREATEST(best_score, %s), "
-            "last_attempt_at = NOW() WHERE user_id = %s AND lesson_id = %s",
-            (record_req.score, user_id, record_req.lessonId)
+            f"SELECT attempts_used, best_score FROM test_attempts_v2 "
+            f"WHERE user_id = {user_id} AND lesson_id = '{lesson_id_safe}'"
         )
+        existing = cur.fetchone()
+        
+        if existing:
+            current_attempts, current_best = existing
+            new_best = max(current_best, record_req.score)
+            
+            cur.execute(
+                f"UPDATE test_attempts_v2 SET best_score = {new_best}, "
+                f"last_attempt_at = NOW() WHERE user_id = {user_id} AND lesson_id = '{lesson_id_safe}'"
+            )
+        else:
+            max_attempts_val = 0
+            cur.execute(
+                f"SELECT attempts_allowed FROM tests_v2 WHERE id = {record_req.testId}"
+            )
+            test_data = cur.fetchone()
+            if test_data and test_data[0]:
+                max_attempts_val = test_data[0]
+            
+            cur.execute(
+                f"INSERT INTO test_attempts_v2 (user_id, test_id, lesson_id, course_id, "
+                f"attempts_used, max_attempts, best_score, created_at, last_attempt_at) "
+                f"VALUES ({user_id}, {record_req.testId}, '{lesson_id_safe}', {record_req.courseId}, "
+                f"1, {max_attempts_val}, {record_req.score}, NOW(), NOW())"
+            )
         
         conn.commit()
         cur.close()
@@ -267,10 +295,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     
     cur.close()
     conn.close()
-    
     return {
         'statusCode': 400,
         'headers': {'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*'},
-        'body': json.dumps({'error': 'Неизвестное действие'}, ensure_ascii=False),
+        'body': json.dumps({'error': 'Неверный метод или action'}, ensure_ascii=False),
         'isBase64Encoded': False
     }
