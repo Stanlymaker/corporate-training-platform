@@ -407,9 +407,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         score = round((earned_points / total_points * 100)) if total_points > 0 else 0
         
         # Используем переданный lessonId и получаем course_id из таблицы lessons
+        lesson_id_safe = check_req.lessonId.replace("'", "''")
         cur.execute(
-            "SELECT course_id FROM t_p8600777_corporate_training_p.lessons_v2 WHERE id = %s LIMIT 1",
-            (check_req.lessonId,)
+            f"SELECT course_id FROM t_p8600777_corporate_training_p.lessons_v2 WHERE id = '{lesson_id_safe}' LIMIT 1"
         )
         lesson_data = cur.fetchone()
         
@@ -426,7 +426,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         course_id_val = lesson_data[0]
         
         # Получаем passing score из теста
-        cur.execute("SELECT pass_score FROM t_p8600777_corporate_training_p.tests_v2 WHERE id = %s", (check_req.testId,))
+        cur.execute(f"SELECT pass_score FROM t_p8600777_corporate_training_p.tests_v2 WHERE id = {check_req.testId}")
         test_info = cur.fetchone()
         passing_score = test_info[0] if test_info else 70
         passed = score >= passing_score
@@ -434,22 +434,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # Сохраняем результат теста
         user_id = payload.get('user_id')
         if user_id and course_id_val:
+            # Экранируем JSON для безопасной вставки
+            answers_json = json.dumps(check_req.answers).replace("'", "''")
+            results_json = json.dumps(results).replace("'", "''")
+            
             cur.execute(
-                "INSERT INTO t_p8600777_corporate_training_p.test_results_v2 (user_id, test_id, lesson_id, course_id, score, "
-                "earned_points, total_points, passed, answers, results, completed_at) "
-                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())",
-                (
-                    user_id,
-                    check_req.testId,
-                    check_req.lessonId,
-                    course_id_val,
-                    score,
-                    earned_points,
-                    total_points,
-                    passed,
-                    json.dumps(check_req.answers),
-                    json.dumps(results)
-                )
+                f"INSERT INTO t_p8600777_corporate_training_p.test_results_v2 (user_id, test_id, lesson_id, course_id, score, "
+                f"earned_points, total_points, passed, answers, results, completed_at) "
+                f"VALUES ({user_id}, {check_req.testId}, '{lesson_id_safe}', {course_id_val}, {score}, "
+                f"{earned_points}, {total_points}, {passed}, '{answers_json}'::jsonb, '{results_json}'::jsonb, NOW())"
             )
             conn.commit()
         
