@@ -415,9 +415,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             elif question_type == 'matching':
                 # Для matching проверяем порядок правых элементов
+                # matching_pairs содержит правильный порядок пар
                 if matching_pairs and isinstance(user_answer, list):
                     correct_order = [p['right'] for p in matching_pairs]
                     is_correct = user_answer == correct_order
+                    print(f'  Сравнение matching: user={user_answer} vs correct={correct_order}, result={is_correct}')
             
             elif question_type == 'text':
                 # Для текстовых вопросов сравниваем с правильным ответом (если задан)
