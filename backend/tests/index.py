@@ -189,13 +189,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         else:
             user_id = payload.get('user_id')
         
-        # Получаем последний результат пользователя для этого конкретного урока
+        # Получаем последний результат пользователя - ищем по test_id через lessons
+        lesson_id_safe = lesson_id.replace("'", "''")
         cur.execute(
-            "SELECT id, user_id, test_id, lesson_id, course_id, score, earned_points, "
-            "total_points, passed, answers, results, completed_at "
-            "FROM t_p8600777_corporate_training_p.test_results_v2 WHERE user_id = %s AND lesson_id = %s "
-            "ORDER BY completed_at DESC LIMIT 1",
-            (user_id, lesson_id)
+            f"SELECT tr.id, tr.user_id, tr.test_id, tr.course_id, tr.score, tr.passed, tr.answers, tr.completed_at "
+            f"FROM t_p8600777_corporate_training_p.test_results_v2 tr "
+            f"JOIN t_p8600777_corporate_training_p.lessons_v2 l ON l.test_id = tr.test_id "
+            f"WHERE tr.user_id = {user_id} AND l.id = '{lesson_id_safe}' "
+            f"ORDER BY tr.completed_at DESC LIMIT 1"
         )
         result_row = cur.fetchone()
         
@@ -209,19 +210,49 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'isBase64Encoded': False
             }
         
+        # Вычисляем earnedPoints и totalPoints из ответов
+        answers = result_row[6]
+        test_id = result_row[2]
+        
+        # Получаем вопросы теста для подсчета баллов
+        cur.execute(
+            f"SELECT id, points, correct_answer FROM t_p8600777_corporate_training_p.questions_v2 WHERE test_id = {test_id}"
+        )
+        questions = cur.fetchall()
+        
+        total_points = sum(q[1] for q in questions)
+        earned_points = 0
+        results = []
+        
+        for q in questions:
+            q_id = str(q[0])
+            points = q[1]
+            user_answer = answers.get(q_id)
+            correct_answer = q[2]
+            is_correct = user_answer == correct_answer if user_answer is not None else False
+            
+            if is_correct:
+                earned_points += points
+            
+            results.append({
+                'questionId': q_id,
+                'isCorrect': is_correct,
+                'points': points if is_correct else 0
+            })
+        
         result_data = {
             'id': result_row[0],
             'userId': result_row[1],
             'testId': result_row[2],
-            'lessonId': result_row[3],
-            'courseId': result_row[4],
-            'score': result_row[5],
-            'earnedPoints': result_row[6],
-            'totalPoints': result_row[7],
-            'passed': result_row[8],
-            'answers': result_row[9],
-            'results': result_row[10],
-            'completedAt': result_row[11].isoformat() if result_row[11] else None
+            'lessonId': lesson_id,
+            'courseId': result_row[3],
+            'score': result_row[4],
+            'earnedPoints': earned_points,
+            'totalPoints': total_points,
+            'passed': result_row[5],
+            'answers': result_row[6],
+            'results': results,
+            'completedAt': result_row[7].isoformat() if result_row[7] else None
         }
         
         cur.close()
