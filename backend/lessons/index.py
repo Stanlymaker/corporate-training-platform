@@ -48,9 +48,7 @@ class LessonMaterialRequest(BaseModel):
 
 def get_db_connection():
     dsn = os.environ['DATABASE_URL']
-    # Добавляем options для установки search_path при подключении
-    conn = psycopg2.connect(dsn, options='-c search_path=t_p8600777_corporate_training_p,public')
-    return conn
+    return psycopg2.connect(dsn)
 
 def verify_jwt_token(token: str) -> Optional[Dict[str, Any]]:
     try:

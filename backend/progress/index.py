@@ -20,9 +20,7 @@ class SubmitTestRequest(BaseModel):
 
 def get_db_connection():
     dsn = os.environ['DATABASE_URL']
-    # Добавляем options для установки search_path при подключении
-    conn = psycopg2.connect(dsn, options='-c search_path=t_p8600777_corporate_training_p,public')
-    return conn
+    return psycopg2.connect(dsn)
 
 def verify_jwt_token(token: str) -> Optional[Dict[str, Any]]:
     try:
@@ -646,12 +644,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         cur.execute(
             "DELETE FROM test_results_v2 WHERE user_id = %s AND test_id IN "
             "(SELECT test_id FROM lessons_v2 WHERE course_id = %s AND test_id IS NOT NULL)",
-            (int(user_id), course_id_int)
-        )
-        
-        # Удаляем попытки тестов пользователя по этому курсу
-        cur.execute(
-            "DELETE FROM test_attempts_v2 WHERE user_id = %s AND course_id = %s",
             (int(user_id), course_id_int)
         )
         

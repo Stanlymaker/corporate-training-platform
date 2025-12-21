@@ -54,9 +54,7 @@ class CheckTestRequest(BaseModel):
 
 def get_db_connection():
     dsn = os.environ['DATABASE_URL']
-    # Добавляем options для установки search_path при подключении
-    conn = psycopg2.connect(dsn, options='-c search_path=t_p8600777_corporate_training_p,public')
-    return conn
+    return psycopg2.connect(dsn)
 
 def verify_jwt_token(token: str) -> Optional[Dict[str, Any]]:
     try:
@@ -189,14 +187,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         else:
             user_id = payload.get('user_id')
         
-        # Получаем последний результат пользователя - ищем по test_id через lessons
-        lesson_id_safe = lesson_id.replace("'", "''")
+        # Получаем последний результат пользователя для этого конкретного урока
         cur.execute(
-            f"SELECT tr.id, tr.user_id, tr.test_id, tr.course_id, tr.score, tr.passed, tr.answers, tr.completed_at "
-            f"FROM t_p8600777_corporate_training_p.test_results_v2 tr "
-            f"JOIN t_p8600777_corporate_training_p.lessons_v2 l ON l.test_id = tr.test_id "
-            f"WHERE tr.user_id = {user_id} AND l.id = '{lesson_id_safe}' "
-            f"ORDER BY tr.completed_at DESC LIMIT 1"
+            "SELECT id, user_id, test_id, lesson_id, course_id, score, earned_points, "
+            "total_points, passed, answers, results, completed_at "
+            "FROM t_p8600777_corporate_training_p.test_results WHERE user_id = %s AND lesson_id = %s "
+            "ORDER BY completed_at DESC LIMIT 1",
+            (user_id, lesson_id)
         )
         result_row = cur.fetchone()
         
@@ -210,49 +207,19 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'isBase64Encoded': False
             }
         
-        # Вычисляем earnedPoints и totalPoints из ответов
-        answers = result_row[6]
-        test_id = result_row[2]
-        
-        # Получаем вопросы теста для подсчета баллов
-        cur.execute(
-            f"SELECT id, points, correct_answer FROM t_p8600777_corporate_training_p.questions_v2 WHERE test_id = {test_id}"
-        )
-        questions = cur.fetchall()
-        
-        total_points = sum(q[1] for q in questions)
-        earned_points = 0
-        results = []
-        
-        for q in questions:
-            q_id = str(q[0])
-            points = q[1]
-            user_answer = answers.get(q_id)
-            correct_answer = q[2]
-            is_correct = user_answer == correct_answer if user_answer is not None else False
-            
-            if is_correct:
-                earned_points += points
-            
-            results.append({
-                'questionId': q_id,
-                'isCorrect': is_correct,
-                'points': points if is_correct else 0
-            })
-        
         result_data = {
             'id': result_row[0],
             'userId': result_row[1],
             'testId': result_row[2],
-            'lessonId': lesson_id,
-            'courseId': result_row[3],
-            'score': result_row[4],
-            'earnedPoints': earned_points,
-            'totalPoints': total_points,
-            'passed': result_row[5],
-            'answers': result_row[6],
-            'results': results,
-            'completedAt': result_row[7].isoformat() if result_row[7] else None
+            'lessonId': result_row[3],
+            'courseId': result_row[4],
+            'score': result_row[5],
+            'earnedPoints': result_row[6],
+            'totalPoints': result_row[7],
+            'passed': result_row[8],
+            'answers': result_row[9],
+            'results': result_row[10],
+            'completedAt': result_row[11].isoformat() if result_row[11] else None
         }
         
         cur.close()
@@ -270,7 +237,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         cur.execute(
             "SELECT id, test_id, type, text, options, correct_answer, points, \"order\", "
-            "matching_pairs, text_check_type, image_url FROM t_p8600777_corporate_training_p.questions_v2 WHERE test_id = %s ORDER BY \"order\"",
+            "matching_pairs, text_check_type, image_url FROM questions_v2 WHERE test_id = %s ORDER BY \"order\"",
             (test_id_int,)
         )
         questions = cur.fetchall()
@@ -289,7 +256,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     if method == 'GET' and test_id:
         cur.execute(
             "SELECT id, course_id, lesson_id, title, description, pass_score, time_limit, "
-            "attempts, questions_count, status, created_at, updated_at FROM t_p8600777_corporate_training_p.tests_v2 WHERE id = %s",
+            "attempts, questions_count, status, created_at, updated_at FROM tests_v2 WHERE id = %s",
             (int(test_id),)
         )
         test = cur.fetchone()
@@ -309,7 +276,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # Загружаем вопросы теста
         cur.execute(
             "SELECT id, test_id, type, text, options, correct_answer, points, \"order\", "
-            "matching_pairs, text_check_type, image_url FROM t_p8600777_corporate_training_p.questions_v2 WHERE test_id = %s ORDER BY \"order\"",
+            "matching_pairs, text_check_type, image_url FROM questions_v2 WHERE test_id = %s ORDER BY \"order\"",
             (int(test_id),)
         )
         questions = cur.fetchall()
@@ -332,7 +299,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         cur.execute(
             "SELECT id, course_id, lesson_id, title, description, pass_score, time_limit, "
             "attempts, questions_count, status, created_at, updated_at "
-            "FROM t_p8600777_corporate_training_p.tests_v2 ORDER BY id DESC"
+            "FROM tests_v2 ORDER BY id DESC"
         )
         tests = cur.fetchall()
         tests_list = [format_test_response(test) for test in tests]
@@ -366,7 +333,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # Получаем вопросы теста с правильными ответами
         cur.execute(
             "SELECT id, test_id, type, text, options, correct_answer, points, \"order\", "
-            "matching_pairs, text_check_type, image_url FROM t_p8600777_corporate_training_p.questions_v2 WHERE test_id = %s ORDER BY \"order\"",
+            "matching_pairs, text_check_type, image_url FROM questions_v2 WHERE test_id = %s ORDER BY \"order\"",
             (check_req.testId,)
         )
         questions = cur.fetchall()
@@ -415,11 +382,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             elif question_type == 'matching':
                 # Для matching проверяем порядок правых элементов
-                # matching_pairs содержит правильный порядок пар
                 if matching_pairs and isinstance(user_answer, list):
                     correct_order = [p['right'] for p in matching_pairs]
                     is_correct = user_answer == correct_order
-                    print(f'  Сравнение matching: user={user_answer} vs correct={correct_order}, result={is_correct}')
             
             elif question_type == 'text':
                 # Для текстовых вопросов сравниваем с правильным ответом (если задан)
@@ -440,9 +405,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         score = round((earned_points / total_points * 100)) if total_points > 0 else 0
         
         # Используем переданный lessonId и получаем course_id из таблицы lessons
-        lesson_id_safe = check_req.lessonId.replace("'", "''")
         cur.execute(
-            f"SELECT course_id FROM t_p8600777_corporate_training_p.lessons_v2 WHERE id = '{lesson_id_safe}' LIMIT 1"
+            "SELECT course_id FROM t_p8600777_corporate_training_p.lessons_v2 WHERE id = %s LIMIT 1",
+            (check_req.lessonId,)
         )
         lesson_data = cur.fetchone()
         
@@ -459,7 +424,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         course_id_val = lesson_data[0]
         
         # Получаем passing score из теста
-        cur.execute(f"SELECT pass_score FROM t_p8600777_corporate_training_p.tests_v2 WHERE id = {check_req.testId}")
+        cur.execute("SELECT pass_score FROM t_p8600777_corporate_training_p.tests_v2 WHERE id = %s", (check_req.testId,))
         test_info = cur.fetchone()
         passing_score = test_info[0] if test_info else 70
         passed = score >= passing_score
@@ -467,15 +432,22 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # Сохраняем результат теста
         user_id = payload.get('user_id')
         if user_id and course_id_val:
-            # Экранируем JSON для безопасной вставки
-            answers_json = json.dumps(check_req.answers).replace("'", "''")
-            passed_sql = 'true' if passed else 'false'
-            
             cur.execute(
-                f"INSERT INTO t_p8600777_corporate_training_p.test_results_v2 (user_id, test_id, course_id, score, "
-                f"passed, answers, completed_at, created_at) "
-                f"VALUES ({user_id}, {check_req.testId}, {course_id_val}, {score}, "
-                f"{passed_sql}, '{answers_json}'::jsonb, NOW(), NOW())"
+                "INSERT INTO t_p8600777_corporate_training_p.test_results (user_id, test_id, lesson_id, course_id, score, "
+                "earned_points, total_points, passed, answers, results, completed_at) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())",
+                (
+                    user_id,
+                    check_req.testId,
+                    check_req.lessonId,
+                    course_id_val,
+                    score,
+                    earned_points,
+                    total_points,
+                    passed,
+                    json.dumps(check_req.answers),
+                    json.dumps(results)
+                )
             )
             conn.commit()
         
@@ -519,7 +491,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'isBase64Encoded': False
             }
         
-        cur.execute("SELECT id FROM t_p8600777_corporate_training_p.tests_v2 WHERE id = %s", (request.testId,))
+        cur.execute("SELECT id FROM tests_v2 WHERE id = %s", (request.testId,))
         test = cur.fetchone()
         if not test:
             cur.close()
@@ -532,7 +504,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             }
         
         cur.execute(
-            "INSERT INTO t_p8600777_corporate_training_p.questions_v2 (test_id, type, text, options, correct_answer, points, \"order\", "
+            "INSERT INTO questions_v2 (test_id, type, text, options, correct_answer, points, \"order\", "
             "matching_pairs, text_check_type, image_url) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
             (
                 request.testId,
@@ -551,7 +523,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         # Update questions_count in tests_v2
         cur.execute(
-            "UPDATE t_p8600777_corporate_training_p.tests_v2 SET questions_count = questions_count + 1, updated_at = NOW() WHERE id = %s",
+            "UPDATE tests_v2 SET questions_count = questions_count + 1, updated_at = NOW() WHERE id = %s",
             (request.testId,)
         )
         
@@ -559,7 +531,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         cur.execute(
             "SELECT id, test_id, type, text, options, correct_answer, points, \"order\", "
-            "matching_pairs, text_check_type FROM t_p8600777_corporate_training_p.questions_v2 WHERE id = %s",
+            "matching_pairs, text_check_type FROM questions_v2 WHERE id = %s",
             (question_id,)
         )
         question = cur.fetchone()
@@ -601,7 +573,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             }
         
         cur.execute(
-            "INSERT INTO t_p8600777_corporate_training_p.tests_v2 (title, description, pass_score, time_limit, attempts, status) "
+            "INSERT INTO tests_v2 (title, description, pass_score, time_limit, attempts, status) "
             "VALUES (%s, %s, %s, %s, %s, 'draft') "
             "RETURNING id, course_id, lesson_id, title, description, pass_score, time_limit, attempts, "
             "questions_count, status, created_at, updated_at",
@@ -665,7 +637,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             }
         
         # Check if question exists
-        cur.execute("SELECT id FROM t_p8600777_corporate_training_p.questions_v2 WHERE id = %s", (question_id,))
+        cur.execute("SELECT id FROM questions_v2 WHERE id = %s", (question_id,))
         if not cur.fetchone():
             cur.close()
             conn.close()
@@ -719,12 +691,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             }
         
         params.append(question_id)
-        query = f"UPDATE t_p8600777_corporate_training_p.questions_v2 SET {', '.join(updates)} WHERE id = %s"
+        query = f"UPDATE questions_v2 SET {', '.join(updates)} WHERE id = %s"
         cur.execute(query, params)
         
         # Update test updated_at
         cur.execute(
-            "UPDATE t_p8600777_corporate_training_p.tests_v2 SET updated_at = NOW() WHERE id = (SELECT test_id FROM t_p8600777_corporate_training_p.questions_v2 WHERE id = %s)",
+            "UPDATE tests_v2 SET updated_at = NOW() WHERE id = (SELECT test_id FROM questions_v2 WHERE id = %s)",
             (question_id,)
         )
         
@@ -732,7 +704,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         cur.execute(
             "SELECT id, test_id, type, text, options, correct_answer, points, \"order\", "
-            "matching_pairs, text_check_type FROM t_p8600777_corporate_training_p.questions_v2 WHERE id = %s",
+            "matching_pairs, text_check_type FROM questions_v2 WHERE id = %s",
             (question_id,)
         )
         question = cur.fetchone()
@@ -821,7 +793,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         updates.append("updated_at = NOW()")
         params.append(int(test_id))
         
-        query = f"UPDATE t_p8600777_corporate_training_p.tests_v2 SET {', '.join(updates)} WHERE id = %s " \
+        query = f"UPDATE tests_v2 SET {', '.join(updates)} WHERE id = %s " \
                 f"RETURNING id, course_id, lesson_id, title, description, pass_score, time_limit, attempts, " \
                 f"questions_count, status, created_at, updated_at"
         
@@ -833,7 +805,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         if request.status == 'draft':
             # Находим все уроки, связанные с этим тестом
             cur.execute(
-                "SELECT DISTINCT course_id FROM t_p8600777_corporate_training_p.lessons_v2 WHERE test_id = %s",
+                "SELECT DISTINCT course_id FROM lessons_v2 WHERE test_id = %s",
                 (int(test_id),)
             )
             course_ids = [row[0] for row in cur.fetchall()]
@@ -882,7 +854,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             }
         
         # Get test_id before deleting
-        cur.execute("SELECT test_id FROM t_p8600777_corporate_training_p.questions_v2 WHERE id = %s", (question_id,))
+        cur.execute("SELECT test_id FROM questions_v2 WHERE id = %s", (question_id,))
         result = cur.fetchone()
         if not result:
             cur.close()
@@ -896,11 +868,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         test_id_for_update = result[0]
         
-        cur.execute("DELETE FROM t_p8600777_corporate_training_p.questions_v2 WHERE id = %s", (question_id,))
+        cur.execute("DELETE FROM questions_v2 WHERE id = %s", (question_id,))
         
         # Update questions_count
         cur.execute(
-            "UPDATE t_p8600777_corporate_training_p.tests_v2 SET questions_count = questions_count - 1, updated_at = NOW() WHERE id = %s",
+            "UPDATE tests_v2 SET questions_count = questions_count - 1, updated_at = NOW() WHERE id = %s",
             (test_id_for_update,)
         )
         
@@ -928,7 +900,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             }
         
         # Check if test exists - use INTEGER id
-        cur.execute("SELECT id FROM t_p8600777_corporate_training_p.tests_v2 WHERE id = %s", (int(test_id),))
+        cur.execute("SELECT id FROM tests_v2 WHERE id = %s", (int(test_id),))
         if not cur.fetchone():
             cur.close()
             conn.close()
@@ -940,10 +912,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             }
         
         # Delete questions first
-        cur.execute("DELETE FROM t_p8600777_corporate_training_p.questions_v2 WHERE test_id = %s", (int(test_id),))
+        cur.execute("DELETE FROM questions_v2 WHERE test_id = %s", (int(test_id),))
         
         # Delete test
-        cur.execute("DELETE FROM t_p8600777_corporate_training_p.tests_v2 WHERE id = %s", (int(test_id),))
+        cur.execute("DELETE FROM tests_v2 WHERE id = %s", (int(test_id),))
         
         conn.commit()
         cur.close()
