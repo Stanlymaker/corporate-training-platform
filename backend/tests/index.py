@@ -191,7 +191,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         cur.execute(
             "SELECT id, user_id, test_id, lesson_id, course_id, score, earned_points, "
             "total_points, passed, answers, results, completed_at "
-            "FROM t_p8600777_corporate_training_p.test_results WHERE user_id = %s AND lesson_id = %s "
+            "FROM test_results_v2 WHERE user_id = %s AND lesson_id = %s "
             "ORDER BY completed_at DESC LIMIT 1",
             (user_id, lesson_id)
         )
@@ -406,7 +406,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         # Используем переданный lessonId и получаем course_id из таблицы lessons
         cur.execute(
-            "SELECT course_id FROM t_p8600777_corporate_training_p.lessons_v2 WHERE id = %s LIMIT 1",
+            "SELECT course_id FROM lessons_v2 WHERE id = %s LIMIT 1",
             (check_req.lessonId,)
         )
         lesson_data = cur.fetchone()
@@ -424,7 +424,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         course_id_val = lesson_data[0]
         
         # Получаем passing score из теста
-        cur.execute("SELECT pass_score FROM t_p8600777_corporate_training_p.tests_v2 WHERE id = %s", (check_req.testId,))
+        cur.execute("SELECT pass_score FROM tests_v2 WHERE id = %s", (check_req.testId,))
         test_info = cur.fetchone()
         passing_score = test_info[0] if test_info else 70
         passed = score >= passing_score
@@ -433,7 +433,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         user_id = payload.get('user_id')
         if user_id and course_id_val:
             cur.execute(
-                "INSERT INTO t_p8600777_corporate_training_p.test_results (user_id, test_id, lesson_id, course_id, score, "
+                "INSERT INTO test_results_v2 (user_id, test_id, lesson_id, course_id, score, "
                 "earned_points, total_points, passed, answers, results, completed_at) "
                 "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())",
                 (
