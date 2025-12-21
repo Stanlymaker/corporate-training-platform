@@ -436,13 +436,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         if user_id and course_id_val:
             # Экранируем JSON для безопасной вставки
             answers_json = json.dumps(check_req.answers).replace("'", "''")
-            results_json = json.dumps(results).replace("'", "''")
+            passed_sql = 'true' if passed else 'false'
             
             cur.execute(
-                f"INSERT INTO t_p8600777_corporate_training_p.test_results_v2 (user_id, test_id, lesson_id, course_id, score, "
-                f"earned_points, total_points, passed, answers, results, completed_at) "
-                f"VALUES ({user_id}, {check_req.testId}, '{lesson_id_safe}', {course_id_val}, {score}, "
-                f"{earned_points}, {total_points}, {passed}, '{answers_json}'::jsonb, '{results_json}'::jsonb, NOW())"
+                f"INSERT INTO t_p8600777_corporate_training_p.test_results_v2 (user_id, test_id, course_id, score, "
+                f"passed, answers, completed_at, created_at) "
+                f"VALUES ({user_id}, {check_req.testId}, {course_id_val}, {score}, "
+                f"{passed_sql}, '{answers_json}'::jsonb, NOW(), NOW())"
             )
             conn.commit()
         
