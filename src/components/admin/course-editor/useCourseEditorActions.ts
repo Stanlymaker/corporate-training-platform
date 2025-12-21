@@ -94,7 +94,13 @@ export function useCourseEditorActions(
           sequenceType: 'linear',
         });
         setSavedStatus(courseData.course.status || 'draft');
-        setWasEverPublished(courseData.course.status === 'published');
+        
+        // Проверяем, был ли курс когда-либо опубликован по наличию прогресса студентов
+        const progressRes = await fetch(`${API_ENDPOINTS.PROGRESS}?courseId=${courseData.course.id}`, {
+          headers: getAuthHeaders(),
+        });
+        const hasProgress = progressRes.ok && (await progressRes.json()).progress?.length > 0;
+        setWasEverPublished(hasProgress || courseData.course.status === 'published');
       }
     } catch (error) {
       console.error('Error loading course:', error);
