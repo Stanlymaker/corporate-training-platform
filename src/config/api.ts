@@ -10,7 +10,7 @@ export const API_ENDPOINTS = {
   UPLOAD: 'https://functions.poehali.dev/a4988ecb-07df-4550-8fd6-25c3210700f7',
   DOWNLOAD: 'https://functions.poehali.dev/e3dd14e5-9268-4f78-a43d-0d6b2ce4af75',
   TEST_ATTEMPTS: 'https://functions.poehali.dev/a3793fd9-2ec5-4c75-9bb1-5fae66bed227',
-  LOGS: 'https://functions.poehali.dev/5e4a918f-9339-44d5-9ef8-1dde5f53f74d',
+  LOGS: 'https://functions.poehali.dev/295789c9-5a86-4594-9b6b-89308d561f40',
 };
 
 export function getAuthToken(): string | null {

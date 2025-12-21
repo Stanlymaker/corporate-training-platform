@@ -9,6 +9,19 @@ from pydantic import BaseModel, Field
 JWT_SECRET = os.environ.get('JWT_SECRET', 'your-secret-key-change-in-production')
 JWT_ALGORITHM = 'HS256'
 
+def log_action(conn, level: str, action: str, message: str, user_id: Optional[int] = None, 
+               ip_address: Optional[str] = None, user_agent: Optional[str] = None, 
+               details: Optional[Dict[str, Any]] = None) -> None:
+    try:
+        with conn.cursor() as cur:
+            cur.execute('''
+                INSERT INTO system_logs (level, action, message, user_id, ip_address, user_agent, details)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+            ''', (level, action, message, user_id, ip_address, user_agent, json.dumps(details) if details else None))
+            conn.commit()
+    except Exception as e:
+        print(f"[WARNING] Failed to create log: {e}")
+
 class CreateTestRequest(BaseModel):
     title: str = Field(..., min_length=1)
     description: Optional[str] = None
@@ -450,6 +463,24 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 )
             )
             conn.commit()
+            
+            # Логируем прохождение теста
+            test_title = f"Тест #{check_req.testId}"
+            try:
+                cur.execute("SELECT title FROM t_p8600777_corporate_training_p.tests_v2 WHERE id = %s", (check_req.testId,))
+                test_row = cur.fetchone()
+                if test_row:
+                    test_title = test_row[0]
+            except:
+                pass
+            
+            log_level = 'success' if passed else 'warning'
+            log_message = f"Пройден тест '{test_title}': {score}% ({earned_points}/{total_points} баллов)"
+            if not passed:
+                log_message = f"Не пройден тест '{test_title}': {score}% ({earned_points}/{total_points} баллов)"
+            
+            log_action(conn, log_level, 'test.submit', log_message, user_id=user_id,
+                      details={'test_id': check_req.testId, 'score': score, 'passed': passed})
         
         cur.close()
         conn.close()

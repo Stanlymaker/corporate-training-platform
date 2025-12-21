@@ -9,6 +9,19 @@ from pydantic import BaseModel, Field
 JWT_SECRET = os.environ.get('JWT_SECRET', 'your-secret-key-change-in-production')
 JWT_ALGORITHM = 'HS256'
 
+def log_action(conn, level: str, action: str, message: str, user_id: Optional[int] = None, 
+               ip_address: Optional[str] = None, user_agent: Optional[str] = None, 
+               details: Optional[Dict[str, Any]] = None) -> None:
+    try:
+        with conn.cursor() as cur:
+            cur.execute('''
+                INSERT INTO system_logs (level, action, message, user_id, ip_address, user_agent, details)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+            ''', (level, action, message, user_id, ip_address, user_agent, json.dumps(details) if details else None))
+            conn.commit()
+    except Exception as e:
+        print(f"[WARNING] Failed to create log: {e}")
+
 class CompleteLessonRequest(BaseModel):
     courseId: int = Field(..., ge=1)
     lessonId: str = Field(..., min_length=1)
@@ -427,6 +440,38 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                             "UPDATE course_progress_v2 SET earned_rewards = %s WHERE id = %s",
                             (json.dumps(updated_rewards), progress_id)
                         )
+                        
+                        # Логируем получение наград
+                        new_rewards = [r for r in reward_ids if r not in current_rewards]
+                        if new_rewards:
+                            try:
+                                cur.execute("SELECT title FROM courses_v2 WHERE id = %s", (course_id,))
+                                course_row = cur.fetchone()
+                                course_title = course_row[0] if course_row else f"Курс #{course_id}"
+                                
+                                for reward_id in new_rewards:
+                                    cur.execute("SELECT title FROM rewards_v2 WHERE id = %s", (reward_id,))
+                                    reward_row = cur.fetchone()
+                                    reward_title = reward_row[0] if reward_row else f"Награда #{reward_id}"
+                                    
+                                    log_action(conn, 'success', 'reward.earned', 
+                                              f"Получена награда '{reward_title}' за завершение курса '{course_title}'",
+                                              user_id=int(payload['user_id']),
+                                              details={'reward_id': reward_id, 'course_id': course_id})
+                            except Exception as e:
+                                print(f"[WARNING] Failed to log reward: {e}")
+                    
+                    # Логируем завершение курса
+                    try:
+                        cur.execute("SELECT title FROM courses_v2 WHERE id = %s", (course_id,))
+                        course_row = cur.fetchone()
+                        course_title = course_row[0] if course_row else f"Курс #{course_id}"
+                        log_action(conn, 'success', 'course.complete', 
+                                  f"Завершен курс '{course_title}'",
+                                  user_id=int(payload['user_id']),
+                                  details={'course_id': course_id})
+                    except Exception as e:
+                        print(f"[WARNING] Failed to log course completion: {e}")
         
         conn.commit()
         
