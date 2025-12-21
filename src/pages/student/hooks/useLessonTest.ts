@@ -40,6 +40,18 @@ export function useLessonTest({
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [showAttemptsWarning, setShowAttemptsWarning] = useState(false);
 
+  // Сбрасываем состояние теста при смене урока или теста
+  useEffect(() => {
+    setTestStarted(false);
+    setTestAnswers({});
+    setTestSubmitted(false);
+    setTestScore(0);
+    setEarnedPoints(0);
+    setTotalPoints(0);
+    setTimeRemaining(0);
+    setCurrentQuestionIndex(0);
+  }, [lesson?.id, test?.id]);
+
   useEffect(() => {
     if (!testStarted || testSubmitted || timeRemaining <= 0) return;
     
