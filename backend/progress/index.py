@@ -538,11 +538,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             }
         
         if reset_type == 'reset_all':
-            # Удаляем весь прогресс по курсу
-            cur.execute(
-                "DELETE FROM course_progress_v2 WHERE course_id = %s",
-                (reset_course_id,)
-            )
             # Удаляем все результаты тестов по курсу (по course_id)
             cur.execute(
                 "DELETE FROM test_results_v2 WHERE course_id = %s",
@@ -553,9 +548,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 "DELETE FROM test_attempts_v2 WHERE course_id = %s",
                 (reset_course_id,)
             )
-            # Сбрасываем награды у всех пользователей этого курса
+            # Удаляем весь прогресс по курсу (должно быть последним)
             cur.execute(
-                "UPDATE course_progress_v2 SET earned_rewards = '[]'::jsonb WHERE course_id = %s",
+                "DELETE FROM course_progress_v2 WHERE course_id = %s",
                 (reset_course_id,)
             )
         elif reset_type == 'reset_tests':
