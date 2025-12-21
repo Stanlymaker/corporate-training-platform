@@ -538,7 +538,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             }
         
         if reset_type == 'reset_all':
-            # Удаляем все результаты тестов по курсу (по course_id)
+            # Удаляем все результаты тестов по курсу (из обеих таблиц)
+            cur.execute(
+                "DELETE FROM test_results WHERE course_id = %s",
+                (reset_course_id,)
+            )
             cur.execute(
                 "DELETE FROM test_results_v2 WHERE course_id = %s",
                 (reset_course_id,)
@@ -554,7 +558,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 (reset_course_id,)
             )
         elif reset_type == 'reset_tests':
-            # Удаляем только результаты тестов (по course_id)
+            # Удаляем только результаты тестов (по course_id, из обеих таблиц)
+            cur.execute(
+                "DELETE FROM test_results WHERE course_id = %s",
+                (reset_course_id,)
+            )
             cur.execute(
                 "DELETE FROM test_results_v2 WHERE course_id = %s",
                 (reset_course_id,)
@@ -629,16 +637,25 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'isBase64Encoded': False
             }
         
-        # Удаляем прогресс пользователя по курсу
+        # Удаляем результаты тестов пользователя по этому курсу (из обеих таблиц)
         cur.execute(
-            "DELETE FROM course_progress_v2 WHERE user_id = %s AND course_id = %s",
+            "DELETE FROM test_results WHERE user_id = %s AND course_id = %s",
+            (int(user_id), course_id_int)
+        )
+        cur.execute(
+            "DELETE FROM test_results_v2 WHERE user_id = %s AND course_id = %s",
             (int(user_id), course_id_int)
         )
         
-        # Удаляем результаты тестов пользователя по этому курсу
+        # Удаляем попытки тестов пользователя по этому курсу
         cur.execute(
-            "DELETE FROM test_results_v2 WHERE user_id = %s AND test_id IN "
-            "(SELECT test_id FROM lessons_v2 WHERE course_id = %s AND test_id IS NOT NULL)",
+            "DELETE FROM test_attempts_v2 WHERE user_id = %s AND course_id = %s",
+            (int(user_id), course_id_int)
+        )
+        
+        # Удаляем прогресс пользователя по курсу
+        cur.execute(
+            "DELETE FROM course_progress_v2 WHERE user_id = %s AND course_id = %s",
             (int(user_id), course_id_int)
         )
         
