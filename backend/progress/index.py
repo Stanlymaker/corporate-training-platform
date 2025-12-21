@@ -647,6 +647,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             (int(user_id), course_id_int)
         )
         
+        # Удаляем попытки тестов пользователя по этому курсу
+        cur.execute(
+            "DELETE FROM test_attempts_v2 WHERE user_id = %s AND course_id = %s",
+            (int(user_id), course_id_int)
+        )
+        
         conn.commit()
         cur.close()
         conn.close()
