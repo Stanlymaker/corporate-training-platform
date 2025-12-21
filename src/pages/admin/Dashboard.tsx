@@ -265,14 +265,15 @@ export default function AdminDashboard() {
                 Последняя активность
               </CardTitle>
             </CardHeader>
-            <CardContent className="max-h-[600px] overflow-y-auto">
+            <CardContent>
               {recentActivities.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
                   <Icon name="Inbox" size={48} className="mx-auto mb-2 opacity-20" />
                   <p>Пока нет активности студентов</p>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="h-[240px] overflow-y-auto pr-2 -mr-2">
+                  <div className="space-y-3">
                   {recentActivities.map((activity, index) => (
                     <div key={index} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                       <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
@@ -321,6 +322,7 @@ export default function AdminDashboard() {
                       </div>
                     </div>
                   ))}
+                  </div>
                 </div>
               )}
             </CardContent>
