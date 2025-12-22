@@ -56,13 +56,13 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
       <div className="w-full max-w-md animate-fade-in">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4 bg-[#e95122] overflow-hidden">
-            {logoUrl ? (
-              <img src={logoUrl} alt="Logo" className="w-full h-full object-contain p-2" />
-            ) : (
+          {logoUrl ? (
+            <img src={logoUrl} alt="Logo" className="w-16 h-16 object-contain mx-auto mb-4" />
+          ) : (
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4 bg-[#e95122]">
               <Icon name="GraduationCap" className="text-white" size={32} />
-            )}
-          </div>
+            </div>
+          )}
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Платформа обучения</h1>
           <p className="text-gray-600">Корпоративная система развития навыков</p>
         </div>

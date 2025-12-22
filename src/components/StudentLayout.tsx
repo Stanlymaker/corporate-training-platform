@@ -58,13 +58,13 @@ export default function StudentLayout({ children }: StudentLayoutProps) {
         <div className="h-full max-w-[1600px] mx-auto px-8 flex items-center justify-between">
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
-              <div className="w-9 h-9 bg-primary rounded-lg flex items-center justify-center overflow-hidden">
-                {logoUrl ? (
-                  <img src={logoUrl} alt="Logo" className="w-full h-full object-contain p-1" />
-                ) : (
+              {logoUrl ? (
+                <img src={logoUrl} alt="Logo" className="w-9 h-9 object-contain" />
+              ) : (
+                <div className="w-9 h-9 bg-primary rounded-lg flex items-center justify-center">
                   <Icon name="GraduationCap" className="text-white" size={18} />
-                )}
-              </div>
+                </div>
+              )}
               <span className="font-bold text-gray-900">Обучение</span>
             </div>
 
