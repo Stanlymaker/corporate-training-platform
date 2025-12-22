@@ -21,6 +21,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   }, [isAuthenticated, user, navigate]);
 
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showAboutModal, setShowAboutModal] = useState(false);
 
   const menuItems = [
     { icon: 'LayoutDashboard', label: 'Панель', path: ROUTES.ADMIN.DASHBOARD },
@@ -98,6 +99,16 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                     <p className="text-xs text-gray-500">{user?.email}</p>
                   </div>
                   <button
+                    onClick={() => {
+                      setShowAboutModal(true);
+                      setShowUserMenu(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                  >
+                    <Icon name="Info" size={16} />
+                    О программном обеспечении
+                  </button>
+                  <button
                     onClick={handleLogout}
                     className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
                   >
@@ -116,6 +127,74 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           {children}
         </div>
       </main>
+
+      {showAboutModal && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/50 z-50"
+            onClick={() => setShowAboutModal(false)}
+          />
+          <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+                <h2 className="text-xl font-bold text-gray-900">О программном обеспечении</h2>
+                <button
+                  onClick={() => setShowAboutModal(false)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <Icon name="X" size={20} />
+                </button>
+              </div>
+
+              <div className="px-6 py-6 space-y-6">
+                <div>
+                  <p className="text-gray-700 leading-relaxed">
+                    Программный продукт «Корпоративная образовательная платформа» — веб-ориентированное приложение, 
+                    предоставляющее организации инструменты для создания обучающих курсов, тестирования знаний и 
+                    поощрения сотрудников цифровыми наградами.
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Возможности платформы</h3>
+                  <ul className="space-y-2">
+                    <li className="flex items-start gap-2">
+                      <Icon name="CheckCircle2" size={20} className="text-primary flex-shrink-0 mt-0.5" />
+                      <span className="text-gray-700">создание единого цифрового пространства для внутреннего обучения сотрудников;</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <Icon name="CheckCircle2" size={20} className="text-primary flex-shrink-0 mt-0.5" />
+                      <span className="text-gray-700">обеспечение возможности создания, прохождения и оценки обучающих курсов различного формата;</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <Icon name="CheckCircle2" size={20} className="text-primary flex-shrink-0 mt-0.5" />
+                      <span className="text-gray-700">мотивация пользователей через систему цифровых наград за успешное завершение обучения.</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Сопроводительная документация</h3>
+                  <ul className="space-y-2">
+                    <li className="flex items-start gap-2">
+                      <Icon name="FileText" size={20} className="text-primary flex-shrink-0 mt-0.5" />
+                      <span className="text-gray-700">пояснительная записка к платформе;</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <Icon name="FileText" size={20} className="text-primary flex-shrink-0 mt-0.5" />
+                      <span className="text-gray-700">руководство пользователя платформы;</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <Icon name="FileText" size={20} className="text-primary flex-shrink-0 mt-0.5" />
+                      <span className="text-gray-700">руководство администратора платформы.</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
