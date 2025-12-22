@@ -23,6 +23,20 @@ export default function StudentLayout({ children }: StudentLayoutProps) {
 
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [logoUrl, setLogoUrl] = useState<string>('');
+
+  useEffect(() => {
+    const loadLogo = () => {
+      const savedLogo = localStorage.getItem('platformLogo');
+      if (savedLogo) {
+        setLogoUrl(savedLogo);
+      }
+    };
+
+    loadLogo();
+    window.addEventListener('logoUpdated', loadLogo);
+    return () => window.removeEventListener('logoUpdated', loadLogo);
+  }, []);
 
   const menuItems = [
     { icon: 'BookOpen', label: 'Мои курсы', path: ROUTES.STUDENT.COURSES },
@@ -44,8 +58,12 @@ export default function StudentLayout({ children }: StudentLayoutProps) {
         <div className="h-full max-w-[1600px] mx-auto px-8 flex items-center justify-between">
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
-              <div className="w-9 h-9 bg-primary rounded-lg flex items-center justify-center">
-                <Icon name="GraduationCap" className="text-white" size={18} />
+              <div className="w-9 h-9 bg-primary rounded-lg flex items-center justify-center overflow-hidden">
+                {logoUrl ? (
+                  <img src={logoUrl} alt="Logo" className="w-full h-full object-contain p-1" />
+                ) : (
+                  <Icon name="GraduationCap" className="text-white" size={18} />
+                )}
               </div>
               <span className="font-bold text-gray-900">Обучение</span>
             </div>
