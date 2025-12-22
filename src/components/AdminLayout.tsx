@@ -182,11 +182,25 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                     </li>
                     <li className="flex items-start gap-2">
                       <Icon name="FileText" size={20} className="text-primary flex-shrink-0 mt-0.5" />
-                      <span className="text-gray-700">руководство пользователя платформы;</span>
+                      <a 
+                        href="/user-guide.html" 
+                        target="_blank"
+                        className="text-primary hover:text-primary/80 hover:underline transition-colors"
+                      >
+                        руководство пользователя платформы
+                      </a>
+                      <Icon name="ExternalLink" size={16} className="text-primary flex-shrink-0 mt-0.5" />
                     </li>
                     <li className="flex items-start gap-2">
                       <Icon name="FileText" size={20} className="text-primary flex-shrink-0 mt-0.5" />
-                      <span className="text-gray-700">руководство администратора платформы.</span>
+                      <a 
+                        href="/admin-guide.html" 
+                        target="_blank"
+                        className="text-primary hover:text-primary/80 hover:underline transition-colors"
+                      >
+                        руководство администратора платформы
+                      </a>
+                      <Icon name="ExternalLink" size={16} className="text-primary flex-shrink-0 mt-0.5" />
                     </li>
                   </ul>
                 </div>
