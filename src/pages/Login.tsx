@@ -1,4 +1,4 @@
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,14 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [logoUrl, setLogoUrl] = useState<string>('');
+
+  useEffect(() => {
+    const savedLogo = localStorage.getItem('platformLogo');
+    if (savedLogo) {
+      setLogoUrl(savedLogo);
+    }
+  }, []);
 
   const handleLogin = async (e?: FormEvent) => {
     if (e) e.preventDefault();
@@ -48,8 +56,12 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
       <div className="w-full max-w-md animate-fade-in">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4 bg-[#e95122]">
-            <Icon name="GraduationCap" className="text-white" size={32} />
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4 bg-[#e95122] overflow-hidden">
+            {logoUrl ? (
+              <img src={logoUrl} alt="Logo" className="w-full h-full object-contain p-2" />
+            ) : (
+              <Icon name="GraduationCap" className="text-white" size={32} />
+            )}
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Платформа обучения</h1>
           <p className="text-gray-600">Корпоративная система развития навыков</p>

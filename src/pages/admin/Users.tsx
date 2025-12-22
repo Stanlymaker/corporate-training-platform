@@ -345,6 +345,20 @@ export default function AdminUsers() {
     }
   };
 
+  const handleSaveLogo = () => {
+    if (logoUrl) {
+      localStorage.setItem('platformLogo', logoUrl);
+      window.dispatchEvent(new Event('logoUpdated'));
+    }
+  };
+
+  useEffect(() => {
+    const savedLogo = localStorage.getItem('platformLogo');
+    if (savedLogo) {
+      setLogoUrl(savedLogo);
+    }
+  }, []);
+
   const students = users.filter((u) => u.role === 'student');
   const activeUsers = users.filter(
     (u) => u.lastActive.includes('часов') || u.lastActive.includes('минут')
@@ -370,24 +384,35 @@ export default function AdminUsers() {
             </h1>
           </div>
           <div className="flex items-center gap-3">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleLogoUpload}
-              className="hidden"
-            />
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-              title="Загрузить логотип"
-            >
-              {logoUrl ? (
-                <img src={logoUrl} alt="Logo" className="w-6 h-6 object-contain" />
-              ) : (
-                <Icon name="Image" size={18} />
+            <div className="flex items-center gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleLogoUpload}
+                className="hidden"
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                title="Загрузить логотип"
+              >
+                {logoUrl ? (
+                  <img src={logoUrl} alt="Logo" className="w-6 h-6 object-contain" />
+                ) : (
+                  <Icon name="Image" size={18} />
+                )}
+              </button>
+              {logoUrl && (
+                <button
+                  onClick={handleSaveLogo}
+                  className="flex items-center gap-1 px-2 py-2 text-sm text-green-600 hover:text-green-700 hover:bg-green-50 rounded-lg transition-colors"
+                  title="Сохранить логотип"
+                >
+                  <Icon name="Check" size={16} />
+                </button>
               )}
-            </button>
+            </div>
             <Button onClick={() => setShowAddModal(true)}>
               <Icon name="UserPlus" className="mr-2" size={18} />
               Добавить пользователя
