@@ -182,24 +182,28 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                     </li>
                     <li className="flex items-start gap-2">
                       <Icon name="FileText" size={20} className="text-primary flex-shrink-0 mt-0.5" />
-                      <a 
-                        href="/user-guide.html" 
-                        target="_blank"
-                        className="text-primary hover:text-primary/80 hover:underline transition-colors"
+                      <button
+                        onClick={() => {
+                          setShowAboutModal(false);
+                          navigate('/user-guide');
+                        }}
+                        className="text-primary hover:text-primary/80 hover:underline transition-colors text-left"
                       >
                         руководство пользователя платформы
-                      </a>
+                      </button>
                       <Icon name="ExternalLink" size={16} className="text-primary flex-shrink-0 mt-0.5" />
                     </li>
                     <li className="flex items-start gap-2">
                       <Icon name="FileText" size={20} className="text-primary flex-shrink-0 mt-0.5" />
-                      <a 
-                        href="/admin-guide.html" 
-                        target="_blank"
-                        className="text-primary hover:text-primary/80 hover:underline transition-colors"
+                      <button
+                        onClick={() => {
+                          setShowAboutModal(false);
+                          navigate('/admin-guide');
+                        }}
+                        className="text-primary hover:text-primary/80 hover:underline transition-colors text-left"
                       >
                         руководство администратора платформы
-                      </a>
+                      </button>
                       <Icon name="ExternalLink" size={16} className="text-primary flex-shrink-0 mt-0.5" />
                     </li>
                   </ul>

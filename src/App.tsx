@@ -25,6 +25,8 @@ import StudentCourseDetail from "./pages/student/CourseDetail";
 import StudentCourseDetails from "./pages/student/CourseDetails";
 import StudentLesson from "./pages/student/Lesson";
 import StudentTest from "./pages/student/Test";
+import UserGuide from "./pages/UserGuide";
+import AdminGuide from "./pages/AdminGuide";
 
 import NotFound from "./pages/NotFound";
 
@@ -40,6 +42,8 @@ const App = () => (
           <Routes>
             <Route path={ROUTES.HOME} element={<Navigate to={ROUTES.LOGIN} replace />} />
             <Route path={ROUTES.LOGIN} element={<Login />} />
+            <Route path={ROUTES.USER_GUIDE} element={<UserGuide />} />
+            <Route path={ROUTES.ADMIN_GUIDE} element={<AdminGuide />} />
             
             <Route path={ROUTES.ADMIN.DASHBOARD} element={<AdminDashboard />} />
             <Route path={ROUTES.ADMIN.COURSES} element={<AdminCourses />} />
