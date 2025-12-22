@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import Icon from '@/components/ui/icon';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import UserFilters, { FilterState } from '@/components/admin/UserFilters';
 import UserDetailsModal from '@/components/admin/UserDetailsModal';
 import AddUserModal, { NewUserData } from '@/components/admin/AddUserModal';
@@ -27,6 +27,8 @@ export default function AdminUsers() {
   const [courses, setCourses] = useState<any[]>([]);
   const [progressData, setProgressData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [logoUrl, setLogoUrl] = useState<string>('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadUsers();
@@ -332,6 +334,17 @@ export default function AdminUsers() {
     }
   };
 
+  const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setLogoUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const students = users.filter((u) => u.role === 'student');
   const activeUsers = users.filter(
     (u) => u.lastActive.includes('часов') || u.lastActive.includes('минут')
@@ -356,10 +369,30 @@ export default function AdminUsers() {
               Управление пользователями
             </h1>
           </div>
-          <Button onClick={() => setShowAddModal(true)}>
-            <Icon name="UserPlus" className="mr-2" size={18} />
-            Добавить пользователя
-          </Button>
+          <div className="flex items-center gap-3">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleLogoUpload}
+              className="hidden"
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+              title="Загрузить логотип"
+            >
+              {logoUrl ? (
+                <img src={logoUrl} alt="Logo" className="w-6 h-6 object-contain" />
+              ) : (
+                <Icon name="Image" size={18} />
+              )}
+            </button>
+            <Button onClick={() => setShowAddModal(true)}>
+              <Icon name="UserPlus" className="mr-2" size={18} />
+              Добавить пользователя
+            </Button>
+          </div>
         </div>
 
         <UserFilters
