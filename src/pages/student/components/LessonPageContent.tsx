@@ -94,6 +94,17 @@ export default function LessonPageContent({
 }: LessonPageContentProps) {
   const navigate = useNavigate();
 
+  const handleDownload = (url: string, filename: string) => {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <>
       {showAttemptsWarning && attemptsInfo && (
@@ -191,7 +202,7 @@ export default function LessonPageContent({
                       )}
                     </>
                   ) : (
-                    <LessonContent lesson={lesson} />
+                    <LessonContent lesson={lesson} currentIndex={lesson.order} onDownload={handleDownload} />
                   )}
                 </CardContent>
               </Card>
