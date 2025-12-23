@@ -23,24 +23,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       if (savedUser && token) {
         setUser(JSON.parse(savedUser));
-        
-        try {
-          const response = await fetch(`${API_ENDPOINTS.AUTH}?action=verify`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-Auth-Token': token,
-            },
-          });
-
-          if (!response.ok) {
-            setUser(null);
-            localStorage.removeItem('currentUser');
-            localStorage.removeItem('authToken');
-          }
-        } catch (error) {
-          console.error('Auth verification error (keeping user logged in):', error);
-        }
       }
       setIsLoading(false);
     };
