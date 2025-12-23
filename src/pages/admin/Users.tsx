@@ -124,8 +124,11 @@ export default function AdminUsers() {
     const diffDays = Math.floor(diffMs / 86400000);
 
     if (diffMins < 1) return 'Только что';
+    if (diffMins === 1) return '1 минуту назад';
     if (diffMins < 60) return `${diffMins} минут назад`;
-    if (diffHours < 24) return `${diffHours} часов назад`;
+    if (diffHours === 1) return '1 час назад';
+    if (diffHours < 24) return `${diffHours} часа назад`;
+    if (diffDays === 1) return '1 день назад';
     if (diffDays < 30) return `${diffDays} дней назад`;
     return `${Math.floor(diffDays / 30)} месяц назад`;
   };
