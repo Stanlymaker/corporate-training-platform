@@ -46,11 +46,6 @@ export default function AdminUsers() {
 
       if (response.ok) {
         const data = await response.json();
-        console.log('[DEBUG] Users data from backend:', data.users.map((u: any) => ({ 
-          id: u.id, 
-          name: u.name, 
-          lastActive: u.lastActive 
-        })));
         
         const formattedUsers = data.users.map((u: any) => ({
           id: u.id,
@@ -122,21 +117,13 @@ export default function AdminUsers() {
   };
 
   const formatLastActive = (dateStr: string): string => {
-    const date = new Date(dateStr);
+    const dateWithZ = dateStr.endsWith('Z') ? dateStr : dateStr + 'Z';
+    const date = new Date(dateWithZ);
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
-
-    console.log('[DEBUG formatLastActive]', { 
-      dateStr, 
-      date: date.toISOString(), 
-      now: now.toISOString(), 
-      diffMs, 
-      diffMins, 
-      diffHours 
-    });
 
     if (diffMins < 1) return 'Только что';
     if (diffMins === 1) return '1 минуту назад';
