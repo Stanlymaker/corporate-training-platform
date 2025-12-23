@@ -214,7 +214,7 @@ export function useTestEditorActions(
       // Определяем, какие вопросы нужно удалить (есть в БД, но нет в форме)
       const formQuestionIds = new Set(
         formData.questions
-          .filter(q => q.id !== undefined)
+          .filter(q => q.id !== undefined && typeof q.id === 'number') // Только реальные числовые id
           .map(q => q.id)
       );
       const questionsToDelete = existingQuestions.filter(q => !formQuestionIds.has(q.id));
@@ -272,8 +272,8 @@ export function useTestEditorActions(
           questionPayload.textCheckType = question.textCheckType || 'manual';
         }
 
-        // Проверяем, это существующий вопрос (есть id) или новый (id === undefined)
-        const isNewQuestion = question.id === undefined;
+        // Проверяем, это существующий вопрос (числовой id из БД) или новый (нет id или строковый temp-id)
+        const isNewQuestion = question.id === undefined || typeof question.id === 'string';
         
         if (isNewQuestion) {
           // Создаём новый вопрос

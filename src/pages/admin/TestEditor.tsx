@@ -19,7 +19,7 @@ interface Answer {
 }
 
 interface Question {
-  id?: number;
+  id?: number | string; // number для существующих, string для новых
   type: 'single' | 'multiple' | 'text' | 'matching';
   question: string;
   imageUrl?: string;
@@ -217,10 +217,10 @@ export default function TestEditor() {
       updated[existingIndex] = editingQuestion;
       setFormData({ ...formData, questions: updated });
     } else {
-      // Добавление нового вопроса - генерируем временный id
+      // Добавление нового вопроса - генерируем временный строковый id
       const newQuestion = {
         ...editingQuestion,
-        id: editingQuestion.id || Date.now() // Временный уникальный id для новых вопросов
+        id: editingQuestion.id || `temp-${Date.now()}-${Math.random()}` // Строковый id для новых
       };
       setFormData({ ...formData, questions: [...formData.questions, newQuestion] });
     }
