@@ -235,9 +235,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-3">Срок действия прав на ПО</h3>
-                  <p className="text-gray-700">
-                    C 23.12.2025 по 28.12.2025
-                  </p>
+                  <p className="text-gray-700">C 23.12.2025 по 28.12.2026</p>
                 </div>
               </div>
             </div>
