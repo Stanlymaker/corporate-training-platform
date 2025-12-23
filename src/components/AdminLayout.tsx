@@ -222,6 +222,23 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                     </li>
                   </ul>
                 </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Техническая поддержка</h3>
+                  <p className="text-gray-700 leading-relaxed mb-2">
+                    Техническая поддержка ПО обеспечивается в будние дни с понедельника по пятницу в рабочее время: с 8-30 до 17-30 по МСК.
+                  </p>
+                  <p className="text-gray-700">
+                    <span className="font-medium">Контакты:</span> digital1212lab@yandex.ru
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Срок действия прав на ПО</h3>
+                  <p className="text-gray-700">
+                    C 23.12.2025 по 28.12.2025
+                  </p>
+                </div>
               </div>
             </div>
           </div>
