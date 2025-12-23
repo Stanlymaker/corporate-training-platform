@@ -272,10 +272,12 @@ export default function AdminLogs() {
                             <span className="font-mono text-xs">{log.metadata.ip}</span>
                           </div>
                         )}
-                        {log.details && (
-                          <div className="flex items-center gap-1 text-red-600">
-                            <Icon name="AlertCircle" size={14} />
-                            <span className="truncate max-w-xs">{log.details}</span>
+                        {log.details && typeof log.details === 'object' && (
+                          <div className="flex items-center gap-1 text-gray-500">
+                            <Icon name="Info" size={14} />
+                            <span className="truncate max-w-xs">
+                              {Object.keys(log.details).length} доп. полей
+                            </span>
                           </div>
                         )}
                       </div>
