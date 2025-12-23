@@ -65,25 +65,37 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         print(f"Attempting to download from S3: {file_key}")
         
-        # Пробуем скачать файл
-        try:
-            response = s3.get_object(Bucket='files', Key=file_key)
-            file_data = response['Body'].read()
-        except s3.exceptions.NoSuchKey:
-            # Если файл не найден, попробуем альтернативные пути
-            # Например, если в URL documents/, попробуем images/
-            if file_key.startswith('documents/'):
-                alt_key = file_key.replace('documents/', 'images/')
-                print(f"File not found, trying alternative path: {alt_key}")
-                response = s3.get_object(Bucket='files', Key=alt_key)
+        # Список возможных путей для поиска файла
+        possible_keys = [file_key]
+        
+        # Добавляем альтернативные пути
+        if file_key.startswith('documents/'):
+            possible_keys.append(file_key.replace('documents/', 'images/'))
+            possible_keys.append(file_key.replace('documents/', ''))
+        elif file_key.startswith('images/'):
+            possible_keys.append(file_key.replace('images/', 'documents/'))
+            possible_keys.append(file_key.replace('images/', ''))
+        else:
+            possible_keys.append(f'images/{file_key}')
+            possible_keys.append(f'documents/{file_key}')
+        
+        # Пробуем найти файл по одному из путей
+        file_data = None
+        last_error = None
+        
+        for key in possible_keys:
+            try:
+                print(f"Trying S3 key: {key}")
+                response = s3.get_object(Bucket='files', Key=key)
                 file_data = response['Body'].read()
-            elif file_key.startswith('images/'):
-                alt_key = file_key.replace('images/', 'documents/')
-                print(f"File not found, trying alternative path: {alt_key}")
-                response = s3.get_object(Bucket='files', Key=alt_key)
-                file_data = response['Body'].read()
-            else:
-                raise
+                print(f"Successfully found file at: {key}")
+                break
+            except Exception as e:
+                last_error = e
+                continue
+        
+        if file_data is None:
+            raise Exception(f"File not found in any location. Last error: {str(last_error)}")
         
         # Определяем content-type по расширению
         content_type = 'application/octet-stream'
