@@ -58,7 +58,9 @@ export default function AdminUsers() {
           avatar: u.avatar,
           isActive: u.isActive,
           registrationDate: new Date(u.registrationDate).toLocaleDateString('ru-RU'),
+          registrationDateRaw: u.registrationDate,
           lastActive: formatLastActive(u.lastActive),
+          lastActiveRaw: u.lastActive,
         }));
         setUsers(formattedUsers);
       }
@@ -142,14 +144,35 @@ export default function AdminUsers() {
 
     const matchesRole = filters.role === 'all' || user.role === filters.role;
 
-    let matchesActivity = true;
-    if (filters.activityStatus === 'active') {
-      matchesActivity = user.lastActive.includes('часов') || user.lastActive.includes('минут');
-    } else if (filters.activityStatus === 'inactive') {
-      matchesActivity = user.lastActive.includes('месяц');
+    let matchesRegistrationDate = true;
+    if (filters.registrationDateFrom || filters.registrationDateTo) {
+      const userRegDate = new Date((user as any).registrationDateRaw + 'Z');
+      if (filters.registrationDateFrom) {
+        const fromDate = new Date(filters.registrationDateFrom);
+        matchesRegistrationDate = matchesRegistrationDate && userRegDate >= fromDate;
+      }
+      if (filters.registrationDateTo) {
+        const toDate = new Date(filters.registrationDateTo);
+        toDate.setHours(23, 59, 59, 999);
+        matchesRegistrationDate = matchesRegistrationDate && userRegDate <= toDate;
+      }
     }
 
-    return matchesSearch && matchesRole && matchesActivity;
+    let matchesActivity = true;
+    if (filters.activityStatus !== 'all') {
+      const lastActiveRaw = (user as any).lastActiveRaw;
+      const lastActiveDate = new Date(lastActiveRaw + 'Z');
+      const now = new Date();
+      const diffDays = Math.floor((now.getTime() - lastActiveDate.getTime()) / 86400000);
+      
+      if (filters.activityStatus === 'active') {
+        matchesActivity = diffDays <= 7;
+      } else if (filters.activityStatus === 'inactive') {
+        matchesActivity = diffDays >= 30;
+      }
+    }
+
+    return matchesSearch && matchesRole && matchesRegistrationDate && matchesActivity;
   });
 
   const getUserProgress = (userId: number) => {
