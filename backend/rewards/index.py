@@ -285,7 +285,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         conn = get_db_connection()
         cur = conn.cursor()
         
-        cur.execute("DELETE FROM user_rewards WHERE reward_id = %s", (reward_id,))
+        cur.execute("DELETE FROM user_rewards_v2 WHERE reward_id = %s", (reward_id,))
         cur.execute("DELETE FROM rewards_v2 WHERE id = %s", (reward_id,))
         conn.commit()
         

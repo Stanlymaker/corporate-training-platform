@@ -33,7 +33,7 @@ export default function RewardCard({ reward, course, onEdit, onDelete }: RewardC
       <Card className="border-0 shadow-md hover:shadow-xl transition-all">
         <CardContent className="p-6">
           <div className="flex items-start justify-between mb-4">
-            <div className="w-24 h-24 rounded-xl bg-gray-50 flex items-center justify-center p-3">
+            <div className="w-24 h-24 rounded-xl bg-white border-2 border-gray-100 flex items-center justify-center p-3">
               <img 
                 src={reward.icon} 
                 alt={reward.name}
