@@ -6,7 +6,7 @@
       "path": "/",
       "expectedStatus": 400,
       "expectedBody": {
-        "error": "string"
+        "error": "URL parameter required"
       },
       "bodyMatcher": "partial"
     }

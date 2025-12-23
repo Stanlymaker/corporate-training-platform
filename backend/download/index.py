@@ -1,13 +1,13 @@
 import json
 import os
-import urllib.request
+import boto3
 import base64
 from typing import Dict, Any
-from urllib.parse import unquote
+from urllib.parse import unquote, urlparse
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     '''
-    Прокси для скачивания файлов с CDN с правильными заголовками
+    Прокси для скачивания файлов из S3 хранилища
     Args: event - dict с httpMethod, queryStringParameters (url, filename)
     Returns: HTTP response с файлом в base64
     '''
@@ -47,12 +47,43 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         }
     
     try:
-        # Логируем URL для отладки
-        print(f"Downloading file from: {file_url}")
+        # Инициализация S3 клиента
+        s3 = boto3.client('s3',
+            endpoint_url='https://bucket.poehali.dev',
+            aws_access_key_id=os.environ['AWS_ACCESS_KEY_ID'],
+            aws_secret_access_key=os.environ['AWS_SECRET_ACCESS_KEY'],
+        )
         
-        # Скачиваем файл с CDN
-        with urllib.request.urlopen(file_url) as response:
-            file_data = response.read()
+        # Извлекаем путь к файлу из URL
+        # URL формат: https://cdn.poehali.dev/projects/{project_id}/bucket/{path}
+        parsed = urlparse(file_url)
+        path_parts = parsed.path.split('/bucket/')
+        if len(path_parts) < 2:
+            raise ValueError(f'Invalid URL format: {file_url}')
+        
+        file_key = path_parts[1]  # Например: images/uuid.pdf или documents/uuid.pdf
+        
+        print(f"Attempting to download from S3: {file_key}")
+        
+        # Пробуем скачать файл
+        try:
+            response = s3.get_object(Bucket='files', Key=file_key)
+            file_data = response['Body'].read()
+        except s3.exceptions.NoSuchKey:
+            # Если файл не найден, попробуем альтернативные пути
+            # Например, если в URL documents/, попробуем images/
+            if file_key.startswith('documents/'):
+                alt_key = file_key.replace('documents/', 'images/')
+                print(f"File not found, trying alternative path: {alt_key}")
+                response = s3.get_object(Bucket='files', Key=alt_key)
+                file_data = response['Body'].read()
+            elif file_key.startswith('images/'):
+                alt_key = file_key.replace('images/', 'documents/')
+                print(f"File not found, trying alternative path: {alt_key}")
+                response = s3.get_object(Bucket='files', Key=alt_key)
+                file_data = response['Body'].read()
+            else:
+                raise
         
         # Определяем content-type по расширению
         content_type = 'application/octet-stream'
