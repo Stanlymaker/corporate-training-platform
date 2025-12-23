@@ -4,6 +4,7 @@ import Icon from '@/components/ui/icon';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/constants/routes';
 import { Course, Lesson, Test, CourseProgress } from '@/components/student/types';
+import { API_ENDPOINTS } from '@/config/api';
 import LessonContent from '@/components/student/LessonContent';
 import TestInterface from '@/components/student/TestInterface';
 import TestResults from '@/components/student/TestResults';
@@ -95,8 +96,10 @@ export default function LessonPageContent({
   const navigate = useNavigate();
 
   const handleDownload = (url: string, filename: string) => {
+    // Используем прокси-функцию download для корректной загрузки файлов
+    const downloadUrl = `${API_ENDPOINTS.DOWNLOAD}?url=${encodeURIComponent(url)}&filename=${encodeURIComponent(filename)}`;
     const link = document.createElement('a');
-    link.href = url;
+    link.href = downloadUrl;
     link.download = filename;
     link.target = '_blank';
     link.rel = 'noopener noreferrer';

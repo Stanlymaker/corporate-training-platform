@@ -56,7 +56,20 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         # Генерируем уникальное имя файла
         file_ext = upload_req.filename.split('.')[-1] if '.' in upload_req.filename else 'jpg'
-        unique_filename = f"images/{uuid.uuid4()}.{file_ext}"
+        
+        # Определяем папку в зависимости от типа файла
+        if upload_req.contentType.startswith('image/'):
+            folder = 'images'
+        elif upload_req.contentType.startswith('video/'):
+            folder = 'videos'
+        elif 'pdf' in upload_req.contentType or file_ext.lower() == 'pdf':
+            folder = 'documents'
+        elif 'word' in upload_req.contentType or 'document' in upload_req.contentType or file_ext.lower() in ['doc', 'docx']:
+            folder = 'documents'
+        else:
+            folder = 'files'
+        
+        unique_filename = f"{folder}/{uuid.uuid4()}.{file_ext}"
         
         # Загружаем в S3
         s3.put_object(
