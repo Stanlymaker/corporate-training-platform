@@ -206,13 +206,23 @@ export default function TestEditor() {
   const handleSaveQuestion = () => {
     if (!editingQuestion) return;
 
-    const existingIndex = formData.questions.findIndex(q => q.id === editingQuestion.id);
+    // Проверяем, есть ли у вопроса id и существует ли он в массиве
+    const existingIndex = editingQuestion.id 
+      ? formData.questions.findIndex(q => q.id === editingQuestion.id)
+      : -1;
+    
     if (existingIndex >= 0) {
+      // Редактирование существующего вопроса
       const updated = [...formData.questions];
       updated[existingIndex] = editingQuestion;
       setFormData({ ...formData, questions: updated });
     } else {
-      setFormData({ ...formData, questions: [...formData.questions, editingQuestion] });
+      // Добавление нового вопроса - генерируем временный id
+      const newQuestion = {
+        ...editingQuestion,
+        id: editingQuestion.id || Date.now() // Временный уникальный id для новых вопросов
+      };
+      setFormData({ ...formData, questions: [...formData.questions, newQuestion] });
     }
 
     setShowQuestionDialog(false);
