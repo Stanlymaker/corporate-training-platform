@@ -196,10 +196,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                   <ul className="space-y-2">
                     <li className="flex items-start gap-2">
                       <Icon name="FileText" size={20} className="text-primary flex-shrink-0 mt-0.5" />
-                      <span className="text-gray-700">пояснительная записка к платформе;</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <Icon name="FileText" size={20} className="text-primary flex-shrink-0 mt-0.5" />
                       <button
                         onClick={() => {
                           setShowAboutModal(false);
