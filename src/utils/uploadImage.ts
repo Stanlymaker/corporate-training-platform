@@ -77,8 +77,9 @@ async function compressImage(file: File, maxSizeMB: number = 1): Promise<File> {
 }
 
 export async function uploadImage(file: File): Promise<string> {
-  // Сжимаем изображение перед загрузкой
-  const compressedFile = await compressImage(file, 1); // макс 1MB
+  // SVG не сжимаем, загружаем как есть
+  const isSVG = file.type === 'image/svg+xml';
+  const fileToUpload = isSVG ? file : await compressImage(file, 1);
   
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -92,8 +93,8 @@ export async function uploadImage(file: File): Promise<string> {
           headers: getAuthHeaders(),
           body: JSON.stringify({
             file: base64,
-            filename: compressedFile.name,
-            contentType: compressedFile.type,
+            filename: fileToUpload.name,
+            contentType: fileToUpload.type,
           }),
         });
         
@@ -109,6 +110,6 @@ export async function uploadImage(file: File): Promise<string> {
     };
     
     reader.onerror = () => reject(new Error('Ошибка чтения файла'));
-    reader.readAsDataURL(compressedFile);
+    reader.readAsDataURL(fileToUpload);
   });
 }
